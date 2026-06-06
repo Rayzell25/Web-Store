@@ -41,7 +41,7 @@ async function main() {
   // (caption foto QR & popup alert tidak terpengaruh)
   function wrapHtml(text) {
     if (typeof text === 'string' && !text.startsWith('<blockquote')) {
-      return `<blockquote expandable>${text}</blockquote>`;
+      return `<blockquote>${text}</blockquote>`;
     }
     return text;
   }
