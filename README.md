@@ -166,3 +166,31 @@ bash scripts/restore.sh backups/ppob-YYYYMMDD-HHMMSS.zip
 ## Keamanan
 - Jangan commit `.env`. Jangan bagikan `api_hash`.
 - Whitelist IP server di dashboard Digiflazz.
+
+
+## Web Storefront (rayzelldigital.web.id)
+
+Web etalase + cek transaksi, terhubung ke database bot (read-only via localhost). Tombol **Beli** mengarahkan ke bot Telegram (transaksi tetap di bot).
+
+- Kode: `src/web/server.js` (Express) + `src/web/public/index.html` (Tailwind CDN).
+- API: `/api/products` (etalase per kategori), `/api/trx/:refId` (cek status), `/api/info` (kontak).
+- Jalan di `127.0.0.1:WEB_PORT` (default 3000), di-expose lewat Nginx + SSL.
+
+### 1. Pointing domain
+Di panel DNS domain `rayzelldigital.web.id`, buat **A record**:
+
+```
+Type: A    Name: @    Value: <IP_VPS>
+```
+(opsional `www` → A record ke IP yang sama). Tunggu propagasi (cek: `ping rayzelldigital.web.id`).
+
+### 2. Setup web + Nginx + SSL (setelah domain pointing)
+
+```bash
+cd ~/ppob
+sudo bash scripts/setup-web.sh rayzelldigital.web.id
+```
+
+Script ini: install Nginx + certbot, daftarkan service `rayzell-web`, pasang reverse proxy, dan ambil SSL otomatis. Buka `https://rayzelldigital.web.id`.
+
+> Isi `BOT_USERNAME` di `.env` (username bot jualan, tanpa @) agar tombol **Beli** mengarah ke bot. Lalu `systemctl restart rayzell-web`.

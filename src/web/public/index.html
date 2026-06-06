@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rayzell Store PPOB — Pulsa, Paket Data, PLN, Game, E-Money</title>
+  <meta name="description" content="Rayzell Store PPOB: layanan pulsa, paket data, token PLN, voucher game, dan e-money. Cepat, otomatis, terpercaya." />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .fade-up { opacity: 0; transform: translateY(12px); animation: fu .5s ease forwards; }
+    @keyframes fu { to { opacity: 1; transform: none; } }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 antialiased">
+
+  <!-- NAV -->
+  <header class="sticky top-0 z-30 border-b border-white/5 bg-slate-950/80 backdrop-blur">
+    <div class="mx-auto flex max-w-5xl items-center justify-between px-5 py-4">
+      <div class="flex items-center gap-2">
+        <div class="grid h-8 w-8 place-items-center rounded-lg bg-white text-slate-900 font-extrabold">R</div>
+        <span class="font-semibold tracking-tight" id="brand">Rayzell Store PPOB</span>
+      </div>
+      <nav class="hidden gap-6 text-sm text-slate-400 sm:flex">
+        <a href="#layanan" class="hover:text-white">Layanan</a>
+        <a href="#cek" class="hover:text-white">Cek Transaksi</a>
+        <a href="#kontak" class="hover:text-white">Kontak</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="mx-auto max-w-5xl px-5 pt-20 pb-16 text-center">
+    <p class="fade-up mb-4 inline-block rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-300">
+      Transaksi otomatis 24 jam
+    </p>
+    <h1 class="fade-up text-4xl font-extrabold leading-tight tracking-tight sm:text-5xl">
+      Pulsa, Data, PLN, Game &amp; E-Money<br class="hidden sm:block" />
+      <span class="text-slate-400">dalam satu tempat.</span>
+    </h1>
+    <p class="fade-up mx-auto mt-5 max-w-xl text-slate-400">
+      Rayzell Store PPOB — isi ulang cepat, harga bersaing, proses otomatis langsung dari Telegram.
+    </p>
+    <div class="fade-up mt-8 flex flex-wrap justify-center gap-3">
+      <a id="cta-buy" href="#" target="_blank" rel="noopener"
+         class="rounded-xl bg-white px-6 py-3 font-semibold text-slate-900 transition hover:bg-slate-200">
+        Mulai Beli di Telegram
+      </a>
+      <a href="#layanan" class="rounded-xl border border-white/15 px-6 py-3 font-semibold text-slate-100 transition hover:bg-white/5">
+        Lihat Layanan
+      </a>
+    </div>
+  </section>
+
+  <!-- LAYANAN -->
+  <section id="layanan" class="mx-auto max-w-5xl px-5 py-14">
+    <div class="mb-8 flex items-end justify-between">
+      <div>
+        <h2 class="text-2xl font-bold tracking-tight">Layanan</h2>
+        <p class="mt-1 text-sm text-slate-400">Harga termurah per kategori. Klik Beli untuk transaksi via Telegram.</p>
+      </div>
+    </div>
+    <div id="grid" class="grid grid-cols-2 gap-3 sm:grid-cols-3">
+      <div class="col-span-full rounded-xl border border-white/10 bg-white/5 p-6 text-center text-slate-400">
+        Memuat layanan…
+      </div>
+    </div>
+  </section>
+
+  <!-- CEK TRANSAKSI -->
+  <section id="cek" class="mx-auto max-w-5xl px-5 py-14">
+    <div class="rounded-2xl border border-white/10 bg-white/5 p-6 sm:p-8">
+      <h2 class="text-2xl font-bold tracking-tight">Cek Status Transaksi</h2>
+      <p class="mt-1 text-sm text-slate-400">Masukkan Ref ID transaksi kamu (mis. CHO XXXX).</p>
+      <div class="mt-5 flex flex-col gap-3 sm:flex-row">
+        <input id="ref" type="text" placeholder="Ref ID…"
+               class="w-full rounded-xl border border-white/10 bg-slate-900 px-4 py-3 text-slate-100 outline-none placeholder:text-slate-500 focus:border-white/30" />
+        <button id="cekBtn"
+                class="rounded-xl bg-white px-6 py-3 font-semibold text-slate-900 transition hover:bg-slate-200">
+          Cek
+        </button>
+      </div>
+      <div id="cekResult" class="mt-5 hidden rounded-xl border border-white/10 bg-slate-900 p-5 text-sm"></div>
+    </div>
+  </section>
+
+  <!-- KONTAK -->
+  <section id="kontak" class="mx-auto max-w-5xl px-5 py-14">
+    <h2 class="text-2xl font-bold tracking-tight">Kontak</h2>
+    <p class="mt-1 text-sm text-slate-400">Butuh bantuan? Hubungi kami.</p>
+    <div class="mt-6 grid gap-3 sm:grid-cols-2">
+      <a id="wa" href="#" target="_blank" rel="noopener"
+         class="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 p-5 transition hover:bg-white/10">
+        <span class="font-semibold">WhatsApp</span>
+        <span class="text-slate-400">Chat sekarang →</span>
+      </a>
+      <a id="tg" href="#" target="_blank" rel="noopener"
+         class="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 p-5 transition hover:bg-white/10">
+        <span class="font-semibold">Telegram</span>
+        <span class="text-slate-400">Buka chat →</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="border-t border-white/5">
+    <div class="mx-auto max-w-5xl px-5 py-8 text-center text-sm text-slate-500">
+      © <span id="year"></span> <span id="brandFoot">Rayzell Store PPOB</span>. Seluruh hak cipta dilindungi.
+    </div>
+  </footer>
+
+  <script>
+    const $ = (s) => document.querySelector(s);
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    function iconFor(cat) {
+      const c = (cat || '').toLowerCase();
+      if (c.includes('pulsa')) return '📱';
+      if (c.includes('data')) return '🌐';
+      if (c.includes('pln') || c.includes('listrik')) return '⚡';
+      if (c.includes('game')) return '🎮';
+      if (c.includes('emoney') || c.includes('e-money') || c.includes('saldo')) return '💳';
+      if (c.includes('voucher')) return '🎟️';
+      if (c.includes('tv')) return '📺';
+      return '📦';
+    }
+
+    // info kontak & nama toko
+    fetch('/api/info').then(r => r.json()).then(({ data }) => {
+      if (!data) return;
+      $('#brand').textContent = data.store;
+      $('#brandFoot').textContent = data.store;
+      document.title = data.store + ' — Pulsa, Paket Data, PLN, Game, E-Money';
+      $('#cta-buy').href = data.botLink;
+      $('#wa').href = data.waLink;
+      $('#tg').href = data.tgLink;
+    }).catch(() => {});
+
+    // etalase
+    fetch('/api/products').then(r => r.json()).then(({ data }) => {
+      const grid = $('#grid');
+      if (!data || !data.length) {
+        grid.innerHTML = '<div class="col-span-full rounded-xl border border-white/10 bg-white/5 p-6 text-center text-slate-400">Produk belum tersedia. Coba lagi nanti.</div>';
+        return;
+      }
+      const botLink = $('#cta-buy').href || '#';
+      grid.innerHTML = data.map(d => `
+        <div class="rounded-xl border border-white/10 bg-white/5 p-5 transition hover:bg-white/10">
+          <div class="text-2xl">${iconFor(d.category)}</div>
+          <div class="mt-3 font-semibold">${d.category}</div>
+          <div class="text-xs text-slate-400">${d.count} produk</div>
+          <div class="mt-2 text-sm text-slate-300">Mulai ${d.startFromText}</div>
+          <a href="${botLink}" target="_blank" rel="noopener"
+             class="mt-4 block rounded-lg bg-white px-3 py-2 text-center text-sm font-semibold text-slate-900 transition hover:bg-slate-200">
+            Beli
+          </a>
+        </div>`).join('');
+    }).catch(() => {});
+
+    // cek transaksi
+    async function cek() {
+      const ref = $('#ref').value.trim();
+      const box = $('#cekResult');
+      if (!ref) { box.classList.remove('hidden'); box.innerHTML = 'Masukkan Ref ID dulu.'; return; }
+      box.classList.remove('hidden');
+      box.innerHTML = 'Mengecek…';
+      try {
+        const r = await fetch('/api/trx/' + encodeURIComponent(ref));
+        const j = await r.json();
+        if (!j.ok) { box.innerHTML = '❌ ' + (j.message || 'Tidak ditemukan'); return; }
+        const d = j.data;
+        const color = d.status === 'Sukses' ? 'text-emerald-400' : d.status === 'Gagal' ? 'text-rose-400' : 'text-amber-400';
+        box.innerHTML = `
+          <div class="grid gap-1">
+            <div class="flex justify-between"><span class="text-slate-400">Ref ID</span><span>${d.ref_id}</span></div>
+            <div class="flex justify-between"><span class="text-slate-400">Produk</span><span>${d.product || '-'}</span></div>
+            <div class="flex justify-between"><span class="text-slate-400">Tujuan</span><span>${d.target || '-'}</span></div>
+            <div class="flex justify-between"><span class="text-slate-400">Status</span><span class="font-semibold ${color}">${d.status}</span></div>
+            <div class="flex justify-between"><span class="text-slate-400">Waktu</span><span>${d.waktu}</span></div>
+          </div>`;
+      } catch (e) {
+        box.innerHTML = '⚠️ Gagal terhubung. Coba lagi.';
+      }
+    }
+    $('#cekBtn').addEventListener('click', cek);
+    $('#ref').addEventListener('keydown', (e) => { if (e.key === 'Enter') cek(); });
+  </script>
+</body>
+</html>
