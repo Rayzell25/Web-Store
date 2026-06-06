@@ -17,16 +17,11 @@ function mainMenu(isAdminUser) {
     ],
   ];
 
-  const lastRow = [];
-  if (config.store.vpnUrl) {
-    lastRow.push({ text: 'Bot VPN', url: config.store.vpnUrl });
-  }
   if (isAdminUser) {
-    lastRow.push({ text: 'Admin', callback_data: 'menu:admin' });
+    rows.push([{ text: 'Admin', callback_data: 'menu:admin' }]);
   } else if (config.store.adminContact) {
-    lastRow.push({ text: 'Admin', url: config.store.adminContact });
+    rows.push([{ text: 'Admin', url: config.store.adminContact }]);
   }
-  if (lastRow.length) rows.push(lastRow);
 
   return { inline_keyboard: rows };
 }
