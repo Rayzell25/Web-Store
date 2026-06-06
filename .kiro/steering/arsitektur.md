@@ -26,7 +26,6 @@ Konvensi wajib untuk repo ini.
 - Prioritas markup: override per-produk > markup per-kategori > default role (RESELLER punya default sendiri).
 - Tipe markup: `flat` (rupiah) atau `percent` (% dari harga modal). Ada pembulatan (`round`).
 - Markup bisa diatur admin dari bot (menu Admin → Markup), format pakai pemisah `|`.
-- **Auto-upgrade RESELLER**: bila `RESELLER_AUTO_TOPUP` > 0, member yang total top up (akumulasi deposit di-approve) tembus ambang itu otomatis jadi RESELLER. Dicek di `deposit.approve()`. 0 = matikan (upgrade manual via Set Role).
 - Transaksi dipotong saldo di depan; jika provider gagal → **refund otomatis**.
 
 ## Session

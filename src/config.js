@@ -56,12 +56,6 @@ const config = {
     min: Number(process.env.MIN_TOPUP || 10000),
   },
 
-  // Auto-upgrade member jadi RESELLER bila total top up (akumulasi) >= ambang ini.
-  // 0 = fitur dimatikan (upgrade hanya manual via Set Role).
-  reseller: {
-    autoTopup: Number(process.env.RESELLER_AUTO_TOPUP || 0),
-  },
-
   store: {
     name: process.env.STORE_NAME || 'Rayzell Store PPOB',
     maintenance: process.env.MAINTENANCE_INFO || '-',
