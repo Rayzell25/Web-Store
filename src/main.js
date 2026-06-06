@@ -100,8 +100,10 @@ async function main() {
         await order.receiveTarget(bot, chatId, userId, msg.text);
       } else if (state.action === 'deposit:input_amount') {
         await deposit.receiveAmount(bot, chatId, userId, msg.text, notifyAdmins);
-      } else if (state.action === 'tools:operator') {
-        await tools.receiveOperatorCheck(bot, chatId, userId, msg.text);
+      } else if (state.action === 'tools:pulsa') {
+        await tools.receivePulsa(bot, chatId, userId, msg.text);
+      } else if (state.action === 'tools:area') {
+        await tools.receiveArea(bot, chatId, userId, msg.text);
       }
     } catch (e) {
       logger.error('message handler error:', e.message);
@@ -182,8 +184,10 @@ async function main() {
         await deposit.reject(bot, chatId, messageId, from, Number(data.slice('dp:no:'.length)));
 
       // ---- Tools ----
-      } else if (data === 'tools:operator') {
-        await tools.askOperator(bot, chatId, messageId, from.id);
+      } else if (data === 'tools:pulsa') {
+        await tools.askPulsa(bot, chatId, messageId, from.id);
+      } else if (data === 'tools:area') {
+        await tools.askArea(bot, chatId, messageId, from.id);
 
       // ---- Admin ----
       } else if (data === 'adm:stats') {
