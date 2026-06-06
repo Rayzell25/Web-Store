@@ -39,6 +39,8 @@ const config = {
     database: process.env.PGDATABASE || 'ppob',
   },
 
+  // Bot khusus pengiriman backup (token bisa beda dari bot utama).
+  backupBotToken: process.env.BACKUP_BOT_TOKEN || '',
   // Chat/channel tujuan backup database (offsite). Kosong = tidak kirim.
   backupChatId: process.env.BACKUP_CHAT_ID || '',
 

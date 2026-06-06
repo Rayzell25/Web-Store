@@ -42,16 +42,18 @@ docker exec -t "$CONTAINER" pg_dump -U "$PGUSER" "$PGDATABASE" | gzip > "$OUT"
 SIZE="$(du -h "$OUT" | cut -f1)"
 echo "[backup] selesai: $OUT ($SIZE)"
 
-# --- kirim ke Telegram (offsite) ---
-if [ -n "${BOT_TOKEN:-}" ] && [ -n "${BACKUP_CHAT_ID:-}" ]; then
-  echo "[backup] mengirim ke Telegram chat $BACKUP_CHAT_ID..."
+# --- kirim ke Telegram (offsite) via bot KHUSUS backup ---
+# Pakai BACKUP_BOT_TOKEN bila ada, kalau kosong fallback ke BOT_TOKEN.
+TG_TOKEN="${BACKUP_BOT_TOKEN:-${BOT_TOKEN:-}}"
+if [ -n "$TG_TOKEN" ] && [ -n "${BACKUP_CHAT_ID:-}" ]; then
+  echo "[backup] mengirim ke bot backup (chat $BACKUP_CHAT_ID)..."
   HTTP_CODE="$(curl -s -o /tmp/tg_backup_resp -w '%{http_code}' \
     -F chat_id="$BACKUP_CHAT_ID" \
     -F document=@"$OUT" \
     -F caption="🗄 Backup PPOB
 Tanggal: $STAMP
 Ukuran: $SIZE" \
-    "https://api.telegram.org/bot$BOT_TOKEN/sendDocument" || echo 000)"
+    "https://api.telegram.org/bot$TG_TOKEN/sendDocument" || echo 000)"
   if [ "$HTTP_CODE" = "200" ]; then
     echo "[backup] terkirim ke Telegram."
   else
@@ -60,7 +62,7 @@ Ukuran: $SIZE" \
     echo >&2
   fi
 else
-  echo "[backup] BOT_TOKEN / BACKUP_CHAT_ID kosong -> lewati kirim Telegram."
+  echo "[backup] BACKUP_BOT_TOKEN/BOT_TOKEN atau BACKUP_CHAT_ID kosong -> lewati kirim Telegram."
 fi
 
 # --- rotasi: simpan N terbaru saja ---

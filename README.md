@@ -98,10 +98,12 @@ npm start
 
 ## 🛡 Backup otomatis (PENTING — biar saldo/riwayat tidak hilang)
 
-Backup tiap hari: `pg_dump` lalu file dikirim ke chat Telegram kamu (offsite). Walau VPS hilang, data tetap bisa dipulihkan.
+Backup tiap hari: `pg_dump` lalu file dikirim ke **bot Telegram khusus backup** (offsite). Walau VPS hilang, data tetap bisa dipulihkan.
 
 ```bash
-# Set BACKUP_CHAT_ID di .env (ID kamu sendiri, lihat /id) lalu tes manual:
+# 1) Buat bot baru KHUSUS backup di @BotFather, salin tokennya ke .env -> BACKUP_BOT_TOKEN
+# 2) Chat/start bot backup itu, lalu set BACKUP_CHAT_ID (ID kamu - lihat /id, atau ID channel privat)
+# 3) Tes manual:
 bash scripts/backup.sh
 
 # Pasang cron harian jam 03:00 (sesuaikan path project):
@@ -109,6 +111,8 @@ crontab -e
 # tambahkan baris:
 0 3 * * * cd /root/ppob && bash scripts/backup.sh >> /root/ppob/backup.log 2>&1
 ```
+
+> File backup dikirim lewat `BACKUP_BOT_TOKEN` (kalau diisi). Jadi bot jualan dan bot backup terpisah. Kalau `BACKUP_BOT_TOKEN` kosong, fallback pakai `BOT_TOKEN`.
 
 Pulihkan dari backup (menimpa data sekarang):
 
@@ -124,6 +128,7 @@ bash scripts/restore.sh backups/ppob-YYYYMMDD-HHMMSS.sql.gz
 | `ADMIN_IDS` | ✅ | ID admin, pisah koma |
 | `DATABASE_URL` | ✅ | Koneksi Postgres, mis. `postgres://ppob:pass@127.0.0.1:5432/ppob` |
 | `PGUSER`/`PGPASSWORD`/`PGDATABASE` | ✅ | Dipakai docker compose (dan fallback bila `DATABASE_URL` kosong) |
+| `BACKUP_BOT_TOKEN` | | Token bot **khusus backup** (beda dari `BOT_TOKEN`). Kosong = pakai `BOT_TOKEN` |
 | `BACKUP_CHAT_ID` | | Chat/channel tujuan backup harian (offsite) |
 | `TELEGRAM_API_ID` / `TELEGRAM_API_HASH` | | Untuk Local Bot API (my.telegram.org) |
 | `BOT_API_ROOT` | | URL Local Bot API (mis. http://localhost:8081) |

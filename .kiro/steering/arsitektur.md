@@ -11,7 +11,7 @@ Konvensi wajib untuk repo ini.
 ## Database & keamanan data
 - Semua service async (await). Mutasi saldo pakai transaksi + `SELECT ... FOR UPDATE` (atomik, anti-balapan).
 - Postgres jalan via Docker (`docker-compose.yml`), dengar hanya di `127.0.0.1` (tidak terbuka ke internet). Data persisten di volume `ppob_pgdata`.
-- **Backup harian wajib**: `scripts/backup.sh` (cron) -> `pg_dump` -> kirim ke Telegram (`BACKUP_CHAT_ID`) sebagai salinan offsite. Restore: `scripts/restore.sh`.
+- **Backup harian wajib**: `scripts/backup.sh` (cron) -> `pg_dump` -> kirim ke Telegram via **bot khusus backup** (`BACKUP_BOT_TOKEN`, fallback `BOT_TOKEN`) ke `BACKUP_CHAT_ID` sebagai salinan offsite. Restore: `scripts/restore.sh`.
 - `markupService` punya cache in-memory (load saat startup) supaya `sellPrice()` tetap sinkron di dalam loop produk.
 
 ## Aturan kode
