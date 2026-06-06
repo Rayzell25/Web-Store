@@ -6,7 +6,7 @@ const { config } = require('../config');
 function mainMenu(isAdminUser) {
   const rows = [
     [{ text: 'Beli Paket', callback_data: 'menu:order' }],
-    [{ text: 'Top Up Saldo', callback_data: 'menu:deposit' }],
+    [{ text: 'Top Up', callback_data: 'menu:deposit' }],
     [
       { text: 'Riwayat', callback_data: 'menu:riwayat' },
       { text: 'Cek Harga', callback_data: 'menu:stok' },
