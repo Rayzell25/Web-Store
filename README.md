@@ -1,4 +1,4 @@
-# Cho Store PPOB Bot
+# Rayzell Store PPOB Bot
 
 Bot Telegram PPOB lengkap (pulsa, paket data, token PLN, voucher game, e-money) dengan integrasi **Digiflazz**, sistem saldo & deposit, **markup fleksibel**, database **PostgreSQL** + **backup harian otomatis ke Telegram**, cache session **Redis**, dan dukungan **Telegram Local Bot API** untuk respons tombol super cepat.
 

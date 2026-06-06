@@ -1,5 +1,5 @@
 {
-  "name": "cho-store-ppob",
+  "name": "rayzell-store-ppob",
   "version": "1.1.0",
   "description": "Bot PPOB Telegram lengkap (pulsa, paket data, PLN, game, e-money) dengan integrasi Digiflazz, sistem saldo, deposit, markup fleksibel, Redis session, dan Local Bot API.",
   "main": "src/main.js",

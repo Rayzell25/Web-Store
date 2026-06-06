@@ -57,7 +57,7 @@ const config = {
   },
 
   store: {
-    name: process.env.STORE_NAME || 'Cho Store PPOB',
+    name: process.env.STORE_NAME || 'Rayzell Store PPOB',
     maintenance: process.env.MAINTENANCE_INFO || '-',
     vpnUrl: process.env.BOT_VPN_URL || '',
     adminContact: process.env.ADMIN_CONTACT || '',
