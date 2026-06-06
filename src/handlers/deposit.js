@@ -91,10 +91,6 @@ async function presentMethod(bot, chatId, messageId, userId, amount, notifyAdmin
   }
 
   await setState(userId, 'deposit:method', { amount });
-  const { total, fee } = autogopay.computeTotal(amount);
-  const info =
-    `Nominal : ${rupiah(amount)}\n` +
-    `Via QRIS: bayar ${rupiah(total)} (fee ${rupiah(fee)})`;
   const kb = {
     inline_keyboard: [
       [
@@ -105,7 +101,8 @@ async function presentMethod(bot, chatId, messageId, userId, amount, notifyAdmin
     ],
   };
   const text =
-    `<b>PILIH METODE TOP UP</b>\n${LINE}\n<code>${escapeHtml(info)}</code>\n${LINE}\n` +
+    `<b>PILIH METODE TOP UP</b>\n${LINE}\n` +
+    `<code>${escapeHtml(`Nominal : ${rupiah(amount)}`)}</code>\n${LINE}\n` +
     `Saldo masuk penuh ${rupiah(amount)} setelah pembayaran.`;
   await edit(bot, chatId, messageId, text, kb);
 }
@@ -169,7 +166,7 @@ async function chooseQris(bot, chatId, messageId, userId) {
     return edit(bot, chatId, messageId, '⚠️ Sesi top up kedaluwarsa. Ulangi dari menu.', backButton('menu:deposit'));
   }
   const amount = state.data.amount;
-  const { fee, total } = autogopay.computeTotal(amount);
+  const { total } = autogopay.computeTotal(amount);
   await clearState(userId);
 
   let qr;
@@ -183,11 +180,7 @@ async function chooseQris(bot, chatId, messageId, userId) {
 
   const caption =
     `<b>TOP UP via QRIS</b>\n${LINE}\n` +
-    `<code>${escapeHtml(
-      `Nominal : ${rupiah(amount)}\n` +
-      `Fee     : ${rupiah(fee)}\n` +
-      `Total   : ${rupiah(total)}`
-    )}</code>\n` +
+    `<code>${escapeHtml(`Nominal : ${rupiah(amount)}`)}</code>\n` +
     `${LINE}\nScan & bayar. Saldo +${rupiah(amount)} masuk otomatis setelah pembayaran.`;
 
   const kb = {

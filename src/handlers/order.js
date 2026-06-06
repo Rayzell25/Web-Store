@@ -124,7 +124,7 @@ async function receiveTarget(bot, chatId, userId, target) {
   let qrisLine = '';
   if (config.qris.enabled) {
     const { total } = autogopay.computeTotal(harga);
-    qrisLine = `\nVia QRIS dibayar ${rupiah(total)} (termasuk fee).`;
+    qrisLine = `\nVia QRIS dibayar ${rupiah(total)}.`;
   }
 
   const text =
@@ -263,7 +263,7 @@ async function payQris(bot, chatId, messageId, userId) {
     return editOrSend(bot, chatId, messageId, '⚠️ Produk tidak tersedia.', backButton('menu:order'));
   }
   const base = sellPrice(product, user.role);
-  const { fee, total } = autogopay.computeTotal(base);
+  const { total } = autogopay.computeTotal(base);
 
   await clearState(userId);
 
@@ -283,8 +283,6 @@ async function payQris(bot, chatId, messageId, userId) {
     `<code>${escapeHtml(
       `Paket : ${product.product_name}\n` +
       `Nomor : ${target}\n` +
-      `Harga : ${rupiah(base)}\n` +
-      `Fee   : ${rupiah(fee)}\n` +
       `Total : ${rupiah(total)}`
     )}</code>\n` +
     `${LINE}\nScan & bayar. Pesanan diproses otomatis setelah pembayaran masuk.`;
