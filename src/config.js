@@ -29,6 +29,19 @@ const config = {
 
   redisUrl: process.env.REDIS_URL || '',
 
+  // PostgreSQL. Pakai DATABASE_URL penuh, atau biarkan kosong & isi PG* satu-satu.
+  databaseUrl: process.env.DATABASE_URL || '',
+  pg: {
+    host: process.env.PGHOST || '127.0.0.1',
+    port: Number(process.env.PGPORT || 5432),
+    user: process.env.PGUSER || 'ppob',
+    password: process.env.PGPASSWORD || '',
+    database: process.env.PGDATABASE || 'ppob',
+  },
+
+  // Chat/channel tujuan backup database (offsite). Kosong = tidak kirim.
+  backupChatId: process.env.BACKUP_CHAT_ID || '',
+
   digiflazz: {
     username: process.env.DIGIFLAZZ_USERNAME || '',
     apiKey: process.env.DIGIFLAZZ_API_KEY || '',
@@ -47,8 +60,6 @@ const config = {
     vpnUrl: process.env.BOT_VPN_URL || '',
     adminContact: process.env.ADMIN_CONTACT || '',
   },
-
-  dbPath: process.env.DB_PATH || 'data/ppob.db',
 };
 
 function isAdmin(telegramId) {
@@ -59,6 +70,7 @@ function assertConfig() {
   const missing = [];
   if (!config.botToken) missing.push('BOT_TOKEN');
   if (config.adminIds.length === 0) missing.push('ADMIN_IDS');
+  if (!config.databaseUrl && !config.pg.password) missing.push('DATABASE_URL (atau PGPASSWORD)');
   if (missing.length) {
     throw new Error(
       `Konfigurasi belum lengkap. Set variabel berikut di .env: ${missing.join(', ')}`

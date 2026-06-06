@@ -1,0 +1,24 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: ppob-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${PGUSER:-ppob}
+      POSTGRES_PASSWORD: ${PGPASSWORD:?PGPASSWORD wajib diisi di .env}
+      POSTGRES_DB: ${PGDATABASE:-ppob}
+    # Hanya dengar di localhost VPS -> tidak terbuka ke internet (aman).
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - ppob_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PGUSER:-ppob} -d ${PGDATABASE:-ppob}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  ppob_pgdata:
+    # Data tersimpan permanen di volume Docker (tidak hilang saat container restart).
+    name: ppob_pgdata

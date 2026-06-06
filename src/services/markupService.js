@@ -1,89 +1,108 @@
 'use strict';
 
-const { db } = require('../db/database');
+const { one, all, query } = require('../db/database');
 const { rupiah, LINE } = require('../utils/format');
 
 const SETTINGS_KEY = 'markup_config';
 
 const DEFAULT_CONFIG = {
-  default: { type: 'flat', value: 500 },   // MEMBER
-  reseller: { type: 'flat', value: 250 },  // RESELLER
-  categories: {},                          // { "Pulsa": {type,value}, ... }
-  round: 100,                              // pembulatan ke atas ke kelipatan ini (0 = tidak)
+  default: { type: 'flat', value: 500 },
+  reseller: { type: 'flat', value: 250 },
+  categories: {},
+  round: 100,
+};
+
+// Cache in-memory supaya sellPrice() tetap sinkron (dipanggil dalam loop produk).
+const cache = {
+  config: { ...DEFAULT_CONFIG },
+  overrides: new Map(), // sku -> { type, value }
 };
 
 function now() {
   return Date.now();
 }
 
-function getConfig() {
-  const row = db.prepare('SELECT value FROM settings WHERE key = ?').get(SETTINGS_KEY);
-  if (!row) return { ...DEFAULT_CONFIG };
-  try {
-    const parsed = JSON.parse(row.value);
-    return {
-      default: parsed.default || DEFAULT_CONFIG.default,
-      reseller: parsed.reseller || DEFAULT_CONFIG.reseller,
-      categories: parsed.categories || {},
-      round: typeof parsed.round === 'number' ? parsed.round : DEFAULT_CONFIG.round,
-    };
-  } catch (e) {
-    return { ...DEFAULT_CONFIG };
+/** Muat konfigurasi markup dari DB ke cache. Dipanggil saat startup & tiap perubahan. */
+async function load() {
+  const row = await one('SELECT value FROM settings WHERE key = $1', [SETTINGS_KEY]);
+  if (row && row.value) {
+    try {
+      const parsed = JSON.parse(row.value);
+      cache.config = {
+        default: parsed.default || DEFAULT_CONFIG.default,
+        reseller: parsed.reseller || DEFAULT_CONFIG.reseller,
+        categories: parsed.categories || {},
+        round: typeof parsed.round === 'number' ? parsed.round : DEFAULT_CONFIG.round,
+      };
+    } catch (e) {
+      cache.config = { ...DEFAULT_CONFIG };
+    }
+  } else {
+    cache.config = { ...DEFAULT_CONFIG };
   }
+  const rows = await all('SELECT * FROM markups');
+  cache.overrides = new Map(
+    rows.map((r) => [r.sku, { type: r.type, value: Number(r.value) }])
+  );
 }
 
-function saveConfig(cfg) {
-  db.prepare(
-    `INSERT INTO settings (key, value) VALUES (?, ?)
-     ON CONFLICT(key) DO UPDATE SET value = excluded.value`
-  ).run(SETTINGS_KEY, JSON.stringify(cfg));
+function getConfig() {
+  return cache.config;
+}
+
+async function saveConfig(cfg) {
+  cache.config = cfg;
+  await query(
+    `INSERT INTO settings (key, value) VALUES ($1, $2)
+     ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`,
+    [SETTINGS_KEY, JSON.stringify(cfg)]
+  );
   return cfg;
 }
 
-function setRule(scope, type, value, category) {
-  const cfg = getConfig();
+async function setRule(scope, type, value, category) {
+  const cfg = { ...getConfig(), categories: { ...getConfig().categories } };
   const rule = { type: type === 'percent' ? 'percent' : 'flat', value: Number(value) };
   if (scope === 'default') cfg.default = rule;
   else if (scope === 'reseller') cfg.reseller = rule;
   else if (scope === 'category') cfg.categories[category] = rule;
-  saveConfig(cfg);
-  return cfg;
+  return saveConfig(cfg);
 }
 
-function setRound(value) {
-  const cfg = getConfig();
+async function setRound(value) {
+  const cfg = { ...getConfig() };
   cfg.round = Math.max(0, Number(value) || 0);
-  saveConfig(cfg);
-  return cfg;
+  return saveConfig(cfg);
 }
 
-function deleteCategoryRule(category) {
-  const cfg = getConfig();
+async function deleteCategoryRule(category) {
+  const cfg = { ...getConfig(), categories: { ...getConfig().categories } };
   delete cfg.categories[category];
-  saveConfig(cfg);
-  return cfg;
+  return saveConfig(cfg);
 }
 
 // ----- override per produk -----
-function setProductMarkup(sku, type, value) {
-  db.prepare(
-    `INSERT INTO markups (sku, type, value, updated_at) VALUES (?, ?, ?, ?)
-     ON CONFLICT(sku) DO UPDATE SET type = excluded.type, value = excluded.value, updated_at = excluded.updated_at`
-  ).run(sku, type === 'percent' ? 'percent' : 'flat', Number(value), now());
+async function setProductMarkup(sku, type, value) {
+  const t = type === 'percent' ? 'percent' : 'flat';
+  const v = Number(value);
+  await query(
+    `INSERT INTO markups (sku, type, value, updated_at) VALUES ($1, $2, $3, $4)
+     ON CONFLICT (sku) DO UPDATE SET type = EXCLUDED.type, value = EXCLUDED.value, updated_at = EXCLUDED.updated_at`,
+    [sku, t, v, now()]
+  );
+  cache.overrides.set(sku, { type: t, value: v });
 }
 
-function deleteProductMarkup(sku) {
-  db.prepare('DELETE FROM markups WHERE sku = ?').run(sku);
+async function deleteProductMarkup(sku) {
+  await query('DELETE FROM markups WHERE sku = $1', [sku]);
+  cache.overrides.delete(sku);
 }
 
 function getProductMarkup(sku) {
-  return db.prepare('SELECT * FROM markups WHERE sku = ?').get(sku);
+  return cache.overrides.get(sku) || null;
 }
 
-/**
- * Tentukan aturan markup yang berlaku untuk sebuah produk + role.
- * Prioritas: override produk > markup kategori > default role.
- */
+/** Aturan markup yang berlaku: override produk > kategori > default role. */
 function resolveRule(product, role) {
   const cfg = getConfig();
   const override = getProductMarkup(product.buyer_sku_code);
@@ -101,7 +120,7 @@ function applyRound(price, round) {
   return Math.ceil(price / round) * round;
 }
 
-/** Hitung harga jual akhir untuk produk + role. */
+/** Harga jual akhir (sinkron). */
 function sellPrice(product, role) {
   const cfg = getConfig();
   const rule = resolveRule(product, role);
@@ -110,7 +129,6 @@ function sellPrice(product, role) {
   return applyRound(cost + markupAmount, cfg.round);
 }
 
-/** Ringkasan konfigurasi untuk ditampilkan ke admin. */
 function describe() {
   const cfg = getConfig();
   const fmt = (r) => (r.type === 'percent' ? `${r.value}%` : rupiah(r.value));
@@ -125,17 +143,18 @@ function describe() {
     text += `\n<b>Per Kategori:</b>\n`;
     for (const [cat, r] of cats) text += `• ${cat}: ${fmt(r)}\n`;
   }
-  const overrides = db.prepare('SELECT * FROM markups ORDER BY updated_at DESC LIMIT 15').all();
+  const overrides = [...cache.overrides.entries()].slice(0, 15);
   if (overrides.length) {
-    text += `\n<b>Override Produk (${overrides.length}):</b>\n`;
-    for (const o of overrides) {
-      text += `• ${o.sku}: ${o.type === 'percent' ? o.value + '%' : rupiah(o.value)}\n`;
+    text += `\n<b>Override Produk (${cache.overrides.size}):</b>\n`;
+    for (const [sku, r] of overrides) {
+      text += `• ${sku}: ${r.type === 'percent' ? r.value + '%' : rupiah(r.value)}\n`;
     }
   }
   return text;
 }
 
 module.exports = {
+  load,
   getConfig,
   saveConfig,
   setRule,

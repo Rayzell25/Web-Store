@@ -1,29 +1,70 @@
 'use strict';
 
-const path = require('path');
-const fs = require('fs');
-const Database = require('better-sqlite3');
+const pg = require('pg');
+const { Pool } = pg;
 const { config } = require('../config');
 const logger = require('../utils/logger');
 
-const dbFile = path.resolve(process.cwd(), config.dbPath);
-fs.mkdirSync(path.dirname(dbFile), { recursive: true });
+// BIGINT (OID 20) di-parse jadi Number JS (rupiah tidak akan melebihi MAX_SAFE_INTEGER).
+pg.types.setTypeParser(20, (v) => (v === null ? null : parseInt(v, 10)));
 
-const db = new Database(dbFile);
-db.pragma('journal_mode = WAL');
-db.pragma('foreign_keys = ON');
+const pool = config.databaseUrl
+  ? new Pool({ connectionString: config.databaseUrl, max: 10 })
+  : new Pool({
+      host: config.pg.host,
+      port: config.pg.port,
+      user: config.pg.user,
+      password: config.pg.password,
+      database: config.pg.database,
+      max: 10,
+    });
 
-function init() {
-  db.exec(`
+pool.on('error', (e) => logger.error('Postgres pool error:', e.message));
+
+/** Query mentah -> hasil pg (rows, rowCount, dll). */
+function query(text, params) {
+  return pool.query(text, params);
+}
+
+/** Ambil satu baris (atau null). */
+async function one(text, params) {
+  const r = await pool.query(text, params);
+  return r.rows[0] || null;
+}
+
+/** Ambil semua baris. */
+async function all(text, params) {
+  const r = await pool.query(text, params);
+  return r.rows;
+}
+
+/** Jalankan fn dalam 1 transaksi DB (atomik). fn menerima client. */
+async function withTx(fn) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const res = await fn(client);
+    await client.query('COMMIT');
+    return res;
+  } catch (e) {
+    await client.query('ROLLBACK');
+    throw e;
+  } finally {
+    client.release();
+  }
+}
+
+async function init() {
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS users (
-      id            INTEGER PRIMARY KEY,            -- telegram id
-      username      TEXT,
-      name          TEXT,
-      balance       INTEGER NOT NULL DEFAULT 0,
-      role          TEXT NOT NULL DEFAULT 'MEMBER', -- MEMBER | RESELLER | ADMIN
-      banned        INTEGER NOT NULL DEFAULT 0,
-      created_at    INTEGER NOT NULL,
-      updated_at    INTEGER NOT NULL
+      id          BIGINT PRIMARY KEY,
+      username    TEXT,
+      name        TEXT,
+      balance     BIGINT NOT NULL DEFAULT 0,
+      role        TEXT NOT NULL DEFAULT 'MEMBER',
+      banned      BOOLEAN NOT NULL DEFAULT FALSE,
+      created_at  BIGINT NOT NULL,
+      updated_at  BIGINT NOT NULL
     );
 
     CREATE TABLE IF NOT EXISTS products (
@@ -32,35 +73,35 @@ function init() {
       category       TEXT,
       brand          TEXT,
       type           TEXT,
-      price          INTEGER NOT NULL DEFAULT 0,   -- harga modal dari digiflazz
-      desc           TEXT,
-      status         TEXT DEFAULT 'active',         -- active | gangguan
-      updated_at     INTEGER NOT NULL
+      price          BIGINT NOT NULL DEFAULT 0,
+      "desc"         TEXT,
+      status         TEXT DEFAULT 'active',
+      updated_at     BIGINT NOT NULL
     );
 
     CREATE TABLE IF NOT EXISTS transactions (
-      ref_id        TEXT PRIMARY KEY,
-      user_id       INTEGER NOT NULL,
+      ref_id         TEXT PRIMARY KEY,
+      user_id        BIGINT NOT NULL,
       buyer_sku_code TEXT,
-      product_name  TEXT,
-      target        TEXT,
-      cost_price    INTEGER NOT NULL DEFAULT 0,    -- modal
-      sell_price    INTEGER NOT NULL DEFAULT 0,    -- harga jual ke user
-      status        TEXT NOT NULL DEFAULT 'Pending', -- Pending | Sukses | Gagal
-      sn            TEXT,
-      message       TEXT,
-      created_at    INTEGER NOT NULL,
-      updated_at    INTEGER NOT NULL
+      product_name   TEXT,
+      target         TEXT,
+      cost_price     BIGINT NOT NULL DEFAULT 0,
+      sell_price     BIGINT NOT NULL DEFAULT 0,
+      status         TEXT NOT NULL DEFAULT 'Pending',
+      sn             TEXT,
+      message        TEXT,
+      created_at     BIGINT NOT NULL,
+      updated_at     BIGINT NOT NULL
     );
 
     CREATE TABLE IF NOT EXISTS topups (
-      id            INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id       INTEGER NOT NULL,
-      amount        INTEGER NOT NULL,
-      status        TEXT NOT NULL DEFAULT 'Pending', -- Pending | Approved | Rejected
-      note          TEXT,
-      created_at    INTEGER NOT NULL,
-      updated_at    INTEGER NOT NULL
+      id          BIGSERIAL PRIMARY KEY,
+      user_id     BIGINT NOT NULL,
+      amount      BIGINT NOT NULL,
+      status      TEXT NOT NULL DEFAULT 'Pending',
+      note        TEXT,
+      created_at  BIGINT NOT NULL,
+      updated_at  BIGINT NOT NULL
     );
 
     CREATE TABLE IF NOT EXISTS settings (
@@ -68,12 +109,11 @@ function init() {
       value TEXT
     );
 
-    -- override markup per produk (prioritas tertinggi)
     CREATE TABLE IF NOT EXISTS markups (
       sku        TEXT PRIMARY KEY,
-      type       TEXT NOT NULL DEFAULT 'flat',  -- flat | percent
-      value      REAL NOT NULL DEFAULT 0,
-      updated_at INTEGER NOT NULL
+      type       TEXT NOT NULL DEFAULT 'flat',
+      value      DOUBLE PRECISION NOT NULL DEFAULT 0,
+      updated_at BIGINT NOT NULL
     );
 
     CREATE INDEX IF NOT EXISTS idx_trx_user ON transactions(user_id);
@@ -81,7 +121,7 @@ function init() {
     CREATE INDEX IF NOT EXISTS idx_products_cat ON products(category);
     CREATE INDEX IF NOT EXISTS idx_topups_status ON topups(status);
   `);
-  logger.info(`Database siap di ${dbFile}`);
+  logger.info('Database PostgreSQL siap.');
 }
 
-module.exports = { db, init };
+module.exports = { pool, query, one, all, withTx, init };

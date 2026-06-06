@@ -1,6 +1,6 @@
 # Cho Store PPOB Bot
 
-Bot Telegram PPOB lengkap (pulsa, paket data, token PLN, voucher game, e-money) dengan integrasi **Digiflazz**, sistem saldo & deposit, **markup fleksibel**, cache session **Redis**, dan dukungan **Telegram Local Bot API** untuk respons tombol super cepat.
+Bot Telegram PPOB lengkap (pulsa, paket data, token PLN, voucher game, e-money) dengan integrasi **Digiflazz**, sistem saldo & deposit, **markup fleksibel**, database **PostgreSQL** + **backup harian otomatis ke Telegram**, cache session **Redis**, dan dukungan **Telegram Local Bot API** untuk respons tombol super cepat.
 
 ## Fitur
 
@@ -12,6 +12,7 @@ Bot Telegram PPOB lengkap (pulsa, paket data, token PLN, voucher game, e-money) 
 - ❓ **Bantuan** (`help.js`).
 - ⚙️ **Panel Admin** (`admin.js`) — statistik, approve deposit, saldo manual, set role, **atur markup**, sync produk, broadcast.
 - 🔁 Refund otomatis jika transaksi ke provider gagal.
+- 🛡 **Data aman**: PostgreSQL + mutasi saldo atomik (`SELECT ... FOR UPDATE`) + **backup harian dikirim ke Telegram** (offsite, selamat walau VPS error/suspend).
 
 ## Markup / Keuntungan (fleksibel)
 
@@ -42,7 +43,7 @@ src/
 ├── main.js                 # entry point + router semua handler
 ├── config.js               # baca .env (tanpa literal rahasia)
 ├── cache/redis.js          # koneksi Redis (opsional)
-├── db/database.js          # SQLite
+├── db/database.js          # PostgreSQL (pg Pool): one/all/query/withTx
 ├── services/
 │   ├── digiflazz.js        # API Digiflazz
 │   ├── userService.js      # user & saldo
@@ -62,16 +63,23 @@ src/
 ## Setup VPS
 
 ```bash
-# 1) Redis (cache session)
-apt install redis-server -y && systemctl enable --now redis
-
-# 2) Docker
+# 1) Docker (untuk PostgreSQL & Local Bot API)
 curl -fsSL https://get.docker.com | bash
 
-# 3) Local Bot API (ganti API_ID & API_HASH dari my.telegram.org)
-docker run -d \
-  --name telegram-bot-api \
-  --restart always \
+# 2) Redis (cache session)
+apt install redis-server -y && systemctl enable --now redis
+
+# 3) Ambil kode + siapkan .env
+git clone <repo-url> && cd ppob
+cp .env.example .env
+nano .env   # WAJIB: isi BOT_TOKEN, ADMIN_IDS, PGPASSWORD/DATABASE_URL, DIGIFLAZZ_*, BACKUP_CHAT_ID
+
+# 4) Jalankan PostgreSQL (data permanen di volume, hanya dengar di localhost)
+docker compose up -d
+#   cek: docker compose ps  (status harus healthy)
+
+# 5) Local Bot API (opsional, biar tombol cepat - ganti API_ID & API_HASH)
+docker run -d --name telegram-bot-api --restart always \
   -p 127.0.0.1:8081:8081 \
   -e TELEGRAM_API_ID=API_ID_KAMU \
   -e TELEGRAM_API_HASH=API_HASH_KAMU \
@@ -80,23 +88,33 @@ docker run -d \
   -v /root/bot-api-temp:/tmp/telegram-bot-api \
   aiogram/telegram-bot-api:latest
 
-# 4) Bot
-git clone <repo-url> && cd ppob
-npm install            # butuh build-essential & python3 untuk better-sqlite3
-cp .env.example .env   # isi BOT_TOKEN, ADMIN_IDS, DIGIFLAZZ_*, dll
+# 6) Install dependency Node & jalankan bot
+npm install
 npm start
 ```
 
-Lalu di `.env`:
+> `DATABASE_URL` di `.env` harus cocok dengan `PGUSER`/`PGPASSWORD`/`PGDATABASE` yang dipakai `docker compose`.
+> Kalau `BOT_API_ROOT`/`REDIS_URL` dikosongkan, bot tetap jalan (server resmi Telegram + session in-memory).
 
-```env
-REDIS_URL=redis://127.0.0.1:6379
-BOT_API_ROOT=http://localhost:8081
-TELEGRAM_API_ID=...
-TELEGRAM_API_HASH=...
+## 🛡 Backup otomatis (PENTING — biar saldo/riwayat tidak hilang)
+
+Backup tiap hari: `pg_dump` lalu file dikirim ke chat Telegram kamu (offsite). Walau VPS hilang, data tetap bisa dipulihkan.
+
+```bash
+# Set BACKUP_CHAT_ID di .env (ID kamu sendiri, lihat /id) lalu tes manual:
+bash scripts/backup.sh
+
+# Pasang cron harian jam 03:00 (sesuaikan path project):
+crontab -e
+# tambahkan baris:
+0 3 * * * cd /root/ppob && bash scripts/backup.sh >> /root/ppob/backup.log 2>&1
 ```
 
-> Jika `BOT_API_ROOT`/`REDIS_URL` dikosongkan, bot tetap jalan memakai server resmi Telegram dan session in-memory.
+Pulihkan dari backup (menimpa data sekarang):
+
+```bash
+bash scripts/restore.sh backups/ppob-YYYYMMDD-HHMMSS.sql.gz
+```
 
 ## Konfigurasi (.env)
 
@@ -104,6 +122,9 @@ TELEGRAM_API_HASH=...
 |---|---|---|
 | `BOT_TOKEN` | ✅ | Token dari @BotFather |
 | `ADMIN_IDS` | ✅ | ID admin, pisah koma |
+| `DATABASE_URL` | ✅ | Koneksi Postgres, mis. `postgres://ppob:pass@127.0.0.1:5432/ppob` |
+| `PGUSER`/`PGPASSWORD`/`PGDATABASE` | ✅ | Dipakai docker compose (dan fallback bila `DATABASE_URL` kosong) |
+| `BACKUP_CHAT_ID` | | Chat/channel tujuan backup harian (offsite) |
 | `TELEGRAM_API_ID` / `TELEGRAM_API_HASH` | | Untuk Local Bot API (my.telegram.org) |
 | `BOT_API_ROOT` | | URL Local Bot API (mis. http://localhost:8081) |
 | `REDIS_URL` | | URL Redis untuk cache session |
@@ -112,7 +133,6 @@ TELEGRAM_API_HASH=...
 | `MIN_TOPUP` | | Nominal top up minimum |
 | `STORE_NAME` / `MAINTENANCE_INFO` | | Tampilan menu |
 | `BOT_VPN_URL` / `ADMIN_CONTACT` | | Link tombol |
-| `DB_PATH` | | Lokasi SQLite |
 
 \* Tanpa kredensial Digiflazz, bot jalan tapi fitur beli & sync produk nonaktif.
 

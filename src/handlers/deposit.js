@@ -13,8 +13,8 @@ const { backButton } = require('../keyboards/menus');
 const { rupiah, escapeHtml, tanggal, LINE } = require('../utils/format');
 
 async function showDepositMenu(bot, chatId, messageId, userId) {
-  const user = getUser(userId);
-  const history = userDeposits(userId, 5);
+  const user = await getUser(userId);
+  const history = await userDeposits(userId, 5);
 
   let histText = '';
   if (history.length) {
@@ -67,8 +67,8 @@ async function receiveAmount(bot, chatId, userId, text, notifyAdmins) {
   }
 
   await clearState(userId);
-  const deposit = createDeposit(userId, amount);
-  const user = getUser(userId);
+  const deposit = await createDeposit(userId, amount);
+  const user = await getUser(userId);
 
   const info =
     `ID     : ${deposit.id}\n` +
@@ -105,15 +105,15 @@ async function receiveAmount(bot, chatId, userId, text, notifyAdmins) {
 }
 
 async function approve(bot, chatId, messageId, adminFrom, depositId) {
-  const deposit = getDeposit(depositId);
+  const deposit = await getDeposit(depositId);
   if (!deposit) return answerEdit(bot, chatId, messageId, '⚠️ Deposit tidak ditemukan.');
   if (deposit.status !== 'Pending') {
     return answerEdit(bot, chatId, messageId, `ℹ️ Deposit #${depositId} sudah ${deposit.status}.`);
   }
 
-  addBalance(deposit.user_id, deposit.amount);
-  setDepositStatus(depositId, 'Approved', `oleh admin ${adminFrom.id}`);
-  const user = getUser(deposit.user_id);
+  await addBalance(deposit.user_id, deposit.amount);
+  await setDepositStatus(depositId, 'Approved', `oleh admin ${adminFrom.id}`);
+  const user = await getUser(deposit.user_id);
 
   await answerEdit(bot, chatId, messageId,
     `✅ Deposit #${depositId} disetujui.\n${user ? escapeHtml(user.name) : deposit.user_id} +${rupiah(deposit.amount)}\nSaldo sekarang: ${rupiah(user ? user.balance : 0)}`);
@@ -126,12 +126,12 @@ async function approve(bot, chatId, messageId, adminFrom, depositId) {
 }
 
 async function reject(bot, chatId, messageId, adminFrom, depositId) {
-  const deposit = getDeposit(depositId);
+  const deposit = await getDeposit(depositId);
   if (!deposit) return answerEdit(bot, chatId, messageId, '⚠️ Deposit tidak ditemukan.');
   if (deposit.status !== 'Pending') {
     return answerEdit(bot, chatId, messageId, `ℹ️ Deposit #${depositId} sudah ${deposit.status}.`);
   }
-  setDepositStatus(depositId, 'Rejected', `oleh admin ${adminFrom.id}`);
+  await setDepositStatus(depositId, 'Rejected', `oleh admin ${adminFrom.id}`);
   await answerEdit(bot, chatId, messageId, `❌ Deposit #${depositId} ditolak.`);
   try {
     await bot.sendMessage(deposit.user_id,

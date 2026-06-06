@@ -43,25 +43,31 @@ async function showStats(bot, chatId, messageId) {
   } catch (e) {
     logger.warn('Cek deposit gagal:', e.message);
   }
+  const [cu, ct, tr, cp] = await Promise.all([
+    userService.countUsers(),
+    trxService.countTransactions(),
+    trxService.todayRevenue(),
+    productService.countProducts(),
+  ]);
   const stat =
-    `Pengguna  : ${userService.countUsers()}\n` +
-    `Transaksi : ${trxService.countTransactions()}\n` +
-    `Omzet ini : ${rupiah(trxService.todayRevenue())}\n` +
-    `Produk    : ${productService.countProducts()}\n` +
+    `Pengguna  : ${cu}\n` +
+    `Transaksi : ${ct}\n` +
+    `Omzet ini : ${rupiah(tr)}\n` +
+    `Produk    : ${cp}\n` +
     `Digiflazz : ${deposit != null ? rupiah(deposit) : '(gagal cek)'}`;
   const text = `<b>STATISTIK</b>\n${LINE}\n<code>${escapeHtml(stat)}</code>`;
   await edit(bot, chatId, messageId, text, back('menu:admin'));
 }
 
 async function showPendingDeposits(bot, chatId, messageId) {
-  const list = depositService.pendingDeposits(20);
+  const list = await depositService.pendingDeposits(20);
   if (!list.length) {
     return edit(bot, chatId, messageId, '🧾 Tidak ada top up pending.', back('menu:admin'));
   }
   let text = `<b>TOP UP PENDING</b>\n${LINE}\n`;
   const rows = [];
   for (const t of list) {
-    const u = userService.getUser(t.user_id);
+    const u = await userService.getUser(t.user_id);
     text += `#${t.id} · ${escapeHtml(u ? u.name : t.user_id)} · ${rupiah(t.amount)} · ${tanggal(t.created_at)}\n`;
     rows.push([
       { text: `✅ #${t.id}`, callback_data: `dp:ok:${t.id}` },
@@ -114,9 +120,10 @@ async function syncProducts(bot, chatId, messageId) {
   await edit(bot, chatId, messageId, '🔄 Mengambil daftar produk dari Digiflazz...', null);
   try {
     const list = await digiflazz.priceList();
-    const n = productService.upsertProducts(list);
+    const n = await productService.upsertProducts(list);
+    const total = await productService.countProducts();
     await edit(bot, chatId, messageId,
-      `✅ Sync selesai. ${n} produk diperbarui.\nTotal produk: ${productService.countProducts()}`,
+      `✅ Sync selesai. ${n} produk diperbarui.\nTotal produk: ${total}`,
       back('menu:admin'));
   } catch (e) {
     logger.error('Sync produk gagal:', e.message);
@@ -140,12 +147,12 @@ async function handleAdminText(bot, chatId, from, text, broadcastFn) {
       await bot.sendMessage(chatId, '⚠️ Format salah. Contoh: 123456789 50000');
       return true;
     }
-    if (!userService.getUser(targetId)) {
+    if (!(await userService.getUser(targetId))) {
       await bot.sendMessage(chatId, '⚠️ User belum terdaftar (harus /start dulu).');
       return true;
     }
     try {
-      const newBal = userService.addBalance(targetId, amount);
+      const newBal = await userService.addBalance(targetId, amount);
       await bot.sendMessage(chatId, `✅ Saldo ${targetId} kini ${rupiah(newBal)} (${amount >= 0 ? '+' : ''}${rupiah(amount)}).`);
       try {
         await bot.sendMessage(targetId,
@@ -166,18 +173,18 @@ async function handleAdminText(bot, chatId, from, text, broadcastFn) {
       await bot.sendMessage(chatId, '⚠️ Format salah. Contoh: 123456789 RESELLER');
       return true;
     }
-    if (!userService.getUser(targetId)) {
+    if (!(await userService.getUser(targetId))) {
       await bot.sendMessage(chatId, '⚠️ User belum terdaftar (harus /start dulu).');
       return true;
     }
-    userService.setRole(targetId, role);
+    await userService.setRole(targetId, role);
     await bot.sendMessage(chatId, `✅ Role ${targetId} diubah menjadi ${role}.`);
     return true;
   }
 
   if (state.action === 'adm:markup') {
     await clearState(from.id);
-    const out = applyMarkupCommand(text);
+    const out = await applyMarkupCommand(text);
     await bot.sendMessage(chatId, out, { parse_mode: 'HTML' });
     return true;
   }
@@ -194,7 +201,7 @@ async function handleAdminText(bot, chatId, from, text, broadcastFn) {
 }
 
 /** Parser perintah markup (pemisah |). */
-function applyMarkupCommand(text) {
+async function applyMarkupCommand(text) {
   const parts = String(text).split('|').map((s) => s.trim());
   const cmd = (parts[0] || '').toLowerCase();
   const validType = (t) => ['flat', 'percent'].includes(String(t).toLowerCase());
@@ -202,34 +209,34 @@ function applyMarkupCommand(text) {
   try {
     if (cmd === 'default' || cmd === 'reseller') {
       if (!validType(parts[1]) || isNaN(Number(parts[2]))) return '⚠️ Format: default|flat|500';
-      markupService.setRule(cmd, parts[1].toLowerCase(), Number(parts[2]));
+      await markupService.setRule(cmd, parts[1].toLowerCase(), Number(parts[2]));
       return `✅ Markup ${cmd} di-set ke ${parts[1]} ${parts[2]}.`;
     }
     if (cmd === 'cat') {
       const category = parts[1];
       if (!category || !validType(parts[2]) || isNaN(Number(parts[3]))) return '⚠️ Format: cat|Paket Data|flat|1000';
-      markupService.setRule('category', parts[2].toLowerCase(), Number(parts[3]), category);
+      await markupService.setRule('category', parts[2].toLowerCase(), Number(parts[3]), category);
       return `✅ Markup kategori "${escapeHtml(category)}" di-set ke ${parts[2]} ${parts[3]}.`;
     }
     if (cmd === 'sku') {
       const sku = parts[1];
       if (!sku || !validType(parts[2]) || isNaN(Number(parts[3]))) return '⚠️ Format: sku|xld10|flat|800';
-      markupService.setProductMarkup(sku, parts[2].toLowerCase(), Number(parts[3]));
+      await markupService.setProductMarkup(sku, parts[2].toLowerCase(), Number(parts[3]));
       return `✅ Markup produk "${escapeHtml(sku)}" di-set ke ${parts[2]} ${parts[3]}.`;
     }
     if (cmd === 'round') {
       if (isNaN(Number(parts[1]))) return '⚠️ Format: round|100';
-      markupService.setRound(Number(parts[1]));
+      await markupService.setRound(Number(parts[1]));
       return `✅ Pembulatan di-set ke kelipatan ${parts[1]}.`;
     }
     if (cmd === 'delcat') {
       if (!parts[1]) return '⚠️ Format: delcat|Paket Data';
-      markupService.deleteCategoryRule(parts[1]);
+      await markupService.deleteCategoryRule(parts[1]);
       return `✅ Markup kategori "${escapeHtml(parts[1])}" dihapus.`;
     }
     if (cmd === 'delsku') {
       if (!parts[1]) return '⚠️ Format: delsku|xld10';
-      markupService.deleteProductMarkup(parts[1]);
+      await markupService.deleteProductMarkup(parts[1]);
       return `✅ Markup produk "${escapeHtml(parts[1])}" dihapus.`;
     }
     return '⚠️ Perintah tidak dikenali. Buka menu Markup lagi untuk lihat format.';

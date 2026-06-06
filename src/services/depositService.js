@@ -1,46 +1,44 @@
 'use strict';
 
-const { db } = require('../db/database');
+const { one, all, query } = require('../db/database');
 
 function now() {
   return Date.now();
 }
 
-function createDeposit(userId, amount) {
-  const info = db
-    .prepare(
-      `INSERT INTO topups (user_id, amount, status, created_at, updated_at)
-       VALUES (?, ?, 'Pending', ?, ?)`
-    )
-    .run(Number(userId), Math.round(amount), now(), now());
-  return getDeposit(info.lastInsertRowid);
+async function createDeposit(userId, amount) {
+  const r = await one(
+    `INSERT INTO topups (user_id, amount, status, created_at, updated_at)
+     VALUES ($1, $2, 'Pending', $3, $3) RETURNING *`,
+    [Number(userId), Math.round(amount), now()]
+  );
+  return r;
 }
 
 function getDeposit(id) {
-  return db.prepare('SELECT * FROM topups WHERE id = ?').get(Number(id));
+  return one('SELECT * FROM topups WHERE id = $1', [Number(id)]);
 }
 
-function setDepositStatus(id, status, note) {
-  db.prepare(
-    'UPDATE topups SET status = ?, note = ?, updated_at = ? WHERE id = ?'
-  ).run(status, note || null, now(), Number(id));
+async function setDepositStatus(id, status, note) {
+  await query(
+    'UPDATE topups SET status = $1, note = $2, updated_at = $3 WHERE id = $4',
+    [status, note || null, now(), Number(id)]
+  );
   return getDeposit(id);
 }
 
 function pendingDeposits(limit = 20) {
-  return db
-    .prepare(
-      "SELECT * FROM topups WHERE status = 'Pending' ORDER BY created_at ASC LIMIT ?"
-    )
-    .all(limit);
+  return all(
+    "SELECT * FROM topups WHERE status = 'Pending' ORDER BY created_at ASC LIMIT $1",
+    [limit]
+  );
 }
 
 function userDeposits(userId, limit = 10) {
-  return db
-    .prepare(
-      'SELECT * FROM topups WHERE user_id = ? ORDER BY created_at DESC LIMIT ?'
-    )
-    .all(Number(userId), limit);
+  return all(
+    'SELECT * FROM topups WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2',
+    [Number(userId), limit]
+  );
 }
 
 module.exports = {

@@ -4,9 +4,15 @@ Konvensi wajib untuk repo ini.
 
 ## Stack
 - Node.js + `node-telegram-bot-api` (polling).
-- SQLite via `better-sqlite3`.
+- **PostgreSQL** via `pg` (async). Akses lewat helper di `db/database.js`: `one()`, `all()`, `query()`, `withTx()`. BIGINT di-parse jadi Number JS.
 - Redis (opsional) untuk cache session — `REDIS_URL`.
 - Telegram **Local Bot API** (opsional) untuk latency rendah — `BOT_API_ROOT` diteruskan sebagai `baseApiUrl` ke constructor `TelegramBot`.
+
+## Database & keamanan data
+- Semua service async (await). Mutasi saldo pakai transaksi + `SELECT ... FOR UPDATE` (atomik, anti-balapan).
+- Postgres jalan via Docker (`docker-compose.yml`), dengar hanya di `127.0.0.1` (tidak terbuka ke internet). Data persisten di volume `ppob_pgdata`.
+- **Backup harian wajib**: `scripts/backup.sh` (cron) -> `pg_dump` -> kirim ke Telegram (`BACKUP_CHAT_ID`) sebagai salinan offsite. Restore: `scripts/restore.sh`.
+- `markupService` punya cache in-memory (load saat startup) supaya `sellPrice()` tetap sinkron di dalam loop produk.
 
 ## Aturan kode
 - **Entry/router** ada di `src/main.js` (BUKAN index.js). Semua routing pesan & callback dipusatkan di sini.

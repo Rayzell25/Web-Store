@@ -16,7 +16,7 @@ const { rupiah, escapeHtml, truncate, LINE } = require('../utils/format');
  * (active / gangguan), tanpa membeli. Berguna untuk cek ketersediaan.
  */
 async function showCategories(bot, chatId, messageId) {
-  const cats = getCategories();
+  const cats = await getCategories();
   if (!cats.length) {
     return edit(bot, chatId, messageId,
       '⚠️ Belum ada produk. Admin perlu Sync Produk dulu.',
@@ -34,7 +34,7 @@ async function showCategories(bot, chatId, messageId) {
 async function showBrands(bot, chatId, messageId, catToken) {
   const category = valueOf(catToken);
   if (!category) return showCategories(bot, chatId, messageId);
-  const brands = getBrands(category);
+  const brands = await getBrands(category);
   const items = brands.map((b) => ({
     text: `${truncate(b.brand, 22)} (${b.c})`,
     data: `stok:brand:${catToken}:${tokenFor(b.brand)}`,
@@ -49,8 +49,8 @@ async function showList(bot, chatId, messageId, catToken, brandToken, userId) {
   const brand = valueOf(brandToken);
   if (!category || !brand) return showCategories(bot, chatId, messageId);
 
-  const user = getUser(userId);
-  const products = getProductsByBrand(category, brand);
+  const user = await getUser(userId);
+  const products = await getProductsByBrand(category, brand);
 
   let text = `<b>${escapeHtml(brand.toUpperCase())}</b> · ${escapeHtml(category)}\n${LINE}\n`;
   if (!products.length) {

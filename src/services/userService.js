@@ -1,90 +1,97 @@
 'use strict';
 
-const { db } = require('../db/database');
+const { one, all, query, withTx } = require('../db/database');
 const { isAdmin } = require('../config');
 
 function now() {
   return Date.now();
 }
 
-/** Ambil user, buat baru jika belum ada (upsert profil dasar) */
-function ensureUser(from) {
+/** Ambil user, buat baru jika belum ada (sinkron profil). */
+async function ensureUser(from) {
   const id = Number(from.id);
-  const existing = db.prepare('SELECT * FROM users WHERE id = ?').get(id);
-  const name = [from.first_name, from.last_name].filter(Boolean).join(' ') || from.username || 'User';
+  const name =
+    [from.first_name, from.last_name].filter(Boolean).join(' ') ||
+    from.username ||
+    'User';
   const username = from.username || null;
+  const existing = await one('SELECT * FROM users WHERE id = $1', [id]);
 
   if (!existing) {
     const role = isAdmin(id) ? 'ADMIN' : 'MEMBER';
-    db.prepare(
+    await query(
       `INSERT INTO users (id, username, name, balance, role, banned, created_at, updated_at)
-       VALUES (?, ?, ?, 0, ?, 0, ?, ?)`
-    ).run(id, username, name, role, now(), now());
-    return db.prepare('SELECT * FROM users WHERE id = ?').get(id);
+       VALUES ($1, $2, $3, 0, $4, FALSE, $5, $5)`,
+      [id, username, name, role, now()]
+    );
+    return one('SELECT * FROM users WHERE id = $1', [id]);
   }
 
-  // sinkronkan profil + pastikan admin selalu role ADMIN
   const role = isAdmin(id) ? 'ADMIN' : existing.role;
-  db.prepare(
-    'UPDATE users SET username = ?, name = ?, role = ?, updated_at = ? WHERE id = ?'
-  ).run(username, name, role, now(), id);
-  return db.prepare('SELECT * FROM users WHERE id = ?').get(id);
+  await query(
+    'UPDATE users SET username = $1, name = $2, role = $3, updated_at = $4 WHERE id = $5',
+    [username, name, role, now(), id]
+  );
+  return one('SELECT * FROM users WHERE id = $1', [id]);
 }
 
 function getUser(id) {
-  return db.prepare('SELECT * FROM users WHERE id = ?').get(Number(id));
+  return one('SELECT * FROM users WHERE id = $1', [Number(id)]);
 }
 
-function getBalance(id) {
-  const u = getUser(id);
+async function getBalance(id) {
+  const u = await getUser(id);
   return u ? u.balance : 0;
 }
 
-/** Tambah/kurang saldo secara atomik. amount boleh negatif. */
+/** Tambah/kurang saldo secara atomik (row lock). amount boleh negatif. */
 function addBalance(id, amount) {
-  const tx = db.transaction((uid, amt) => {
-    const u = db.prepare('SELECT balance FROM users WHERE id = ?').get(uid);
-    if (!u) throw new Error('User tidak ditemukan');
-    const next = u.balance + amt;
+  const uid = Number(id);
+  const amt = Math.round(amount);
+  return withTx(async (client) => {
+    const r = await client.query(
+      'SELECT balance FROM users WHERE id = $1 FOR UPDATE',
+      [uid]
+    );
+    if (!r.rows[0]) throw new Error('User tidak ditemukan');
+    const next = Number(r.rows[0].balance) + amt;
     if (next < 0) throw new Error('Saldo tidak cukup');
-    db.prepare('UPDATE users SET balance = ?, updated_at = ? WHERE id = ?').run(
-      next,
-      now(),
-      uid
+    await client.query(
+      'UPDATE users SET balance = $1, updated_at = $2 WHERE id = $3',
+      [next, now(), uid]
     );
     return next;
   });
-  return tx(Number(id), Math.round(amount));
 }
 
-function setRole(id, role) {
-  db.prepare('UPDATE users SET role = ?, updated_at = ? WHERE id = ?').run(
+async function setRole(id, role) {
+  await query('UPDATE users SET role = $1, updated_at = $2 WHERE id = $3', [
     role,
     now(),
-    Number(id)
-  );
+    Number(id),
+  ]);
 }
 
-function setBanned(id, banned) {
-  db.prepare('UPDATE users SET banned = ?, updated_at = ? WHERE id = ?').run(
-    banned ? 1 : 0,
+async function setBanned(id, banned) {
+  await query('UPDATE users SET banned = $1, updated_at = $2 WHERE id = $3', [
+    !!banned,
     now(),
-    Number(id)
-  );
+    Number(id),
+  ]);
 }
 
-function countUsers() {
-  return db.prepare('SELECT COUNT(*) AS c FROM users').get().c;
+async function countUsers() {
+  const r = await one('SELECT COUNT(*)::int AS c FROM users');
+  return r.c;
 }
 
-function allUserIds() {
-  return db.prepare('SELECT id FROM users WHERE banned = 0').all().map((r) => r.id);
+async function allUserIds() {
+  const rows = await all('SELECT id FROM users WHERE banned = FALSE');
+  return rows.map((r) => r.id);
 }
 
 function searchUsers(limit = 20) {
-  return db
-    .prepare('SELECT * FROM users ORDER BY updated_at DESC LIMIT ?')
-    .all(limit);
+  return all('SELECT * FROM users ORDER BY updated_at DESC LIMIT $1', [limit]);
 }
 
 module.exports = {

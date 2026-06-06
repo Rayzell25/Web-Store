@@ -4,14 +4,14 @@ const { config, isAdmin } = require('../config');
 const { ensureUser, countUsers } = require('../services/userService');
 const { countTransactions, todayRevenue } = require('../services/trxService');
 const { mainMenu } = require('../keyboards/menus');
-const { rupiah, escapeHtml } = require('../utils/format');
+const { rupiah, escapeHtml, LINE } = require('../utils/format');
 
-const LINE = '─────────────────────';
-
-function buildMenuText(user) {
-  const totalTrx = countTransactions();
-  const today = todayRevenue();
-  const totalUsers = countUsers();
+async function buildMenuText(user) {
+  const [totalTrx, today, totalUsers] = await Promise.all([
+    countTransactions(),
+    todayRevenue(),
+    countUsers(),
+  ]);
 
   // blok data rata kolom (monospace) -> tampilan rapi & "premium"
   const akun =
@@ -39,8 +39,8 @@ function buildMenuText(user) {
 }
 
 async function sendMainMenu(bot, chatId, from) {
-  const user = ensureUser(from);
-  const text = buildMenuText(user);
+  const user = await ensureUser(from);
+  const text = await buildMenuText(user);
   return bot.sendMessage(chatId, text, {
     parse_mode: 'HTML',
     reply_markup: mainMenu(isAdmin(from.id)),
@@ -48,8 +48,8 @@ async function sendMainMenu(bot, chatId, from) {
 }
 
 async function editToMainMenu(bot, chatId, messageId, from) {
-  const user = ensureUser(from);
-  const text = buildMenuText(user);
+  const user = await ensureUser(from);
+  const text = await buildMenuText(user);
   try {
     await bot.editMessageText(text, {
       chat_id: chatId,

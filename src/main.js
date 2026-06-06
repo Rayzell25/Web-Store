@@ -8,6 +8,7 @@ const logger = require('./utils/logger');
 const { rupiah } = require('./utils/format');
 
 const userService = require('./services/userService');
+const markupService = require('./services/markupService');
 const { getState, clearState } = require('./utils/session');
 
 // ---- Handlers (router terpusat di file ini) ----
@@ -22,7 +23,8 @@ const admin = require('./handlers/admin');
 
 async function main() {
   assertConfig();
-  initDb();
+  await initDb();
+  await markupService.load();
   await initRedis();
 
   const botOptions = { polling: true };
@@ -43,7 +45,7 @@ async function main() {
 
   // ===== helper broadcast =====
   async function broadcast(text) {
-    const ids = userService.allUserIds();
+    const ids = await userService.allUserIds();
     let sent = 0;
     let failed = 0;
     for (const id of ids) {
@@ -64,8 +66,8 @@ async function main() {
     start.sendMainMenu(bot, msg.chat.id, msg.from).catch((e) => logger.error(e));
   });
 
-  bot.onText(/^\/saldo\b/, (msg) => {
-    const u = userService.ensureUser(msg.from);
+  bot.onText(/^\/saldo\b/, async (msg) => {
+    const u = await userService.ensureUser(msg.from);
     bot.sendMessage(msg.chat.id, `💳 Saldo kamu: ${rupiah(u.balance)}`);
   });
 
@@ -79,7 +81,7 @@ async function main() {
     const userId = msg.from.id;
     const chatId = msg.chat.id;
 
-    userService.ensureUser(msg.from);
+    await userService.ensureUser(msg.from);
 
     // input admin lebih dulu
     try {
@@ -113,7 +115,7 @@ async function main() {
     const data = q.data || '';
     const from = q.from;
 
-    const user = userService.ensureUser(from);
+    const user = await userService.ensureUser(from);
     if (user.banned) {
       return bot.answerCallbackQuery(q.id, { text: 'Akun kamu diblokir.', show_alert: true });
     }

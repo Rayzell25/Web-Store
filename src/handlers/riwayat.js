@@ -5,7 +5,7 @@ const { backButton } = require('../keyboards/menus');
 const { rupiah, escapeHtml, tanggal, LINE } = require('../utils/format');
 
 async function showRiwayat(bot, chatId, messageId, userId) {
-  const trx = getUserTransactions(userId, 10);
+  const trx = await getUserTransactions(userId, 10);
   let text = `<b>RIWAYAT TRANSAKSI</b>\n${LINE}\n`;
   if (!trx.length) {
     text += 'Belum ada transaksi.';

@@ -1,86 +1,86 @@
 'use strict';
 
-const { db } = require('../db/database');
+const { one, all, query } = require('../db/database');
 
 function now() {
   return Date.now();
 }
 
-function createTransaction(data) {
-  db.prepare(
+async function createTransaction(data) {
+  await query(
     `INSERT INTO transactions
       (ref_id, user_id, buyer_sku_code, product_name, target, cost_price, sell_price, status, sn, message, created_at, updated_at)
-     VALUES (@ref_id, @user_id, @buyer_sku_code, @product_name, @target, @cost_price, @sell_price, @status, @sn, @message, @created_at, @updated_at)`
-  ).run({
-    ref_id: data.ref_id,
-    user_id: data.user_id,
-    buyer_sku_code: data.buyer_sku_code,
-    product_name: data.product_name,
-    target: data.target,
-    cost_price: data.cost_price || 0,
-    sell_price: data.sell_price || 0,
-    status: data.status || 'Pending',
-    sn: data.sn || null,
-    message: data.message || null,
-    created_at: now(),
-    updated_at: now(),
-  });
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$11)`,
+    [
+      data.ref_id,
+      data.user_id,
+      data.buyer_sku_code,
+      data.product_name,
+      data.target,
+      data.cost_price || 0,
+      data.sell_price || 0,
+      data.status || 'Pending',
+      data.sn || null,
+      data.message || null,
+      now(),
+    ]
+  );
   return getTransaction(data.ref_id);
 }
 
 function getTransaction(refId) {
-  return db.prepare('SELECT * FROM transactions WHERE ref_id = ?').get(refId);
+  return one('SELECT * FROM transactions WHERE ref_id = $1', [refId]);
 }
 
-function updateTransaction(refId, fields) {
+async function updateTransaction(refId, fields) {
   const allowed = ['status', 'sn', 'message'];
   const sets = [];
-  const vals = {};
+  const vals = [];
+  let i = 1;
   for (const k of allowed) {
     if (k in fields) {
-      sets.push(`${k} = @${k}`);
-      vals[k] = fields[k];
+      sets.push(`${k} = $${i++}`);
+      vals.push(fields[k]);
     }
   }
   if (!sets.length) return getTransaction(refId);
-  vals.ref_id = refId;
-  vals.updated_at = now();
-  db.prepare(
-    `UPDATE transactions SET ${sets.join(', ')}, updated_at = @updated_at WHERE ref_id = @ref_id`
-  ).run(vals);
+  sets.push(`updated_at = $${i++}`);
+  vals.push(now());
+  vals.push(refId);
+  await query(
+    `UPDATE transactions SET ${sets.join(', ')} WHERE ref_id = $${i}`,
+    vals
+  );
   return getTransaction(refId);
 }
 
 function getUserTransactions(userId, limit = 10) {
-  return db
-    .prepare(
-      'SELECT * FROM transactions WHERE user_id = ? ORDER BY created_at DESC LIMIT ?'
-    )
-    .all(Number(userId), limit);
+  return all(
+    'SELECT * FROM transactions WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2',
+    [Number(userId), limit]
+  );
 }
 
-function countTransactions() {
-  return db.prepare('SELECT COUNT(*) AS c FROM transactions').get().c;
+async function countTransactions() {
+  const r = await one('SELECT COUNT(*)::int AS c FROM transactions');
+  return r.c;
 }
 
-/** Total nilai jual transaksi sukses hari ini (mulai 00:00 Asia/Jakarta) */
-function todayRevenue() {
+/** Total nilai jual transaksi sukses hari ini (mulai 00:00 WIB). */
+async function todayRevenue() {
   const start = startOfTodayJakarta();
-  const row = db
-    .prepare(
-      `SELECT COALESCE(SUM(sell_price), 0) AS total
-         FROM transactions
-        WHERE status = 'Sukses' AND created_at >= ?`
-    )
-    .get(start);
-  return row.total;
+  const r = await one(
+    `SELECT COALESCE(SUM(sell_price), 0)::bigint AS total
+       FROM transactions
+      WHERE status = 'Sukses' AND created_at >= $1`,
+    [start]
+  );
+  return Number(r.total);
 }
 
 function startOfTodayJakarta() {
-  // WIB = UTC+7
-  const nowMs = Date.now();
-  const offset = 7 * 60 * 60 * 1000;
-  const jakarta = new Date(nowMs + offset);
+  const offset = 7 * 60 * 60 * 1000; // WIB = UTC+7
+  const jakarta = new Date(Date.now() + offset);
   jakarta.setUTCHours(0, 0, 0, 0);
   return jakarta.getTime() - offset;
 }

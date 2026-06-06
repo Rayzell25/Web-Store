@@ -30,7 +30,7 @@ function catIcon(cat) {
 }
 
 async function showCategories(bot, chatId, messageId) {
-  const cats = getCategories();
+  const cats = await getCategories();
   if (!cats.length) {
     return editOrSend(bot, chatId, messageId,
       '⚠️ Produk belum tersedia.\n\nAdmin perlu menjalankan <b>Sync Produk</b> dari menu Admin terlebih dahulu.',
@@ -48,7 +48,7 @@ async function showCategories(bot, chatId, messageId) {
 async function showBrands(bot, chatId, messageId, catToken) {
   const category = valueOf(catToken);
   if (!category) return showCategories(bot, chatId, messageId);
-  const brands = getBrands(category);
+  const brands = await getBrands(category);
   const items = brands.map((b) => ({
     text: `${truncate(b.brand, 22)} (${b.c})`,
     data: `order:brand:${catToken}:${tokenFor(b.brand)}`,
@@ -63,8 +63,8 @@ async function showProducts(bot, chatId, messageId, catToken, brandToken, userId
   const brand = valueOf(brandToken);
   if (!category || !brand) return showCategories(bot, chatId, messageId);
 
-  const user = getUser(userId);
-  const products = getProductsByBrand(category, brand);
+  const user = await getUser(userId);
+  const products = await getProductsByBrand(category, brand);
   const items = products.map((p) => {
     const harga = sellPrice(p, user.role);
     return {
@@ -78,11 +78,11 @@ async function showProducts(bot, chatId, messageId, catToken, brandToken, userId
 }
 
 async function selectProduct(bot, chatId, messageId, sku, userId) {
-  const product = getProduct(sku);
+  const product = await getProduct(sku);
   if (!product) {
     return editOrSend(bot, chatId, messageId, '⚠️ Produk tidak ditemukan.', backButton('menu:order'));
   }
-  const user = getUser(userId);
+  const user = await getUser(userId);
   const harga = sellPrice(product, user.role);
 
   await setState(userId, 'order:input_target', { sku });
@@ -106,12 +106,12 @@ async function selectProduct(bot, chatId, messageId, sku, userId) {
 async function receiveTarget(bot, chatId, userId, target) {
   const state = await getState(userId);
   if (!state || state.action !== 'order:input_target') return;
-  const product = getProduct(state.data.sku);
+  const product = await getProduct(state.data.sku);
   if (!product) {
     await clearState(userId);
     return bot.sendMessage(chatId, '⚠️ Produk sudah tidak tersedia.');
   }
-  const user = getUser(userId);
+  const user = await getUser(userId);
   const harga = sellPrice(product, user.role);
   const cleanTarget = String(target).trim();
 
@@ -147,8 +147,8 @@ async function pay(bot, chatId, messageId, userId, notifyAdmins) {
     return editOrSend(bot, chatId, messageId, '⚠️ Sesi pembelian kedaluwarsa. Ulangi dari menu Beli Paket.', backButton('menu:order'));
   }
   const { sku, target } = state.data;
-  const product = getProduct(sku);
-  const user = getUser(userId);
+  const product = await getProduct(sku);
+  const user = await getUser(userId);
   if (!product) {
     await clearState(userId);
     return editOrSend(bot, chatId, messageId, '⚠️ Produk tidak tersedia.', backButton('menu:order'));
@@ -164,14 +164,14 @@ async function pay(bot, chatId, messageId, userId, notifyAdmins) {
   const refId = trxCode('CHO');
 
   try {
-    addBalance(userId, -harga); // potong dulu, refund jika gagal
+    await addBalance(userId, -harga); // potong dulu, refund jika gagal
   } catch (e) {
     await clearState(userId);
     return editOrSend(bot, chatId, messageId, `⚠️ ${e.message}`, backButton('menu:deposit'));
   }
   await clearState(userId);
 
-  createTransaction({
+  await createTransaction({
     ref_id: refId,
     user_id: userId,
     buyer_sku_code: sku,
@@ -189,8 +189,8 @@ async function pay(bot, chatId, messageId, userId, notifyAdmins) {
     result = await digiflazz.topUp({ buyerSkuCode: sku, customerNo: target, refId });
   } catch (e) {
     logger.error('Digiflazz topUp error:', e.message);
-    addBalance(userId, harga);
-    updateTransaction(refId, { status: 'Gagal', message: 'Gagal terhubung ke provider' });
+    await addBalance(userId, harga);
+    await updateTransaction(refId, { status: 'Gagal', message: 'Gagal terhubung ke provider' });
     return editOrSend(bot, chatId, messageId,
       `<b>TRANSAKSI GAGAL</b> ❌\n${LINE}\nGagal menghubungi provider. Saldo dikembalikan.\nRef: <code>${refId}</code>`,
       backButton('menu:home'));
@@ -201,15 +201,15 @@ async function pay(bot, chatId, messageId, userId, notifyAdmins) {
   const message = result.message || '';
 
   if (status === 'Gagal') {
-    addBalance(userId, harga);
-    updateTransaction(refId, { status: 'Gagal', message, sn });
+    await addBalance(userId, harga);
+    await updateTransaction(refId, { status: 'Gagal', message, sn });
     return editOrSend(bot, chatId, messageId,
       `<b>TRANSAKSI GAGAL</b> ❌\n${LINE}\n${escapeHtml(message)}\nSaldo dikembalikan.\nRef: <code>${refId}</code>`,
       backButton('menu:home'));
   }
 
-  updateTransaction(refId, { status, message, sn });
-  const updatedUser = getUser(userId);
+  await updateTransaction(refId, { status, message, sn });
+  const updatedUser = await getUser(userId);
 
   const statusIcon = status === 'Sukses' ? '✅' : '⏳';
   const detail =
