@@ -13,6 +13,7 @@ Bot Telegram PPOB lengkap (pulsa, paket data, token PLN, voucher game, e-money) 
 - ⚙️ **Panel Admin** (`admin.js`) — statistik, approve deposit, saldo manual, set role, **atur markup**, sync produk, broadcast.
 - 🔁 Refund otomatis jika transaksi ke provider gagal.
 - 🛡 **Data aman**: PostgreSQL + mutasi saldo atomik (`SELECT ... FOR UPDATE`) + **backup harian dikirim ke Telegram** (offsite, selamat walau VPS error/suspend).
+- 💳 **Pembayaran QRIS (AutoGoPay)**: beli produk & top up bisa bayar via QRIS — pembayaran terdeteksi otomatis (polling), QR & notif sukses auto-hapus, fee QRIS dibebankan ke member (bisa diatur).
 
 ## Markup / Keuntungan (fleksibel)
 
@@ -35,6 +36,17 @@ round|100
 delcat|Paket Data
 delsku|xld10
 ```
+
+## Pembayaran QRIS (AutoGoPay)
+
+- Saat **beli produk**, member pilih metode: **QRIS** atau **SALDO**.
+- Saat **top up saldo**, member pilih: **QRIS** (otomatis) atau **Transfer Manual** (approve admin).
+- Alur QRIS: bot generate QR → member scan & bayar → poller cek status tiap beberapa detik → begitu lunas, pesanan/saldo diproses otomatis → QR & notif sukses terhapus sendiri setelah `QRIS_SUCCESS_TTL_SEC` detik.
+- **Fee QRIS ditanggung member** (`QRIS_FEE_TYPE`/`QRIS_FEE_VALUE`), agar untung markup tidak terpotong fee gateway.
+- Kalau QRIS sudah lunas tapi produk **gagal** di provider, harga produk otomatis **dikreditkan ke SALDO** member (tidak hangus) + admin diberi tahu.
+- Set `AUTOGOPAY_API_KEY` kosong untuk mematikan QRIS (fallback: SALDO / Transfer Manual).
+
+> QRIS pakai **polling**, jadi tidak perlu webhook/domain/buka port.
 
 ## Arsitektur
 
@@ -136,6 +148,9 @@ bash scripts/restore.sh backups/ppob-YYYYMMDD-HHMMSS.sql.gz
 | `DIGIFLAZZ_USERNAME` / `DIGIFLAZZ_API_KEY` | ✅* | Kredensial Digiflazz |
 | `TOPUP_INFO` | | Info rekening transfer manual |
 | `MIN_TOPUP` | | Nominal top up minimum |
+| `AUTOGOPAY_API_KEY` | | API Key AutoGoPay (kosong = QRIS mati) |
+| `QRIS_FEE_TYPE` / `QRIS_FEE_VALUE` | | Fee QRIS ke member (flat/percent) |
+| `QRIS_FEE_ROUND` / `QRIS_POLL_INTERVAL_SEC` / `QRIS_SUCCESS_TTL_SEC` | | Pembulatan, interval poll, durasi notif sebelum auto-hapus |
 | `STORE_NAME` / `MAINTENANCE_INFO` | | Tampilan menu |
 | `BOT_VPN_URL` / `ADMIN_CONTACT` | | Link tombol |
 

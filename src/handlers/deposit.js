@@ -8,6 +8,8 @@ const {
   setDepositStatus,
   userDeposits,
 } = require('../services/depositService');
+const autogopay = require('../services/autogopay');
+const qrisService = require('../services/qrisService');
 const { setState, clearState, getState } = require('../utils/session');
 const { backButton } = require('../keyboards/menus');
 const { rupiah, escapeHtml, tanggal, LINE } = require('../utils/format');
@@ -66,7 +68,44 @@ async function receiveAmount(bot, chatId, userId, text, notifyAdmins) {
     return bot.sendMessage(chatId, `⚠️ Minimal top up ${rupiah(config.topup.min)}.`);
   }
 
+  // Jika QRIS aktif -> tawarkan pilihan metode. Kalau tidak, langsung manual.
+  if (config.qris.enabled) {
+    await setState(userId, 'deposit:method', { amount });
+    const { total, fee } = autogopay.computeTotal(amount);
+    const info =
+      `Nominal : ${rupiah(amount)}\n` +
+      `Via QRIS: bayar ${rupiah(total)} (fee ${rupiah(fee)})`;
+    const kb = {
+      inline_keyboard: [
+        [
+          { text: 'QRIS', callback_data: 'deposit:qris' },
+          { text: 'Transfer Manual', callback_data: 'deposit:manual' },
+        ],
+        [{ text: 'Batal', callback_data: 'menu:deposit' }],
+      ],
+    };
+    return bot.sendMessage(chatId,
+      `<b>PILIH METODE TOP UP</b>\n${LINE}\n<code>${escapeHtml(info)}</code>\n${LINE}\nSaldo masuk penuh ${rupiah(amount)} setelah pembayaran.`,
+      { parse_mode: 'HTML', reply_markup: kb });
+  }
+
   await clearState(userId);
+  await createManualDeposit(bot, chatId, userId, amount, notifyAdmins);
+}
+
+/** Top up via transfer manual (perlu approve admin). */
+async function chooseManual(bot, chatId, messageId, userId, notifyAdmins) {
+  const state = await getState(userId);
+  if (!state || state.action !== 'deposit:method') {
+    return edit(bot, chatId, messageId, '⚠️ Sesi top up kedaluwarsa. Ulangi dari menu.', backButton('menu:deposit'));
+  }
+  const amount = state.data.amount;
+  await clearState(userId);
+  try { await bot.deleteMessage(chatId, messageId); } catch (e) { /* ignore */ }
+  await createManualDeposit(bot, chatId, userId, amount, notifyAdmins);
+}
+
+async function createManualDeposit(bot, chatId, userId, amount, notifyAdmins) {
   const deposit = await createDeposit(userId, amount);
   const user = await getUser(userId);
 
@@ -84,14 +123,12 @@ async function receiveAmount(bot, chatId, userId, text, notifyAdmins) {
   await bot.sendMessage(chatId, userText, { parse_mode: 'HTML', reply_markup: backButton('menu:home') });
 
   if (typeof notifyAdmins === 'function') {
-    const info =
+    const ainfo =
       `#${deposit.id}\n` +
       `User : ${user.name} (${userId})` +
       (user.username ? ` @${user.username}` : '') + `\n` +
       `Nilai: ${rupiah(amount)}\n` +
       `Waktu: ${tanggal(deposit.created_at)}`;
-    const adminText =
-      `<b>PERMINTAAN TOP UP</b> 🔔\n${LINE}\n<code>${escapeHtml(info)}</code>`;
     const adminKb = {
       inline_keyboard: [
         [
@@ -100,8 +137,66 @@ async function receiveAmount(bot, chatId, userId, text, notifyAdmins) {
         ],
       ],
     };
-    notifyAdmins(adminText, { parse_mode: 'HTML', reply_markup: adminKb });
+    notifyAdmins(`<b>PERMINTAAN TOP UP</b> 🔔\n${LINE}\n<code>${escapeHtml(ainfo)}</code>`,
+      { parse_mode: 'HTML', reply_markup: adminKb });
   }
+}
+
+/** Top up via QRIS otomatis (saldo masuk sendiri setelah bayar). */
+async function chooseQris(bot, chatId, messageId, userId) {
+  if (!config.qris.enabled) {
+    return edit(bot, chatId, messageId, '⚠️ QRIS sedang tidak tersedia.', backButton('menu:deposit'));
+  }
+  const state = await getState(userId);
+  if (!state || state.action !== 'deposit:method') {
+    return edit(bot, chatId, messageId, '⚠️ Sesi top up kedaluwarsa. Ulangi dari menu.', backButton('menu:deposit'));
+  }
+  const amount = state.data.amount;
+  const { fee, total } = autogopay.computeTotal(amount);
+  await clearState(userId);
+
+  let qr;
+  try {
+    qr = await autogopay.generateQris(total);
+  } catch (e) {
+    return edit(bot, chatId, messageId, `⚠️ Gagal membuat QRIS: ${escapeHtml(e.message)}`, backButton('menu:deposit'));
+  }
+
+  try { await bot.deleteMessage(chatId, messageId); } catch (e) { /* ignore */ }
+
+  const caption =
+    `<b>TOP UP via QRIS</b>\n${LINE}\n` +
+    `<code>${escapeHtml(
+      `Nominal : ${rupiah(amount)}\n` +
+      `Fee     : ${rupiah(fee)}\n` +
+      `Total   : ${rupiah(total)}`
+    )}</code>\n` +
+    `${LINE}\nScan & bayar. Saldo +${rupiah(amount)} masuk otomatis setelah pembayaran.`;
+
+  const kb = {
+    inline_keyboard: [
+      [
+        { text: 'Cek Sekarang', callback_data: `qris:check:${qr.transaction_id}` },
+        { text: 'Batal', callback_data: `qris:cancel:${qr.transaction_id}` },
+      ],
+    ],
+  };
+
+  const sent = await bot.sendPhoto(chatId, qr.qr_url, { caption, parse_mode: 'HTML', reply_markup: kb });
+
+  await qrisService.create({
+    transaction_id: qr.transaction_id,
+    order_id: qr.order_id,
+    user_id: userId,
+    chat_id: chatId,
+    message_id: sent.message_id,
+    purpose: 'topup',
+    base_amount: amount,
+    fee,
+    amount: total,
+    payload: { nominal: amount },
+    expiry_at: autogopay.parseExpiry(qr.expiry_time),
+  });
 }
 
 async function approve(bot, chatId, messageId, adminFrom, depositId) {
@@ -159,4 +254,4 @@ async function answerEdit(bot, chatId, messageId, text) {
   }
 }
 
-module.exports = { showDepositMenu, askAmount, receiveAmount, approve, reject };
+module.exports = { showDepositMenu, askAmount, receiveAmount, chooseManual, chooseQris, approve, reject };

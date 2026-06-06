@@ -62,6 +62,21 @@ const config = {
     vpnUrl: process.env.BOT_VPN_URL || '',
     adminContact: process.env.ADMIN_CONTACT || '',
   },
+
+  // Gateway QRIS AutoGoPay. Kosongkan AUTOGOPAY_API_KEY untuk menonaktifkan QRIS.
+  qris: {
+    apiKey: process.env.AUTOGOPAY_API_KEY || '',
+    baseUrl: process.env.AUTOGOPAY_BASE_URL || 'https://v1-gateway.autogopay.site',
+    // Fee QRIS yang dibebankan ke member (member yang menanggung fee gateway).
+    feeType: (process.env.QRIS_FEE_TYPE || 'flat').toLowerCase(), // flat | percent
+    feeValue: Number(process.env.QRIS_FEE_VALUE || 1000),
+    feeRound: Number(process.env.QRIS_FEE_ROUND || 100), // bulatkan total ke atas
+    pollSec: Number(process.env.QRIS_POLL_INTERVAL_SEC || 3),
+    successTtlSec: Number(process.env.QRIS_SUCCESS_TTL_SEC || 15),
+    get enabled() {
+      return !!this.apiKey;
+    },
+  },
 };
 
 function isAdmin(telegramId) {

@@ -7,6 +7,7 @@ Konvensi wajib untuk repo ini.
 - **PostgreSQL** via `pg` (async). Akses lewat helper di `db/database.js`: `one()`, `all()`, `query()`, `withTx()`. BIGINT di-parse jadi Number JS.
 - Redis (opsional) untuk cache session — `REDIS_URL`.
 - Telegram **Local Bot API** (opsional) untuk latency rendah — `BOT_API_ROOT` diteruskan sebagai `baseApiUrl` ke constructor `TelegramBot`.
+- **QRIS via AutoGoPay** (`services/autogopay.js`): bayar produk & top up via QRIS. Pembayaran dideteksi **polling** (`services/qrisPoller.js`), bukan webhook. State tersimpan di tabel `qris_payments`. Fee QRIS dibebankan ke member (`QRIS_FEE_*`). QR & notif sukses auto-hapus setelah `QRIS_SUCCESS_TTL_SEC`. Order QRIS yang lunas tapi produknya gagal → harga dikreditkan ke SALDO member.
 
 ## Database & keamanan data
 - Semua service async (await). Mutasi saldo pakai transaksi + `SELECT ... FOR UPDATE` (atomik, anti-balapan).
@@ -33,8 +34,9 @@ Konvensi wajib untuk repo ini.
 
 ## Callback naming
 - Menu: `menu:home|order|deposit|stok|riwayat|tools|bantuan|admin`
-- Order: `order:cat:<tok>`, `order:brand:<tok>:<tok>`, `order:prod:<sku>`, `order:pay`
+- Order: `order:cat:<tok>`, `order:brand:<tok>:<tok>`, `order:prod:<sku>`, `order:pay:saldo`, `order:pay:qris`
 - Stok: `stok:cat:<tok>`, `stok:brand:<tok>:<tok>`
-- Deposit: `deposit:new`, `dp:ok:<id>`, `dp:no:<id>`
+- Deposit: `deposit:new`, `deposit:qris`, `deposit:manual`, `dp:ok:<id>`, `dp:no:<id>`
+- QRIS: `qris:check:<txId>`, `qris:cancel:<txId>`
 - Admin: `adm:stats|deposits|addsaldo|setrole|markup|sync|broadcast`
 - `callback_data` dibatasi 64 byte → nilai panjang (kategori/brand) dipetakan ke token pendek via `utils/registry.js`.

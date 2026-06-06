@@ -116,10 +116,28 @@ async function init() {
       updated_at BIGINT NOT NULL
     );
 
+    CREATE TABLE IF NOT EXISTS qris_payments (
+      transaction_id TEXT PRIMARY KEY,
+      order_id       TEXT,
+      user_id        BIGINT NOT NULL,
+      chat_id        BIGINT NOT NULL,
+      message_id     BIGINT,
+      purpose        TEXT NOT NULL,                  -- 'order' | 'topup'
+      base_amount    BIGINT NOT NULL,                -- harga produk / nominal topup
+      fee            BIGINT NOT NULL DEFAULT 0,
+      amount         BIGINT NOT NULL,                -- total dibayar (base+fee)
+      payload        TEXT,                           -- JSON detail
+      status         TEXT NOT NULL DEFAULT 'pending', -- pending|processing|done|expired|canceled|failed
+      created_at     BIGINT NOT NULL,
+      updated_at     BIGINT NOT NULL,
+      expiry_at      BIGINT
+    );
+
     CREATE INDEX IF NOT EXISTS idx_trx_user ON transactions(user_id);
     CREATE INDEX IF NOT EXISTS idx_trx_created ON transactions(created_at);
     CREATE INDEX IF NOT EXISTS idx_products_cat ON products(category);
     CREATE INDEX IF NOT EXISTS idx_topups_status ON topups(status);
+    CREATE INDEX IF NOT EXISTS idx_qris_status ON qris_payments(status);
   `);
   logger.info('Database PostgreSQL siap.');
 }

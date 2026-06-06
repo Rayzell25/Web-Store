@@ -10,6 +10,9 @@ const {
 const { getUser, addBalance } = require('../services/userService');
 const { createTransaction, updateTransaction } = require('../services/trxService');
 const digiflazz = require('../services/digiflazz');
+const autogopay = require('../services/autogopay');
+const qrisService = require('../services/qrisService');
+const { config } = require('../config');
 const { tokenFor, valueOf } = require('../utils/registry');
 const { setState, clearState, getState } = require('../utils/session');
 const { gridKeyboard, backButton } = require('../keyboards/menus');
@@ -105,27 +108,34 @@ async function receiveTarget(bot, chatId, userId, target) {
   await setState(userId, 'order:confirm', { sku: product.buyer_sku_code, target: cleanTarget });
 
   const detail =
-    `Produk : ${product.product_name}\n` +
-    `Tujuan : ${cleanTarget}\n` +
-    `Harga  : ${rupiah(harga)}\n` +
-    `Saldo  : ${rupiah(user.balance)}`;
+    `Paket : ${product.product_name}\n` +
+    `Nomor : ${cleanTarget}\n` +
+    `Total : ${rupiah(harga)}`;
+
+  const rows = [];
+  const methodRow = [];
+  if (config.qris.enabled) {
+    methodRow.push({ text: 'QRIS', callback_data: 'order:pay:qris' });
+  }
+  methodRow.push({ text: 'SALDO', callback_data: 'order:pay:saldo' });
+  rows.push(methodRow);
+  rows.push([{ text: 'Batal', callback_data: 'menu:order' }]);
+
+  let qrisLine = '';
+  if (config.qris.enabled) {
+    const { total } = autogopay.computeTotal(harga);
+    qrisLine = `\nVia QRIS dibayar ${rupiah(total)} (termasuk fee).`;
+  }
 
   const text =
-    `<b>KONFIRMASI</b>\n` +
+    `<b>PILIH PEMBAYARAN</b>\n` +
     `${LINE}\n` +
     `<code>${escapeHtml(detail)}</code>\n` +
     `${LINE}\n` +
-    (user.balance < harga ? '<b>Saldo tidak cukup.</b> Silakan top up dulu.' : 'Lanjut bayar?');
+    `Saldo kamu: ${rupiah(user.balance)}${qrisLine}\n\n` +
+    `Pilih metode pembayaran:`;
 
-  const keyboard = {
-    inline_keyboard: [
-      [
-        { text: 'Bayar', callback_data: 'order:pay' },
-        { text: 'Batal', callback_data: 'menu:order' },
-      ],
-    ],
-  };
-  await bot.sendMessage(chatId, text, { parse_mode: 'HTML', reply_markup: keyboard });
+  await bot.sendMessage(chatId, text, { parse_mode: 'HTML', reply_markup: { inline_keyboard: rows } });
 }
 
 async function pay(bot, chatId, messageId, userId, notifyAdmins) {
@@ -232,4 +242,73 @@ async function editOrSend(bot, chatId, messageId, text, replyMarkup) {
   return bot.sendMessage(chatId, text, opts);
 }
 
-module.exports = { showCategories, showBrands, showProducts, selectProduct, receiveTarget, pay };
+/** Bayar order via QRIS: generate QR, kirim foto, catat untuk di-poll. */
+async function payQris(bot, chatId, messageId, userId) {
+  if (!config.qris.enabled) {
+    return editOrSend(bot, chatId, messageId, '⚠️ QRIS sedang tidak tersedia.', backButton('menu:order'));
+  }
+  const state = await getState(userId);
+  if (!state || state.action !== 'order:confirm') {
+    return editOrSend(bot, chatId, messageId, '⚠️ Sesi pembelian kedaluwarsa. Ulangi dari menu Beli Paket.', backButton('menu:order'));
+  }
+  const { sku, target } = state.data;
+  const product = await getProduct(sku);
+  const user = await getUser(userId);
+  if (!product) {
+    await clearState(userId);
+    return editOrSend(bot, chatId, messageId, '⚠️ Produk tidak tersedia.', backButton('menu:order'));
+  }
+  const base = sellPrice(product, user.role);
+  const { fee, total } = autogopay.computeTotal(base);
+
+  await clearState(userId);
+
+  let qr;
+  try {
+    qr = await autogopay.generateQris(total);
+  } catch (e) {
+    logger.error('generateQris (order) error:', e.message);
+    return editOrSend(bot, chatId, messageId, `⚠️ Gagal membuat QRIS: ${escapeHtml(e.message)}`, backButton('menu:order'));
+  }
+
+  // hapus pesan pilih-metode, ganti dengan foto QR
+  try { await bot.deleteMessage(chatId, messageId); } catch (e) { /* ignore */ }
+
+  const caption =
+    `<b>BAYAR via QRIS</b>\n${LINE}\n` +
+    `<code>${escapeHtml(
+      `Paket : ${product.product_name}\n` +
+      `Nomor : ${target}\n` +
+      `Harga : ${rupiah(base)}\n` +
+      `Fee   : ${rupiah(fee)}\n` +
+      `Total : ${rupiah(total)}`
+    )}</code>\n` +
+    `${LINE}\nScan & bayar. Pesanan diproses otomatis setelah pembayaran masuk.`;
+
+  const kb = {
+    inline_keyboard: [
+      [
+        { text: 'Cek Sekarang', callback_data: `qris:check:${qr.transaction_id}` },
+        { text: 'Batal', callback_data: `qris:cancel:${qr.transaction_id}` },
+      ],
+    ],
+  };
+
+  const sent = await bot.sendPhoto(chatId, qr.qr_url, { caption, parse_mode: 'HTML', reply_markup: kb });
+
+  await qrisService.create({
+    transaction_id: qr.transaction_id,
+    order_id: qr.order_id,
+    user_id: userId,
+    chat_id: chatId,
+    message_id: sent.message_id,
+    purpose: 'order',
+    base_amount: base,
+    fee,
+    amount: total,
+    payload: { sku, target, product_name: product.product_name, cost_price: product.price },
+    expiry_at: autogopay.parseExpiry(qr.expiry_time),
+  });
+}
+
+module.exports = { showCategories, showBrands, showProducts, selectProduct, receiveTarget, pay, payQris };

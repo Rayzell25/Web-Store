@@ -9,6 +9,7 @@ const { rupiah } = require('./utils/format');
 
 const userService = require('./services/userService');
 const markupService = require('./services/markupService');
+const qrisPoller = require('./services/qrisPoller');
 const { getState, clearState } = require('./utils/session');
 
 // ---- Handlers (router terpusat di file ini) ----
@@ -148,8 +149,10 @@ async function main() {
         await order.showProducts(bot, chatId, messageId, catTok, brandTok, from.id);
       } else if (data.startsWith('order:prod:')) {
         await order.selectProduct(bot, chatId, messageId, data.slice('order:prod:'.length), from.id);
-      } else if (data === 'order:pay') {
+      } else if (data === 'order:pay:saldo') {
         await order.pay(bot, chatId, messageId, from.id, notifyAdmins);
+      } else if (data === 'order:pay:qris') {
+        await order.payQris(bot, chatId, messageId, from.id);
 
       // ---- Cek Stok ----
       } else if (data.startsWith('stok:cat:')) {
@@ -161,6 +164,16 @@ async function main() {
       // ---- Deposit / Top Up ----
       } else if (data === 'deposit:new') {
         await deposit.askAmount(bot, chatId, messageId, from.id);
+      } else if (data === 'deposit:qris') {
+        await deposit.chooseQris(bot, chatId, messageId, from.id);
+      } else if (data === 'deposit:manual') {
+        await deposit.chooseManual(bot, chatId, messageId, from.id, notifyAdmins);
+      } else if (data.startsWith('qris:check:')) {
+        await qrisPoller.checkNow(data.slice('qris:check:'.length));
+        bot.answerCallbackQuery(q.id, { text: 'Mengecek pembayaran...' }).catch(() => {});
+      } else if (data.startsWith('qris:cancel:')) {
+        const ok = await qrisPoller.cancel(data.slice('qris:cancel:'.length));
+        bot.answerCallbackQuery(q.id, { text: ok ? 'Dibatalkan.' : 'Tidak bisa dibatalkan.' }).catch(() => {});
       } else if (data.startsWith('dp:ok:')) {
         if (!isAdmin(from.id)) return bot.answerCallbackQuery(q.id, { text: 'Khusus admin.', show_alert: true });
         await deposit.approve(bot, chatId, messageId, from, Number(data.slice('dp:ok:'.length)));
@@ -197,6 +210,9 @@ async function main() {
 
   bot.on('polling_error', (e) => logger.warn('polling_error:', e.message));
   bot.on('webhook_error', (e) => logger.warn('webhook_error:', e.message));
+
+  // poller QRIS (AutoGoPay) untuk deteksi pembayaran otomatis
+  qrisPoller.start(bot, notifyAdmins);
 
   logger.info(`${config.store.name} berjalan. Admin: ${config.adminIds.join(', ') || '-'}`);
 }
