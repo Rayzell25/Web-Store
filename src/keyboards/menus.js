@@ -5,26 +5,26 @@ const { config } = require('../config');
 /** Keyboard inline menu utama. isAdminUser -> tampilkan tombol ADMIN */
 function mainMenu(isAdminUser) {
   const rows = [
-    [{ text: '🛍 Beli Paket', callback_data: 'menu:order' }],
-    [{ text: '💎 Top Up Saldo', callback_data: 'menu:deposit' }],
+    [{ text: 'Beli Paket', callback_data: 'menu:order' }],
+    [{ text: 'Top Up Saldo', callback_data: 'menu:deposit' }],
     [
-      { text: '🧾 Riwayat', callback_data: 'menu:riwayat' },
-      { text: '🏷 Cek Harga', callback_data: 'menu:stok' },
+      { text: 'Riwayat', callback_data: 'menu:riwayat' },
+      { text: 'Cek Harga', callback_data: 'menu:stok' },
     ],
     [
-      { text: '🛠 Tools', callback_data: 'menu:tools' },
-      { text: '💬 Bantuan', callback_data: 'menu:bantuan' },
+      { text: 'Tools', callback_data: 'menu:tools' },
+      { text: 'Bantuan', callback_data: 'menu:bantuan' },
     ],
   ];
 
   const lastRow = [];
   if (config.store.vpnUrl) {
-    lastRow.push({ text: '🌐 Bot VPN', url: config.store.vpnUrl });
+    lastRow.push({ text: 'Bot VPN', url: config.store.vpnUrl });
   }
   if (isAdminUser) {
-    lastRow.push({ text: '👑 Admin', callback_data: 'menu:admin' });
+    lastRow.push({ text: 'Admin', callback_data: 'menu:admin' });
   } else if (config.store.adminContact) {
-    lastRow.push({ text: '👤 Admin', url: config.store.adminContact });
+    lastRow.push({ text: 'Admin', url: config.store.adminContact });
   }
   if (lastRow.length) rows.push(lastRow);
 

@@ -16,19 +16,6 @@ const { gridKeyboard, backButton } = require('../keyboards/menus');
 const { rupiah, escapeHtml, trxCode, truncate, LINE } = require('../utils/format');
 const logger = require('../utils/logger');
 
-function catIcon(cat) {
-  const c = String(cat).toLowerCase();
-  if (c.includes('pulsa')) return '📱';
-  if (c.includes('data')) return '🌐';
-  if (c.includes('pln') || c.includes('listrik')) return '⚡';
-  if (c.includes('game')) return '🎮';
-  if (c.includes('emoney') || c.includes('e-money') || c.includes('saldo')) return '💳';
-  if (c.includes('voucher')) return '🎟';
-  if (c.includes('tv')) return '📺';
-  if (c.includes('masa') || c.includes('aktif')) return '📶';
-  return '📦';
-}
-
 async function showCategories(bot, chatId, messageId) {
   const cats = await getCategories();
   if (!cats.length) {
@@ -37,7 +24,7 @@ async function showCategories(bot, chatId, messageId) {
       backButton('menu:home'));
   }
   const items = cats.map((c) => ({
-    text: `${catIcon(c.category)} ${truncate(c.category, 20)} (${c.c})`,
+    text: `${truncate(c.category, 22)} (${c.c})`,
     data: `order:cat:${tokenFor(c.category)}`,
   }));
   await editOrSend(bot, chatId, messageId,
@@ -133,8 +120,8 @@ async function receiveTarget(bot, chatId, userId, target) {
   const keyboard = {
     inline_keyboard: [
       [
-        { text: '✅ Bayar', callback_data: 'order:pay' },
-        { text: '✖ Batal', callback_data: 'menu:order' },
+        { text: 'Bayar', callback_data: 'order:pay' },
+        { text: 'Batal', callback_data: 'menu:order' },
       ],
     ],
   };

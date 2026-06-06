@@ -37,7 +37,7 @@ async function showDepositMenu(bot, chatId, messageId, userId) {
 
   const keyboard = {
     inline_keyboard: [
-      [{ text: '➕ Top Up Saldo', callback_data: 'deposit:new' }],
+      [{ text: 'Top Up Saldo', callback_data: 'deposit:new' }],
       [{ text: '« Kembali', callback_data: 'menu:home' }],
     ],
   };
@@ -95,8 +95,8 @@ async function receiveAmount(bot, chatId, userId, text, notifyAdmins) {
     const adminKb = {
       inline_keyboard: [
         [
-          { text: '✅ Setujui', callback_data: `dp:ok:${deposit.id}` },
-          { text: '✖ Tolak', callback_data: `dp:no:${deposit.id}` },
+          { text: 'Setujui', callback_data: `dp:ok:${deposit.id}` },
+          { text: 'Tolak', callback_data: `dp:no:${deposit.id}` },
         ],
       ],
     };

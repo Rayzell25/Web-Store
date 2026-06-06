@@ -26,7 +26,7 @@ async function showTools(bot, chatId, messageId) {
   const text = `<b>TOOLS</b>\n${LINE}\nPilih alat bantu:`;
   const keyboard = {
     inline_keyboard: [
-      [{ text: '🔍 Cek Operator Nomor', callback_data: 'tools:operator' }],
+      [{ text: 'Cek Operator Nomor', callback_data: 'tools:operator' }],
       [{ text: '« Kembali', callback_data: 'menu:home' }],
     ],
   };

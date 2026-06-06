@@ -14,17 +14,17 @@ const logger = require('../utils/logger');
 function adminMenuKeyboard() {
   return {
     inline_keyboard: [
-      [{ text: '📊 Statistik', callback_data: 'adm:stats' }],
-      [{ text: '🧾 Top Up Pending', callback_data: 'adm:deposits' }],
+      [{ text: 'Statistik', callback_data: 'adm:stats' }],
+      [{ text: 'Top Up Pending', callback_data: 'adm:deposits' }],
       [
-        { text: '➕ Saldo Manual', callback_data: 'adm:addsaldo' },
-        { text: '🎖 Set Role', callback_data: 'adm:setrole' },
+        { text: 'Saldo Manual', callback_data: 'adm:addsaldo' },
+        { text: 'Set Role', callback_data: 'adm:setrole' },
       ],
       [
-        { text: '🏷 Markup', callback_data: 'adm:markup' },
-        { text: '🔄 Sync Produk', callback_data: 'adm:sync' },
+        { text: 'Markup', callback_data: 'adm:markup' },
+        { text: 'Sync Produk', callback_data: 'adm:sync' },
       ],
-      [{ text: '📢 Broadcast', callback_data: 'adm:broadcast' }],
+      [{ text: 'Broadcast', callback_data: 'adm:broadcast' }],
       [{ text: '« Kembali', callback_data: 'menu:home' }],
     ],
   };
@@ -70,8 +70,8 @@ async function showPendingDeposits(bot, chatId, messageId) {
     const u = await userService.getUser(t.user_id);
     text += `#${t.id} · ${escapeHtml(u ? u.name : t.user_id)} · ${rupiah(t.amount)} · ${tanggal(t.created_at)}\n`;
     rows.push([
-      { text: `✅ #${t.id}`, callback_data: `dp:ok:${t.id}` },
-      { text: `✖ #${t.id}`, callback_data: `dp:no:${t.id}` },
+      { text: `Setujui #${t.id}`, callback_data: `dp:ok:${t.id}` },
+      { text: `Tolak #${t.id}`, callback_data: `dp:no:${t.id}` },
     ]);
   }
   rows.push([{ text: '« Kembali', callback_data: 'menu:admin' }]);

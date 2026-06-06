@@ -19,7 +19,7 @@ async function showBantuan(bot, chatId, messageId) {
     `• Maintenance: ${escapeHtml(config.store.maintenance)}`;
 
   const rows = [];
-  if (config.store.adminContact) rows.push([{ text: '👤 Hubungi Admin', url: config.store.adminContact }]);
+  if (config.store.adminContact) rows.push([{ text: 'Hubungi Admin', url: config.store.adminContact }]);
   rows.push([{ text: '« Kembali', callback_data: 'menu:home' }]);
 
   const opts = { parse_mode: 'HTML', reply_markup: { inline_keyboard: rows } };
