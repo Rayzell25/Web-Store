@@ -85,13 +85,12 @@ step "Menyiapkan konfigurasi (.env)"
 set_env() {
   local key="$1" val="$2"
   if grep -q "^${key}=" .env; then
-    # pakai pemisah | untuk hindari konflik dengan / di value
     sed -i "s|^${key}=.*|${key}=${val}|" .env
   else
     echo "${key}=${val}" >> .env
   fi
 }
-get_env() { grep "^$1=" .env | head -n1 | cut -d= -f2-; }
+get_env() { grep "^$1=" .env | head -n1 | cut -d= -f2- || true; }
 
 PGUSER_V="$(get_env PGUSER)"; PGUSER_V="${PGUSER_V:-ppob}"
 PGDB_V="$(get_env PGDATABASE)"; PGDB_V="${PGDB_V:-ppob}"
@@ -132,7 +131,11 @@ done
 step "Memasang cron backup harian (03:00)"
 chmod +x scripts/*.sh 2>/dev/null || true
 CRON_LINE="0 3 * * * cd ${SCRIPT_DIR} && bash scripts/backup.sh >> ${SCRIPT_DIR}/backup.log 2>&1"
-( crontab -l 2>/dev/null | grep -v 'scripts/backup.sh' ; echo "$CRON_LINE" ) | crontab -
+TMPCRON="$(mktemp)"
+crontab -l 2>/dev/null | grep -v 'scripts/backup.sh' > "$TMPCRON" || true
+echo "$CRON_LINE" >> "$TMPCRON"
+crontab "$TMPCRON" 2>/dev/null || warn "Gagal pasang cron (lewati, bisa dipasang manual nanti)."
+rm -f "$TMPCRON"
 log "Cron terpasang."
 
 # ===== 10. systemd service =====
@@ -162,25 +165,25 @@ echo
 echo "═══════════════════════════════════════════"
 echo "   SETUP RAYZELL STORE PPOB"
 echo "═══════════════════════════════════════════"
-read -rp "Token bot          : " IN_BOT_TOKEN
-read -rp "ID owner           : " IN_OWNER_ID
-read -rp "Token bot backup   : " IN_BACKUP_TOKEN
-read -rp "ID channel / grup  : " IN_BACKUP_CHAT
+read -rp "Token bot          : " IN_BOT_TOKEN </dev/tty
+read -rp "ID owner           : " IN_OWNER_ID </dev/tty
+read -rp "Token bot backup   : " IN_BACKUP_TOKEN </dev/tty
+read -rp "ID channel / grup  : " IN_BACKUP_CHAT </dev/tty
 echo "═══════════════════════════════════════════"
 
-[ -n "$IN_BOT_TOKEN" ]   && set_env BOT_TOKEN "$IN_BOT_TOKEN"
-[ -n "$IN_OWNER_ID" ]    && set_env ADMIN_IDS "$IN_OWNER_ID"
-[ -n "$IN_BACKUP_TOKEN" ] && set_env BACKUP_BOT_TOKEN "$IN_BACKUP_TOKEN"
-[ -n "$IN_BACKUP_CHAT" ] && set_env BACKUP_CHAT_ID "$IN_BACKUP_CHAT"
+[ -n "${IN_BOT_TOKEN:-}" ]    && set_env BOT_TOKEN "$IN_BOT_TOKEN" || true
+[ -n "${IN_OWNER_ID:-}" ]     && set_env ADMIN_IDS "$IN_OWNER_ID" || true
+[ -n "${IN_BACKUP_TOKEN:-}" ] && set_env BACKUP_BOT_TOKEN "$IN_BACKUP_TOKEN" || true
+[ -n "${IN_BACKUP_CHAT:-}" ]  && set_env BACKUP_CHAT_ID "$IN_BACKUP_CHAT" || true
 
 # ===== 12. start bot =====
 step "Menjalankan bot"
-systemctl restart rayzell-ppob
+systemctl restart rayzell-ppob || warn "Bot gagal start, cek: journalctl -u rayzell-ppob -n 50"
 
 sleep 2
 echo
 echo "═══════════════════════════════════════════"
-log  "INSTALASI SELESAI 🎉"
+log  "INSTALASI SELESAI"
 echo "═══════════════════════════════════════════"
 echo " Status bot   : systemctl status rayzell-ppob"
 echo " Log bot      : journalctl -u rayzell-ppob -f"
