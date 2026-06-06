@@ -5,13 +5,16 @@ const { config } = require('../config');
 /** Keyboard inline menu utama. isAdminUser -> tampilkan tombol ADMIN */
 function mainMenu(isAdminUser) {
   const rows = [
-    [{ text: '🛒 Beli Paket', callback_data: 'menu:beli' }],
-    [{ text: '💰 Saldo / Top Up', callback_data: 'menu:topup' }],
+    [{ text: '🛒 Beli Paket', callback_data: 'menu:order' }],
+    [{ text: '💰 Saldo / Top Up', callback_data: 'menu:deposit' }],
     [
       { text: '📜 Riwayat', callback_data: 'menu:riwayat' },
-      { text: '🧰 Tools', callback_data: 'menu:tools' },
+      { text: '📦 Cek Stok', callback_data: 'menu:stok' },
     ],
-    [{ text: '❓ Bantuan', callback_data: 'menu:bantuan' }],
+    [
+      { text: '🧰 Tools', callback_data: 'menu:tools' },
+      { text: '❓ Bantuan', callback_data: 'menu:bantuan' },
+    ],
   ];
 
   const lastRow = [];

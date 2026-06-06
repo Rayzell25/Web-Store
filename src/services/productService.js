@@ -1,7 +1,6 @@
 'use strict';
 
 const { db } = require('../db/database');
-const { config } = require('../config');
 
 function now() {
   return Date.now();
@@ -78,11 +77,10 @@ function countProducts() {
   return db.prepare('SELECT COUNT(*) AS c FROM products').get().c;
 }
 
-/** Hitung harga jual = harga modal + markup berdasarkan role */
+/** Hitung harga jual = harga modal + markup (delegasi ke markupService) */
 function sellPrice(product, role) {
-  const markup =
-    role === 'RESELLER' ? config.markup.reseller : config.markup.default;
-  return Math.round(Number(product.price) + markup);
+  // require lazy untuk menghindari siklus saat load awal
+  return require('./markupService').sellPrice(product, role);
 }
 
 module.exports = {

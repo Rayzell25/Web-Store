@@ -1,97 +1,133 @@
 # Cho Store PPOB Bot
 
-Bot Telegram PPOB lengkap (pulsa, paket data, token PLN, voucher game, e-money) dengan integrasi **Digiflazz**, sistem saldo, top up dengan konfirmasi admin, riwayat transaksi, tools, dan panel admin.
+Bot Telegram PPOB lengkap (pulsa, paket data, token PLN, voucher game, e-money) dengan integrasi **Digiflazz**, sistem saldo & deposit, **markup fleksibel**, cache session **Redis**, dan dukungan **Telegram Local Bot API** untuk respons tombol super cepat.
 
 ## Fitur
 
-- 🛒 **Beli Paket** — kategori → brand/operator → produk → input nomor → konfirmasi → bayar pakai saldo.
-- 💰 **Saldo / Top Up** — buat permintaan top up, transfer manual, disetujui/ditolak admin.
-- 📜 **Riwayat** — 10 transaksi terakhir lengkap dengan status & SN.
-- 🧰 **Tools** — cek operator berdasarkan nomor HP.
-- ❓ **Bantuan** — panduan pemakaian.
-- ⚙️ **Panel Admin** — statistik, approve top up, tambah saldo manual, set role, sync produk Digiflazz, broadcast.
-- 🔁 Refund otomatis kalau transaksi ke provider gagal.
-- 🎖 Harga jual otomatis = harga modal Digiflazz + markup (beda untuk MEMBER & RESELLER).
+- 🛒 **Beli Paket** (`order.js`) — kategori → brand → produk → nomor tujuan → konfirmasi → bayar.
+- 💰 **Saldo / Top Up** (`deposit.js`) — buat deposit, transfer manual, approve/tolak admin.
+- 📦 **Cek Stok** (`stok.js`) — lihat daftar produk + harga jual tanpa beli.
+- 📜 **Riwayat** (`riwayat.js`) — 10 transaksi terakhir + SN.
+- 🧰 **Tools** (`tools.js`) — cek operator dari nomor HP.
+- ❓ **Bantuan** (`help.js`).
+- ⚙️ **Panel Admin** (`admin.js`) — statistik, approve deposit, saldo manual, set role, **atur markup**, sync produk, broadcast.
+- 🔁 Refund otomatis jika transaksi ke provider gagal.
 
-## Persiapan
+## Markup / Keuntungan (fleksibel)
 
-1. **Node.js 18+** terpasang.
-2. Akun **Digiflazz** (https://digiflazz.com) → ambil `username` dan `API Key` (Development/Production) di menu API. Whitelist IP server kamu di Digiflazz.
-3. Token bot dari **@BotFather**.
-4. ID Telegram kamu (cek lewat **@userinfobot** atau ketik `/id` ke bot ini setelah jalan).
+Untung kamu = selisih **harga jual − harga modal Digiflazz**. Markup bisa diatur dari bot (Admin → 🏷 Markup) dengan prioritas:
 
-## Instalasi
+1. **Override per produk** (paling diutamakan)
+2. **Markup per kategori**
+3. **Default per role** (MEMBER / RESELLER)
+
+Tipe markup: `flat` (rupiah) atau `percent` (% dari modal), plus pembulatan. Contoh perintah:
+
+```
+default|flat|500
+default|percent|3
+reseller|flat|250
+cat|Paket Data|flat|1000
+cat|PLN|flat|1500
+sku|xld10|flat|800
+round|100
+delcat|Paket Data
+delsku|xld10
+```
+
+## Arsitektur
+
+```
+src/
+├── main.js                 # entry point + router semua handler
+├── config.js               # baca .env (tanpa literal rahasia)
+├── cache/redis.js          # koneksi Redis (opsional)
+├── db/database.js          # SQLite
+├── services/
+│   ├── digiflazz.js        # API Digiflazz
+│   ├── userService.js      # user & saldo
+│   ├── trxService.js       # transaksi
+│   ├── depositService.js   # deposit/top up
+│   ├── productService.js   # produk
+│   └── markupService.js    # markup fleksibel
+├── handlers/               # 1 fitur = 1 file
+│   ├── start.js  order.js  deposit.js  stok.js
+│   ├── riwayat.js  tools.js  help.js  admin.js
+├── keyboards/menus.js
+└── utils/                  # logger, format, session(redis), registry
+```
+
+> Data sensitif (token, API key, `api_id`, `api_hash`) **hanya** di `.env` (gitignored).
+
+## Setup VPS
 
 ```bash
-git clone <repo-url>
-cd ppob
-npm install
-cp .env.example .env
-# edit .env, isi BOT_TOKEN, ADMIN_IDS, DIGIFLAZZ_USERNAME, DIGIFLAZZ_API_KEY, dll
+# 1) Redis (cache session)
+apt install redis-server -y && systemctl enable --now redis
+
+# 2) Docker
+curl -fsSL https://get.docker.com | bash
+
+# 3) Local Bot API (ganti API_ID & API_HASH dari my.telegram.org)
+docker run -d \
+  --name telegram-bot-api \
+  --restart always \
+  -p 127.0.0.1:8081:8081 \
+  -e TELEGRAM_API_ID=API_ID_KAMU \
+  -e TELEGRAM_API_HASH=API_HASH_KAMU \
+  -e TELEGRAM_LOCAL=1 \
+  -v /root/bot-api-data:/var/lib/telegram-bot-api \
+  -v /root/bot-api-temp:/tmp/telegram-bot-api \
+  aiogram/telegram-bot-api:latest
+
+# 4) Bot
+git clone <repo-url> && cd ppob
+npm install            # butuh build-essential & python3 untuk better-sqlite3
+cp .env.example .env   # isi BOT_TOKEN, ADMIN_IDS, DIGIFLAZZ_*, dll
 npm start
 ```
 
-> `better-sqlite3` butuh build native. Jika gagal di server, install build tools:
-> Ubuntu/Debian: `sudo apt install -y build-essential python3`
+Lalu di `.env`:
+
+```env
+REDIS_URL=redis://127.0.0.1:6379
+BOT_API_ROOT=http://localhost:8081
+TELEGRAM_API_ID=...
+TELEGRAM_API_HASH=...
+```
+
+> Jika `BOT_API_ROOT`/`REDIS_URL` dikosongkan, bot tetap jalan memakai server resmi Telegram dan session in-memory.
 
 ## Konfigurasi (.env)
 
 | Variabel | Wajib | Keterangan |
 |---|---|---|
 | `BOT_TOKEN` | ✅ | Token dari @BotFather |
-| `ADMIN_IDS` | ✅ | ID admin, pisah koma untuk banyak admin |
-| `DIGIFLAZZ_USERNAME` | ✅* | Username Digiflazz |
-| `DIGIFLAZZ_API_KEY` | ✅* | API Key Digiflazz |
-| `MARKUP_DEFAULT` | | Markup rupiah untuk MEMBER (default 500) |
-| `MARKUP_RESELLER` | | Markup rupiah untuk RESELLER (default 250) |
-| `TOPUP_INFO` | | Info rekening tujuan transfer manual |
-| `MIN_TOPUP` | | Nominal top up minimum (default 10000) |
-| `STORE_NAME` | | Nama toko di menu |
-| `MAINTENANCE_INFO` | | Jam maintenance yang ditampilkan |
-| `BOT_VPN_URL` | | Link tombol BOT VPN (opsional) |
-| `ADMIN_CONTACT` | | Link kontak admin untuk non-admin |
-| `DB_PATH` | | Lokasi file SQLite (default data/ppob.db) |
+| `ADMIN_IDS` | ✅ | ID admin, pisah koma |
+| `TELEGRAM_API_ID` / `TELEGRAM_API_HASH` | | Untuk Local Bot API (my.telegram.org) |
+| `BOT_API_ROOT` | | URL Local Bot API (mis. http://localhost:8081) |
+| `REDIS_URL` | | URL Redis untuk cache session |
+| `DIGIFLAZZ_USERNAME` / `DIGIFLAZZ_API_KEY` | ✅* | Kredensial Digiflazz |
+| `TOPUP_INFO` | | Info rekening transfer manual |
+| `MIN_TOPUP` | | Nominal top up minimum |
+| `STORE_NAME` / `MAINTENANCE_INFO` | | Tampilan menu |
+| `BOT_VPN_URL` / `ADMIN_CONTACT` | | Link tombol |
+| `DB_PATH` | | Lokasi SQLite |
 
-\* Tanpa kredensial Digiflazz, bot tetap jalan tapi fitur beli & sync produk tidak berfungsi.
+\* Tanpa kredensial Digiflazz, bot jalan tapi fitur beli & sync produk nonaktif.
 
 ## Cara Pakai Pertama Kali
 
-1. Jalankan bot, kirim `/start`.
-2. Sebagai admin, buka **⚙️ ADMIN → 🔄 Sync Produk** untuk menarik daftar harga Digiflazz.
-3. Produk siap dibeli lewat **🛒 Beli Paket**.
-4. Top up saldo user disetujui lewat **⚙️ ADMIN → 🧾 Top Up Pending**.
+1. `/start`, lalu ketik `/id` untuk ambil ID Telegram → isi ke `ADMIN_IDS`.
+2. Admin → 🔄 **Sync Produk** untuk tarik harga Digiflazz.
+3. (Opsional) Admin → 🏷 **Markup** untuk atur keuntungan.
+4. Produk siap dijual.
 
 ## Perintah
-
-- `/start` atau `/menu` — buka menu utama
+- `/start` / `/menu` — menu utama
 - `/saldo` — cek saldo
-- `/id` — lihat ID Telegram kamu
+- `/id` — ID Telegram kamu
 
-## Struktur Proyek
-
-```
-src/
-├── index.js              # entry point: routing pesan & callback
-├── config.js             # konfigurasi dari .env
-├── db/database.js        # SQLite (better-sqlite3)
-├── services/
-│   ├── digiflazz.js      # client API Digiflazz
-│   ├── userService.js    # user & saldo
-│   ├── trxService.js     # transaksi
-│   ├── topupService.js   # top up
-│   └── productService.js # produk & harga
-├── handlers/
-│   ├── start.js          # menu utama
-│   ├── beliPaket.js      # alur pembelian
-│   ├── topup.js          # alur top up
-│   ├── misc.js           # riwayat, tools, bantuan
-│   └── admin.js          # panel admin
-├── keyboards/menus.js    # keyboard inline
-└── utils/                # logger, format, session, registry
-```
-
-## Catatan Keamanan
-
-- Jangan commit `.env` (sudah di `.gitignore`).
-- Gunakan API Key **Production** Digiflazz hanya saat siap live; gunakan Development key untuk uji coba.
-- Whitelist IP server di dashboard Digiflazz agar transaksi tidak ditolak.
+## Keamanan
+- Jangan commit `.env`. Jangan bagikan `api_hash`.
+- Whitelist IP server di dashboard Digiflazz.

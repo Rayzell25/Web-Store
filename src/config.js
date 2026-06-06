@@ -1,5 +1,8 @@
 'use strict';
 
+// Memuat variabel dari .env. Semua data SENSITIF (token, key, api_hash)
+// hanya berada di .env — file ini tidak menyimpan nilai rahasia apa pun,
+// hanya membaca dari process.env dan menyediakan default non-sensitif.
 require('dotenv').config();
 
 function parseAdminIds(raw) {
@@ -13,8 +16,18 @@ function parseAdminIds(raw) {
 }
 
 const config = {
+  // --- rahasia: dibaca langsung dari env, tidak ditulis sebagai literal ---
   botToken: process.env.BOT_TOKEN || '',
   adminIds: parseAdminIds(process.env.ADMIN_IDS),
+
+  telegram: {
+    // baseApiUrl untuk Local Bot API (latency rendah). Kosong = server resmi.
+    apiRoot: process.env.BOT_API_ROOT || '',
+    apiId: process.env.TELEGRAM_API_ID || '',
+    apiHash: process.env.TELEGRAM_API_HASH || '',
+  },
+
+  redisUrl: process.env.REDIS_URL || '',
 
   digiflazz: {
     username: process.env.DIGIFLAZZ_USERNAME || '',
@@ -22,11 +35,7 @@ const config = {
     mode: process.env.DIGIFLAZZ_MODE || 'prepaid',
   },
 
-  markup: {
-    default: Number(process.env.MARKUP_DEFAULT || 500),
-    reseller: Number(process.env.MARKUP_RESELLER || 250),
-  },
-
+  // --- non-sensitif: default tampilan & aturan ---
   topup: {
     info: process.env.TOPUP_INFO || 'Hubungi admin untuk info rekening.',
     min: Number(process.env.MIN_TOPUP || 10000),

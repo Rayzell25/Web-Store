@@ -68,6 +68,14 @@ function init() {
       value TEXT
     );
 
+    -- override markup per produk (prioritas tertinggi)
+    CREATE TABLE IF NOT EXISTS markups (
+      sku        TEXT PRIMARY KEY,
+      type       TEXT NOT NULL DEFAULT 'flat',  -- flat | percent
+      value      REAL NOT NULL DEFAULT 0,
+      updated_at INTEGER NOT NULL
+    );
+
     CREATE INDEX IF NOT EXISTS idx_trx_user ON transactions(user_id);
     CREATE INDEX IF NOT EXISTS idx_trx_created ON transactions(created_at);
     CREATE INDEX IF NOT EXISTS idx_products_cat ON products(category);

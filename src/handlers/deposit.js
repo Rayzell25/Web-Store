@@ -3,23 +3,22 @@
 const { config } = require('../config');
 const { getUser, addBalance } = require('../services/userService');
 const {
-  createTopup,
-  getTopup,
-  setTopupStatus,
-  userTopups,
-} = require('../services/topupService');
+  createDeposit,
+  getDeposit,
+  setDepositStatus,
+  userDeposits,
+} = require('../services/depositService');
 const { setState, clearState, getState } = require('../utils/session');
 const { backButton } = require('../keyboards/menus');
-const { rupiah, escapeHtml, tanggal, ribuan } = require('../utils/format');
+const { rupiah, escapeHtml, tanggal } = require('../utils/format');
 
-/** Tampilkan menu saldo + opsi top up */
-async function showTopupMenu(bot, chatId, messageId, userId) {
+async function showDepositMenu(bot, chatId, messageId, userId) {
   const user = getUser(userId);
-  const history = userTopups(userId, 5);
+  const history = userDeposits(userId, 5);
 
   let histText = '';
   if (history.length) {
-    histText = '\n\n📋 <b>Top Up Terakhir:</b>\n';
+    histText = '\n\n📋 <b>Deposit Terakhir:</b>\n';
     for (const t of history) {
       const icon = t.status === 'Approved' ? '✅' : t.status === 'Rejected' ? '❌' : '⏳';
       histText += `${icon} ${rupiah(t.amount)} — ${t.status} (${tanggal(t.created_at)})\n`;
@@ -36,28 +35,26 @@ async function showTopupMenu(bot, chatId, messageId, userId) {
 
   const keyboard = {
     inline_keyboard: [
-      [{ text: '➕ Top Up Saldo', callback_data: 'topup:new' }],
+      [{ text: '➕ Top Up Saldo', callback_data: 'deposit:new' }],
       [{ text: '« Kembali', callback_data: 'menu:home' }],
     ],
   };
   await edit(bot, chatId, messageId, text, keyboard);
 }
 
-/** Minta nominal top up */
 async function askAmount(bot, chatId, messageId, userId) {
-  setState(userId, 'topup:input_amount', {});
+  await setState(userId, 'deposit:input_amount', {});
   const text =
     `➕ <b>TOP UP SALDO</b>\n\n` +
     `Ketik nominal yang ingin di-top up (angka saja).\n` +
     `Contoh: <code>50000</code>\n\n` +
     `Minimal: <b>${rupiah(config.topup.min)}</b>`;
-  await edit(bot, chatId, messageId, text, backButton('menu:topup'));
+  await edit(bot, chatId, messageId, text, backButton('menu:deposit'));
 }
 
-/** Terima nominal -> buat request top up + instruksi pembayaran */
 async function receiveAmount(bot, chatId, userId, text, notifyAdmins) {
-  const state = getState(userId);
-  if (!state || state.action !== 'topup:input_amount') return;
+  const state = await getState(userId);
+  if (!state || state.action !== 'deposit:input_amount') return;
 
   const amount = parseInt(String(text).replace(/[^\d]/g, ''), 10);
   if (!Number.isFinite(amount) || amount <= 0) {
@@ -67,38 +64,34 @@ async function receiveAmount(bot, chatId, userId, text, notifyAdmins) {
     return bot.sendMessage(chatId, `⚠️ Minimal top up ${rupiah(config.topup.min)}.`);
   }
 
-  clearState(userId);
-  const topup = createTopup(userId, amount);
+  await clearState(userId);
+  const deposit = createDeposit(userId, amount);
   const user = getUser(userId);
 
   const userText =
     `🧾 <b>PERMINTAAN TOP UP DIBUAT</b>\n` +
     `━━━━━━━━━━━━━━━━━━━━\n` +
-    `🆔 ID Top Up: <code>${topup.id}</code>\n` +
+    `🆔 ID Deposit: <code>${deposit.id}</code>\n` +
     `💵 Nominal: <b>${rupiah(amount)}</b>\n` +
     `━━━━━━━━━━━━━━━━━━━━\n` +
     `💳 <b>Transfer ke:</b>\n${escapeHtml(config.topup.info)}\n\n` +
     `Setelah transfer, kirim bukti ke admin. Saldo akan ditambahkan setelah dikonfirmasi admin.`;
 
-  await bot.sendMessage(chatId, userText, {
-    parse_mode: 'HTML',
-    reply_markup: backButton('menu:home'),
-  });
+  await bot.sendMessage(chatId, userText, { parse_mode: 'HTML', reply_markup: backButton('menu:home') });
 
-  // Notifikasi ke admin dengan tombol approve/reject
   if (typeof notifyAdmins === 'function') {
     const adminText =
       `🔔 <b>PERMINTAAN TOP UP</b>\n` +
-      `🆔 #${topup.id}\n` +
+      `🆔 #${deposit.id}\n` +
       `👤 ${escapeHtml(user.name)} (<code>${userId}</code>)` +
       (user.username ? ` @${escapeHtml(user.username)}` : '') + `\n` +
       `💵 ${rupiah(amount)}\n` +
-      `🕒 ${tanggal(topup.created_at)}`;
+      `🕒 ${tanggal(deposit.created_at)}`;
     const adminKb = {
       inline_keyboard: [
         [
-          { text: '✅ Setujui', callback_data: `tu:ok:${topup.id}` },
-          { text: '❌ Tolak', callback_data: `tu:no:${topup.id}` },
+          { text: '✅ Setujui', callback_data: `dp:ok:${deposit.id}` },
+          { text: '❌ Tolak', callback_data: `dp:no:${deposit.id}` },
         ],
       ],
     };
@@ -106,41 +99,38 @@ async function receiveAmount(bot, chatId, userId, text, notifyAdmins) {
   }
 }
 
-/** Admin menyetujui top up */
-async function approve(bot, chatId, messageId, adminFrom, topupId) {
-  const topup = getTopup(topupId);
-  if (!topup) return answerEdit(bot, chatId, messageId, '⚠️ Top up tidak ditemukan.');
-  if (topup.status !== 'Pending') {
-    return answerEdit(bot, chatId, messageId, `ℹ️ Top up #${topupId} sudah ${topup.status}.`);
+async function approve(bot, chatId, messageId, adminFrom, depositId) {
+  const deposit = getDeposit(depositId);
+  if (!deposit) return answerEdit(bot, chatId, messageId, '⚠️ Deposit tidak ditemukan.');
+  if (deposit.status !== 'Pending') {
+    return answerEdit(bot, chatId, messageId, `ℹ️ Deposit #${depositId} sudah ${deposit.status}.`);
   }
 
-  addBalance(topup.user_id, topup.amount);
-  setTopupStatus(topupId, 'Approved', `oleh admin ${adminFrom.id}`);
-  const user = getUser(topup.user_id);
+  addBalance(deposit.user_id, deposit.amount);
+  setDepositStatus(depositId, 'Approved', `oleh admin ${adminFrom.id}`);
+  const user = getUser(deposit.user_id);
 
   await answerEdit(bot, chatId, messageId,
-    `✅ Top up #${topupId} disetujui.\n${user ? escapeHtml(user.name) : topup.user_id} +${rupiah(topup.amount)}\nSaldo sekarang: ${rupiah(user ? user.balance : 0)}`);
+    `✅ Deposit #${depositId} disetujui.\n${user ? escapeHtml(user.name) : deposit.user_id} +${rupiah(deposit.amount)}\nSaldo sekarang: ${rupiah(user ? user.balance : 0)}`);
 
-  // beri tahu user
   try {
-    await bot.sendMessage(topup.user_id,
-      `✅ <b>Top Up Disetujui</b>\nSaldo +${rupiah(topup.amount)} telah ditambahkan.\n💳 Saldo sekarang: <b>${rupiah(user.balance)}</b>`,
+    await bot.sendMessage(deposit.user_id,
+      `✅ <b>Top Up Disetujui</b>\nSaldo +${rupiah(deposit.amount)} telah ditambahkan.\n💳 Saldo sekarang: <b>${rupiah(user.balance)}</b>`,
       { parse_mode: 'HTML' });
   } catch (e) { /* user mungkin blokir bot */ }
 }
 
-/** Admin menolak top up */
-async function reject(bot, chatId, messageId, adminFrom, topupId) {
-  const topup = getTopup(topupId);
-  if (!topup) return answerEdit(bot, chatId, messageId, '⚠️ Top up tidak ditemukan.');
-  if (topup.status !== 'Pending') {
-    return answerEdit(bot, chatId, messageId, `ℹ️ Top up #${topupId} sudah ${topup.status}.`);
+async function reject(bot, chatId, messageId, adminFrom, depositId) {
+  const deposit = getDeposit(depositId);
+  if (!deposit) return answerEdit(bot, chatId, messageId, '⚠️ Deposit tidak ditemukan.');
+  if (deposit.status !== 'Pending') {
+    return answerEdit(bot, chatId, messageId, `ℹ️ Deposit #${depositId} sudah ${deposit.status}.`);
   }
-  setTopupStatus(topupId, 'Rejected', `oleh admin ${adminFrom.id}`);
-  await answerEdit(bot, chatId, messageId, `❌ Top up #${topupId} ditolak.`);
+  setDepositStatus(depositId, 'Rejected', `oleh admin ${adminFrom.id}`);
+  await answerEdit(bot, chatId, messageId, `❌ Deposit #${depositId} ditolak.`);
   try {
-    await bot.sendMessage(topup.user_id,
-      `❌ <b>Top Up Ditolak</b>\nPermintaan top up ${rupiah(topup.amount)} ditolak admin. Hubungi admin jika ada kendala.`,
+    await bot.sendMessage(deposit.user_id,
+      `❌ <b>Top Up Ditolak</b>\nPermintaan top up ${rupiah(deposit.amount)} ditolak admin. Hubungi admin jika ada kendala.`,
       { parse_mode: 'HTML' });
   } catch (e) { /* ignore */ }
 }
@@ -164,4 +154,4 @@ async function answerEdit(bot, chatId, messageId, text) {
   }
 }
 
-module.exports = { showTopupMenu, askAmount, receiveAmount, approve, reject };
+module.exports = { showDepositMenu, askAmount, receiveAmount, approve, reject };

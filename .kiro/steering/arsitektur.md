@@ -1,0 +1,34 @@
+# Arsitektur Bot PPOB (Rayzell25/ppob)
+
+Konvensi wajib untuk repo ini.
+
+## Stack
+- Node.js + `node-telegram-bot-api` (polling).
+- SQLite via `better-sqlite3`.
+- Redis (opsional) untuk cache session — `REDIS_URL`.
+- Telegram **Local Bot API** (opsional) untuk latency rendah — `BOT_API_ROOT` diteruskan sebagai `baseApiUrl` ke constructor `TelegramBot`.
+
+## Aturan kode
+- **Entry/router** ada di `src/main.js` (BUKAN index.js). Semua routing pesan & callback dipusatkan di sini.
+- **Setiap fitur = satu file handler** di `src/handlers/` dinamai per domain:
+  `start.js`, `order.js` (beli paket), `deposit.js` (top up), `stok.js`, `riwayat.js`, `tools.js`, `help.js`, `admin.js`.
+- **Data sensitif HANYA di `.env`** (token, API key, `TELEGRAM_API_ID`, `TELEGRAM_API_HASH`). `config.js` hanya membaca `process.env` via dotenv — tidak boleh ada literal rahasia di file mana pun yang ter-commit.
+- `.env` masuk `.gitignore`. `.env.example` memakai placeholder.
+
+## Logika bisnis
+- Margin/untung = **markup** (lihat `services/markupService.js`).
+- Prioritas markup: override per-produk > markup per-kategori > default role (RESELLER punya default sendiri).
+- Tipe markup: `flat` (rupiah) atau `percent` (% dari harga modal). Ada pembulatan (`round`).
+- Markup bisa diatur admin dari bot (menu Admin → Markup), format pakai pemisah `|`.
+- Transaksi dipotong saldo di depan; jika provider gagal → **refund otomatis**.
+
+## Session
+- `utils/session.js` async: Redis bila tersedia, fallback Map in-memory. Semua pemanggil harus `await`.
+
+## Callback naming
+- Menu: `menu:home|order|deposit|stok|riwayat|tools|bantuan|admin`
+- Order: `order:cat:<tok>`, `order:brand:<tok>:<tok>`, `order:prod:<sku>`, `order:pay`
+- Stok: `stok:cat:<tok>`, `stok:brand:<tok>:<tok>`
+- Deposit: `deposit:new`, `dp:ok:<id>`, `dp:no:<id>`
+- Admin: `adm:stats|deposits|addsaldo|setrole|markup|sync|broadcast`
+- `callback_data` dibatasi 64 byte → nilai panjang (kategori/brand) dipetakan ke token pendek via `utils/registry.js`.
