@@ -164,8 +164,10 @@ async function main() {
         await stok.showList(bot, chatId, messageId, catTok, brandTok, from.id);
 
       // ---- Deposit / Top Up ----
-      } else if (data === 'deposit:new') {
+      } else if (data === 'deposit:custom') {
         await deposit.askAmount(bot, chatId, messageId, from.id);
+      } else if (data.startsWith('deposit:nom:')) {
+        await deposit.chooseNominal(bot, chatId, messageId, from.id, data.slice('deposit:nom:'.length), notifyAdmins);
       } else if (data === 'deposit:qris') {
         await deposit.chooseQris(bot, chatId, messageId, from.id);
       } else if (data === 'deposit:manual') {

@@ -6,7 +6,6 @@ const {
   createDeposit,
   getDeposit,
   setDepositStatus,
-  userDeposits,
 } = require('../services/depositService');
 const autogopay = require('../services/autogopay');
 const qrisService = require('../services/qrisService');
@@ -14,44 +13,56 @@ const { setState, clearState, getState } = require('../utils/session');
 const { backButton } = require('../keyboards/menus');
 const { rupiah, escapeHtml, tanggal, LINE } = require('../utils/format');
 
+const PRESETS = [10000, 20000, 50000, 100000, 200000, 500000];
+
+/** Menu utama Top Up: saldo + preset nominal. */
 async function showDepositMenu(bot, chatId, messageId, userId) {
   const user = await getUser(userId);
-  const history = await userDeposits(userId, 5);
-
-  let histText = '';
-  if (history.length) {
-    histText = `\n${LINE}\n<b>Top Up Terakhir</b>\n`;
-    for (const t of history) {
-      const icon = t.status === 'Approved' ? '✅' : t.status === 'Rejected' ? '✖' : '⏳';
-      histText += `${icon} ${rupiah(t.amount)} · ${t.status} · ${tanggal(t.created_at)}\n`;
-    }
-  }
 
   const akun =
-    `Saldo : ${rupiah(user.balance)}\n` +
-    `Role  : ${user.role}\n` +
-    `Min.  : ${rupiah(config.topup.min)}`;
+    `Saldo kamu : ${rupiah(user.balance)}\n` +
+    `Role       : ${user.role}`;
 
   const text =
-    `<b>SALDO / TOP UP</b>\n` +
+    `<b>SALDO</b>\n${LINE}\n` +
+    `<code>${escapeHtml(akun)}</code>\n` +
+    `Gunakan saldo untuk beli paket tanpa scan QRIS tiap kali.\n` +
     `${LINE}\n` +
-    `<code>${escapeHtml(akun)}</code>\n${histText}`;
+    `<b>TOP UP SALDO</b>\n` +
+    `Pilih nominal, atau "Nominal Lain" untuk custom:`;
 
-  const keyboard = {
-    inline_keyboard: [
-      [{ text: 'Top Up Saldo', callback_data: 'deposit:new' }],
-      [{ text: '« Kembali', callback_data: 'menu:home' }],
-    ],
-  };
-  await edit(bot, chatId, messageId, text, keyboard);
+  const rows = [];
+  for (let i = 0; i < PRESETS.length; i += 2) {
+    rows.push(
+      PRESETS.slice(i, i + 2).map((n) => ({
+        text: rupiah(n),
+        callback_data: `deposit:nom:${n}`,
+      }))
+    );
+  }
+  rows.push([{ text: 'Nominal Lain', callback_data: 'deposit:custom' }]);
+  rows.push([{ text: '« Kembali', callback_data: 'menu:home' }]);
+
+  await edit(bot, chatId, messageId, text, { inline_keyboard: rows });
 }
 
+/** Nominal preset dipilih -> langsung ke pilih metode. */
+async function chooseNominal(bot, chatId, messageId, userId, amount, notifyAdmins) {
+  const amt = parseInt(amount, 10);
+  if (!Number.isFinite(amt) || amt < config.topup.min) {
+    return edit(bot, chatId, messageId,
+      `⚠️ Minimal top up ${rupiah(config.topup.min)}.`, backButton('menu:deposit'));
+  }
+  await presentMethod(bot, chatId, messageId, userId, amt, notifyAdmins);
+}
+
+/** "Nominal Lain" -> minta user ketik angka. */
 async function askAmount(bot, chatId, messageId, userId) {
   await setState(userId, 'deposit:input_amount', {});
   const text =
     `<b>TOP UP SALDO</b>\n${LINE}\n` +
     `Ketik nominal yang ingin di-top up (angka saja).\n` +
-    `Contoh: <code>50000</code>\n\n` +
+    `Contoh: <code>75000</code>\n\n` +
     `Minimal: <b>${rupiah(config.topup.min)}</b>`;
   await edit(bot, chatId, messageId, text, backButton('menu:deposit'));
 }
@@ -62,35 +73,41 @@ async function receiveAmount(bot, chatId, userId, text, notifyAdmins) {
 
   const amount = parseInt(String(text).replace(/[^\d]/g, ''), 10);
   if (!Number.isFinite(amount) || amount <= 0) {
-    return bot.sendMessage(chatId, '⚠️ Nominal tidak valid. Ketik angka saja, contoh: 50000');
+    return bot.sendMessage(chatId, '⚠️ Nominal tidak valid. Ketik angka saja, contoh: 75000');
   }
   if (amount < config.topup.min) {
     return bot.sendMessage(chatId, `⚠️ Minimal top up ${rupiah(config.topup.min)}.`);
   }
+  await presentMethod(bot, chatId, null, userId, amount, notifyAdmins);
+}
 
-  // Jika QRIS aktif -> tawarkan pilihan metode. Kalau tidak, langsung manual.
-  if (config.qris.enabled) {
-    await setState(userId, 'deposit:method', { amount });
-    const { total, fee } = autogopay.computeTotal(amount);
-    const info =
-      `Nominal : ${rupiah(amount)}\n` +
-      `Via QRIS: bayar ${rupiah(total)} (fee ${rupiah(fee)})`;
-    const kb = {
-      inline_keyboard: [
-        [
-          { text: 'QRIS', callback_data: 'deposit:qris' },
-          { text: 'Transfer Manual', callback_data: 'deposit:manual' },
-        ],
-        [{ text: 'Batal', callback_data: 'menu:deposit' }],
-      ],
-    };
-    return bot.sendMessage(chatId,
-      `<b>PILIH METODE TOP UP</b>\n${LINE}\n<code>${escapeHtml(info)}</code>\n${LINE}\nSaldo masuk penuh ${rupiah(amount)} setelah pembayaran.`,
-      { parse_mode: 'HTML', reply_markup: kb });
+/** Tampilkan pilihan metode (QRIS / Transfer Manual) untuk sebuah nominal. */
+async function presentMethod(bot, chatId, messageId, userId, amount, notifyAdmins) {
+  // QRIS mati -> langsung buat tagihan manual
+  if (!config.qris.enabled) {
+    await clearState(userId);
+    if (messageId) { try { await bot.deleteMessage(chatId, messageId); } catch (e) { /* ignore */ } }
+    return createManualDeposit(bot, chatId, userId, amount, notifyAdmins);
   }
 
-  await clearState(userId);
-  await createManualDeposit(bot, chatId, userId, amount, notifyAdmins);
+  await setState(userId, 'deposit:method', { amount });
+  const { total, fee } = autogopay.computeTotal(amount);
+  const info =
+    `Nominal : ${rupiah(amount)}\n` +
+    `Via QRIS: bayar ${rupiah(total)} (fee ${rupiah(fee)})`;
+  const kb = {
+    inline_keyboard: [
+      [
+        { text: 'QRIS', callback_data: 'deposit:qris' },
+        { text: 'Transfer Manual', callback_data: 'deposit:manual' },
+      ],
+      [{ text: '« Kembali', callback_data: 'menu:deposit' }],
+    ],
+  };
+  const text =
+    `<b>PILIH METODE TOP UP</b>\n${LINE}\n<code>${escapeHtml(info)}</code>\n${LINE}\n` +
+    `Saldo masuk penuh ${rupiah(amount)} setelah pembayaran.`;
+  await edit(bot, chatId, messageId, text, kb);
 }
 
 /** Top up via transfer manual (perlu approve admin). */
@@ -254,4 +271,13 @@ async function answerEdit(bot, chatId, messageId, text) {
   }
 }
 
-module.exports = { showDepositMenu, askAmount, receiveAmount, chooseManual, chooseQris, approve, reject };
+module.exports = {
+  showDepositMenu,
+  chooseNominal,
+  askAmount,
+  receiveAmount,
+  chooseManual,
+  chooseQris,
+  approve,
+  reject,
+};

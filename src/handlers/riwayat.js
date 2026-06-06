@@ -11,6 +11,14 @@ function icon(status) {
   return '[!]'; // pending / lainnya
 }
 
+function jamDetik() {
+  return new Intl.DateTimeFormat('id-ID', {
+    dateStyle: 'medium',
+    timeStyle: 'medium',
+    timeZone: 'Asia/Jakarta',
+  }).format(new Date());
+}
+
 /** Riwayat gabungan: pembelian + top up, urut waktu terbaru. */
 async function showRiwayat(bot, chatId, messageId, userId) {
   const [trx, tops] = await Promise.all([
@@ -61,7 +69,7 @@ async function showRiwayat(bot, chatId, messageId, userId) {
   const text =
     `<b>RIWAYAT TRANSAKSI</b>\n${LINE}\n${body}\n${LINE}\n` +
     `Total: ${shown.length} transaksi\n` +
-    `<i>diperbarui ${tanggal(Date.now())}</i>`;
+    `<i>diperbarui ${jamDetik()}</i>`;
 
   const keyboard = {
     inline_keyboard: [
@@ -70,12 +78,17 @@ async function showRiwayat(bot, chatId, messageId, userId) {
     ],
   };
 
+  // Selalu edit pesan yang sama (tetap 1 chat). Kalau gagal edit & belum ada
+  // pesan (dipanggil tanpa messageId), baru kirim baru.
   if (messageId) {
     try {
-      return await bot.editMessageText(text, {
+      await bot.editMessageText(text, {
         chat_id: chatId, message_id: messageId, parse_mode: 'HTML', reply_markup: keyboard,
       });
-    } catch (e) { /* fall through */ }
+    } catch (e) {
+      // mis. "message is not modified" -> abaikan, jangan kirim chat baru
+    }
+    return;
   }
   return bot.sendMessage(chatId, text, { parse_mode: 'HTML', reply_markup: keyboard });
 }
