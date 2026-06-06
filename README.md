@@ -72,65 +72,60 @@ src/
 
 > Data sensitif (token, API key, `api_id`, `api_hash`) **hanya** di `.env` (gitignored).
 
-## Setup VPS
+## Setup VPS (1 perintah)
+
+VPS **fresh** (Ubuntu 20/22/24 atau Debian 10/11/12). `install.sh` mengurus semuanya:
+apt update/upgrade, Docker, Redis, Node.js, PostgreSQL + Local Bot API (docker compose),
+generate password DB & ZIP backup otomatis, pasang cron backup harian, daftarkan service systemd.
 
 ```bash
-# 1) Docker (untuk PostgreSQL & Local Bot API)
-curl -fsSL https://get.docker.com | bash
-
-# 2) Redis (cache session)
-apt install redis-server -y && systemctl enable --now redis
-
-# 3) Ambil kode + siapkan .env
 git clone <repo-url> && cd ppob
-cp .env.example .env
-nano .env   # WAJIB: isi BOT_TOKEN, ADMIN_IDS, PGPASSWORD/DATABASE_URL, DIGIFLAZZ_*, BACKUP_CHAT_ID
-
-# 4) Jalankan PostgreSQL (data permanen di volume, hanya dengar di localhost)
-docker compose up -d
-#   cek: docker compose ps  (status harus healthy)
-
-# 5) Local Bot API (opsional, biar tombol cepat - ganti API_ID & API_HASH)
-docker run -d --name telegram-bot-api --restart always \
-  -p 127.0.0.1:8081:8081 \
-  -e TELEGRAM_API_ID=API_ID_KAMU \
-  -e TELEGRAM_API_HASH=API_HASH_KAMU \
-  -e TELEGRAM_LOCAL=1 \
-  -v /root/bot-api-data:/var/lib/telegram-bot-api \
-  -v /root/bot-api-temp:/tmp/telegram-bot-api \
-  aiogram/telegram-bot-api:latest
-
-# 6) Install dependency Node & jalankan bot
-npm install
-npm start
+sudo bash install.sh
 ```
 
-> `DATABASE_URL` di `.env` harus cocok dengan `PGUSER`/`PGPASSWORD`/`PGDATABASE` yang dipakai `docker compose`.
-> Kalau `BOT_API_ROOT`/`REDIS_URL` dikosongkan, bot tetap jalan (server resmi Telegram + session in-memory).
+Di akhir, installer cuma menanyakan **4 hal**:
+
+```
+Token bot          :
+ID owner           :
+Token bot backup   :
+ID channel / grup  :
+```
+
+Selesai — bot langsung jalan sebagai service. Cek:
+
+```bash
+systemctl status rayzell-ppob      # status bot
+journalctl -u rayzell-ppob -f      # log realtime
+docker compose ps                  # postgres + telegram-bot-api
+```
+
+> `DIGIFLAZZ_*` & `AUTOGOPAY_API_KEY` sengaja dikosongkan. Isi nanti di `.env` lalu `systemctl restart rayzell-ppob`.
+> Password DB & password ZIP backup di-generate otomatis & ditampilkan sekali di akhir install — **simpan baik-baik**.
+
+### Manual (kalau tidak pakai install.sh)
+
+```bash
+cp .env.example .env && nano .env   # isi BOT_TOKEN, ADMIN_IDS, dll
+docker compose up -d                # postgres + local bot api
+npm install && npm start
+```
 
 ## 🛡 Backup otomatis (PENTING — biar saldo/riwayat tidak hilang)
 
-Backup tiap hari: `pg_dump` lalu file dikirim ke **bot Telegram khusus backup** (offsite). Walau VPS hilang, data tetap bisa dipulihkan.
+`install.sh` sudah memasang cron harian (03:00). Backup = **`.zip` ber-password (AES-256)** berisi seluruh database (saldo member, transaksi, deposit, dll), dikirim ke **bot backup → channel/grup** (offsite). Walau VPS hilang, data aman.
 
 ```bash
-# 1) Buat bot baru KHUSUS backup di @BotFather, salin tokennya ke .env -> BACKUP_BOT_TOKEN
-# 2) Chat/start bot backup itu, lalu set BACKUP_CHAT_ID (ID kamu - lihat /id, atau ID channel privat)
-# 3) Tes manual:
-bash scripts/backup.sh
-
-# Pasang cron harian jam 03:00 (sesuaikan path project):
-crontab -e
-# tambahkan baris:
-0 3 * * * cd /root/ppob && bash scripts/backup.sh >> /root/ppob/backup.log 2>&1
+bash scripts/backup.sh             # tes manual
 ```
-
-> File backup dikirim lewat `BACKUP_BOT_TOKEN` (kalau diisi). Jadi bot jualan dan bot backup terpisah. Kalau `BACKUP_BOT_TOKEN` kosong, fallback pakai `BOT_TOKEN`.
 
 Pulihkan dari backup (menimpa data sekarang):
 
 ```bash
-bash scripts/restore.sh backups/ppob-YYYYMMDD-HHMMSS.sql.gz
+bash scripts/restore.sh backups/ppob-YYYYMMDD-HHMMSS.zip
 ```
+
+> File `.zip` butuh `BACKUP_ZIP_PASSWORD` untuk dibuka (otomatis dipakai `restore.sh`). Buka manual pakai 7-Zip/WinRAR + password tsb.
 
 ## Konfigurasi (.env)
 
