@@ -1,0 +1,30 @@
+{
+  "name": "cho-store-ppob",
+  "version": "1.0.0",
+  "description": "Bot PPOB Telegram lengkap (pulsa, paket data, PLN, game, e-money) dengan integrasi Digiflazz, sistem saldo, top up, dan panel admin.",
+  "main": "src/index.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  },
+  "keywords": [
+    "ppob",
+    "telegram",
+    "bot",
+    "digiflazz",
+    "pulsa",
+    "paket-data"
+  ],
+  "author": "Rayzell25",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "axios": "^1.7.2",
+    "better-sqlite3": "^11.1.2",
+    "dotenv": "^16.4.5",
+    "node-telegram-bot-api": "^0.66.0"
+  }
+}

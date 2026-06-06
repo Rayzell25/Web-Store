@@ -1,0 +1,60 @@
+'use strict';
+
+require('dotenv').config();
+
+function parseAdminIds(raw) {
+  if (!raw) return [];
+  return raw
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .map((s) => Number(s))
+    .filter((n) => Number.isFinite(n));
+}
+
+const config = {
+  botToken: process.env.BOT_TOKEN || '',
+  adminIds: parseAdminIds(process.env.ADMIN_IDS),
+
+  digiflazz: {
+    username: process.env.DIGIFLAZZ_USERNAME || '',
+    apiKey: process.env.DIGIFLAZZ_API_KEY || '',
+    mode: process.env.DIGIFLAZZ_MODE || 'prepaid',
+  },
+
+  markup: {
+    default: Number(process.env.MARKUP_DEFAULT || 500),
+    reseller: Number(process.env.MARKUP_RESELLER || 250),
+  },
+
+  topup: {
+    info: process.env.TOPUP_INFO || 'Hubungi admin untuk info rekening.',
+    min: Number(process.env.MIN_TOPUP || 10000),
+  },
+
+  store: {
+    name: process.env.STORE_NAME || 'Cho Store PPOB',
+    maintenance: process.env.MAINTENANCE_INFO || '-',
+    vpnUrl: process.env.BOT_VPN_URL || '',
+    adminContact: process.env.ADMIN_CONTACT || '',
+  },
+
+  dbPath: process.env.DB_PATH || 'data/ppob.db',
+};
+
+function isAdmin(telegramId) {
+  return config.adminIds.includes(Number(telegramId));
+}
+
+function assertConfig() {
+  const missing = [];
+  if (!config.botToken) missing.push('BOT_TOKEN');
+  if (config.adminIds.length === 0) missing.push('ADMIN_IDS');
+  if (missing.length) {
+    throw new Error(
+      `Konfigurasi belum lengkap. Set variabel berikut di .env: ${missing.join(', ')}`
+    );
+  }
+}
+
+module.exports = { config, isAdmin, assertConfig };
