@@ -1,12 +1,13 @@
 'use strict';
 
 const { config } = require('../config');
-const { getUser, addBalance } = require('../services/userService');
+const { getUser, addBalance, setRole } = require('../services/userService');
 const {
   createDeposit,
   getDeposit,
   setDepositStatus,
   userDeposits,
+  totalApprovedDeposits,
 } = require('../services/depositService');
 const { setState, clearState, getState } = require('../utils/session');
 const { backButton } = require('../keyboards/menus');
@@ -30,10 +31,21 @@ async function showDepositMenu(bot, chatId, messageId, userId) {
     `Role  : ${user.role}\n` +
     `Min.  : ${rupiah(config.topup.min)}`;
 
+  // info progress menuju RESELLER (kalau fitur auto-upgrade aktif)
+  let resellerLine = '';
+  const threshold = config.reseller.autoTopup;
+  if (threshold > 0 && user.role === 'MEMBER') {
+    const total = await totalApprovedDeposits(userId);
+    const sisa = Math.max(0, threshold - total);
+    if (sisa > 0) {
+      resellerLine = `\n🎖 Top up <b>${rupiah(sisa)}</b> lagi untuk jadi RESELLER (harga lebih murah).`;
+    }
+  }
+
   const text =
     `<b>SALDO / TOP UP</b>\n` +
     `${LINE}\n` +
-    `<code>${escapeHtml(akun)}</code>\n${histText}`;
+    `<code>${escapeHtml(akun)}</code>${resellerLine}\n${histText}`;
 
   const keyboard = {
     inline_keyboard: [
@@ -113,15 +125,31 @@ async function approve(bot, chatId, messageId, adminFrom, depositId) {
 
   await addBalance(deposit.user_id, deposit.amount);
   await setDepositStatus(depositId, 'Approved', `oleh admin ${adminFrom.id}`);
-  const user = await getUser(deposit.user_id);
+  let user = await getUser(deposit.user_id);
+
+  // Auto-upgrade ke RESELLER bila total top up (akumulasi) tembus ambang.
+  let promoted = false;
+  const threshold = config.reseller.autoTopup;
+  if (threshold > 0 && user && user.role === 'MEMBER') {
+    const totalTopup = await totalApprovedDeposits(deposit.user_id);
+    if (totalTopup >= threshold) {
+      await setRole(deposit.user_id, 'RESELLER');
+      user = await getUser(deposit.user_id);
+      promoted = true;
+    }
+  }
 
   await answerEdit(bot, chatId, messageId,
-    `✅ Deposit #${depositId} disetujui.\n${user ? escapeHtml(user.name) : deposit.user_id} +${rupiah(deposit.amount)}\nSaldo sekarang: ${rupiah(user ? user.balance : 0)}`);
+    `✅ Deposit #${depositId} disetujui.\n${user ? escapeHtml(user.name) : deposit.user_id} +${rupiah(deposit.amount)}\nSaldo sekarang: ${rupiah(user ? user.balance : 0)}` +
+    (promoted ? `\n🎖 User naik jadi RESELLER (total top up tembus ${rupiah(threshold)}).` : ''));
 
   try {
-    await bot.sendMessage(deposit.user_id,
-      `<b>TOP UP DISETUJUI</b> ✅\n${LINE}\nSaldo +${rupiah(deposit.amount)} ditambahkan.\nSaldo sekarang: <b>${rupiah(user.balance)}</b>`,
-      { parse_mode: 'HTML' });
+    let userMsg =
+      `<b>TOP UP DISETUJUI</b> ✅\n${LINE}\nSaldo +${rupiah(deposit.amount)} ditambahkan.\nSaldo sekarang: <b>${rupiah(user.balance)}</b>`;
+    if (promoted) {
+      userMsg += `\n${LINE}\n🎖 <b>Selamat!</b> Status kamu naik jadi <b>RESELLER</b> — sekarang dapat harga lebih murah di semua produk.`;
+    }
+    await bot.sendMessage(deposit.user_id, userMsg, { parse_mode: 'HTML' });
   } catch (e) { /* user mungkin blokir bot */ }
 }
 

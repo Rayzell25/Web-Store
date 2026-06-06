@@ -41,10 +41,20 @@ function userDeposits(userId, limit = 10) {
   );
 }
 
+/** Total nominal top up yang sudah di-approve (akumulasi seumur hidup). */
+async function totalApprovedDeposits(userId) {
+  const r = await one(
+    "SELECT COALESCE(SUM(amount), 0)::bigint AS total FROM topups WHERE user_id = $1 AND status = 'Approved'",
+    [Number(userId)]
+  );
+  return Number(r.total);
+}
+
 module.exports = {
   createDeposit,
   getDeposit,
   setDepositStatus,
   pendingDeposits,
   userDeposits,
+  totalApprovedDeposits,
 };

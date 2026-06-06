@@ -36,6 +36,12 @@ delcat|Paket Data
 delsku|xld10
 ```
 
+## Role & Reseller
+
+- **Manual:** Admin → 🎖 Set Role → ketik `ID_TELEGRAM ROLE` (MEMBER/RESELLER/ADMIN).
+- **Otomatis:** set `RESELLER_AUTO_TOPUP` di `.env` (mis. `100000`). Member yang total top up (akumulasi yang sudah di-approve) tembus nilai itu langsung naik jadi RESELLER + dapat notif. Isi `0` untuk mematikan.
+- Member bisa lihat progress "kurang berapa lagi jadi reseller" di menu Top Up.
+
 ## Arsitektur
 
 ```
@@ -136,6 +142,7 @@ bash scripts/restore.sh backups/ppob-YYYYMMDD-HHMMSS.sql.gz
 | `DIGIFLAZZ_USERNAME` / `DIGIFLAZZ_API_KEY` | ✅* | Kredensial Digiflazz |
 | `TOPUP_INFO` | | Info rekening transfer manual |
 | `MIN_TOPUP` | | Nominal top up minimum |
+| `RESELLER_AUTO_TOPUP` | | Total top up agar auto jadi RESELLER (0 = matikan) |
 | `STORE_NAME` / `MAINTENANCE_INFO` | | Tampilan menu |
 | `BOT_VPN_URL` / `ADMIN_CONTACT` | | Link tombol |
 
