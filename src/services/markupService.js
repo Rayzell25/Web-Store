@@ -1,7 +1,7 @@
 'use strict';
 
 const { db } = require('../db/database');
-const { rupiah } = require('../utils/format');
+const { rupiah, LINE } = require('../utils/format');
 
 const SETTINGS_KEY = 'markup_config';
 
@@ -115,8 +115,8 @@ function describe() {
   const cfg = getConfig();
   const fmt = (r) => (r.type === 'percent' ? `${r.value}%` : rupiah(r.value));
   let text =
-    `🏷 <b>KONFIGURASI MARKUP</b>\n` +
-    `━━━━━━━━━━━━━━━━━━━━\n` +
+    `<b>KONFIGURASI MARKUP</b>\n` +
+    `${LINE}\n` +
     `• Default (MEMBER): <b>${fmt(cfg.default)}</b>\n` +
     `• RESELLER: <b>${fmt(cfg.reseller)}</b>\n` +
     `• Pembulatan: ${cfg.round ? 'kelipatan ' + rupiah(cfg.round) : 'tidak ada'}\n`;

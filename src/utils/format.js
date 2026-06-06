@@ -1,5 +1,8 @@
 'use strict';
 
+/** Garis pemisah tipis (tema minimalis, konsisten di semua layar) */
+const LINE = '─────────────────────';
+
 /** Format angka jadi rupiah: 306100 -> "Rp 306.100" */
 function rupiah(value) {
   const n = Math.round(Number(value) || 0);
@@ -43,4 +46,4 @@ function truncate(text, max = 30) {
   return s.length > max ? s.slice(0, max - 1) + '…' : s;
 }
 
-module.exports = { rupiah, ribuan, escapeHtml, tanggal, trxCode, truncate };
+module.exports = { LINE, rupiah, ribuan, escapeHtml, tanggal, trxCode, truncate };

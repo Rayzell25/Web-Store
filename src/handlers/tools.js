@@ -2,7 +2,7 @@
 
 const { setState, clearState } = require('../utils/session');
 const { backButton } = require('../keyboards/menus');
-const { escapeHtml } = require('../utils/format');
+const { escapeHtml, LINE } = require('../utils/format');
 
 /** Deteksi operator dari prefix nomor HP Indonesia */
 function detectOperator(number) {
@@ -23,7 +23,7 @@ function detectOperator(number) {
 }
 
 async function showTools(bot, chatId, messageId) {
-  const text = `🧰 <b>TOOLS</b>\n━━━━━━━━━━━━━━━━━━━━\n\nPilih alat bantu:`;
+  const text = `<b>TOOLS</b>\n${LINE}\nPilih alat bantu:`;
   const keyboard = {
     inline_keyboard: [
       [{ text: '🔍 Cek Operator Nomor', callback_data: 'tools:operator' }],
@@ -36,7 +36,7 @@ async function showTools(bot, chatId, messageId) {
 async function askOperator(bot, chatId, messageId, userId) {
   await setState(userId, 'tools:operator', {});
   await edit(bot, chatId, messageId,
-    '🔍 <b>Cek Operator</b>\n\nKetik nomor HP yang ingin dicek (contoh: 081234567890):',
+    `<b>CEK OPERATOR</b>\n${LINE}\nKetik nomor HP yang ingin dicek (contoh: 081234567890):`,
     backButton('menu:tools'));
 }
 
@@ -45,8 +45,8 @@ async function receiveOperatorCheck(bot, chatId, userId, number) {
   const op = detectOperator(number);
   const clean = String(number).replace(/[^\d]/g, '');
   const text = op
-    ? `🔍 Nomor <code>${escapeHtml(clean)}</code>\n📡 Operator: <b>${op}</b>`
-    : `🔍 Nomor <code>${escapeHtml(clean)}</code>\n❓ Operator tidak dikenali.`;
+    ? `Nomor <code>${escapeHtml(clean)}</code>\nOperator: <b>${op}</b>`
+    : `Nomor <code>${escapeHtml(clean)}</code>\nOperator tidak dikenali.`;
   await bot.sendMessage(chatId, text, { parse_mode: 'HTML', reply_markup: backButton('menu:home') });
 }
 

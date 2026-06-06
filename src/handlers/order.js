@@ -13,7 +13,7 @@ const digiflazz = require('../services/digiflazz');
 const { tokenFor, valueOf } = require('../utils/registry');
 const { setState, clearState, getState } = require('../utils/session');
 const { gridKeyboard, backButton } = require('../keyboards/menus');
-const { rupiah, escapeHtml, trxCode, truncate } = require('../utils/format');
+const { rupiah, escapeHtml, trxCode, truncate, LINE } = require('../utils/format');
 const logger = require('../utils/logger');
 
 function catIcon(cat) {
@@ -41,7 +41,7 @@ async function showCategories(bot, chatId, messageId) {
     data: `order:cat:${tokenFor(c.category)}`,
   }));
   await editOrSend(bot, chatId, messageId,
-    '🛒 <b>BELI PAKET</b>\n\nPilih kategori produk:',
+    `<b>BELI PAKET</b>\n${LINE}\nPilih kategori produk:`,
     gridKeyboard(items, 2, 'menu:home'));
 }
 
@@ -54,7 +54,7 @@ async function showBrands(bot, chatId, messageId, catToken) {
     data: `order:brand:${catToken}:${tokenFor(b.brand)}`,
   }));
   await editOrSend(bot, chatId, messageId,
-    `🛒 <b>${escapeHtml(category)}</b>\n\nPilih operator / brand:`,
+    `<b>${escapeHtml(category.toUpperCase())}</b>\n${LINE}\nPilih operator / brand:`,
     gridKeyboard(items, 2, 'menu:order'));
 }
 
@@ -73,7 +73,7 @@ async function showProducts(bot, chatId, messageId, catToken, brandToken, userId
     };
   });
   await editOrSend(bot, chatId, messageId,
-    `🛒 <b>${escapeHtml(brand)}</b> — ${escapeHtml(category)}\n\nPilih produk:`,
+    `<b>${escapeHtml(brand.toUpperCase())}</b> · ${escapeHtml(category)}\n${LINE}\nPilih produk:`,
     gridKeyboard(items, 1, `order:cat:${catToken}`));
 }
 
@@ -87,15 +87,18 @@ async function selectProduct(bot, chatId, messageId, sku, userId) {
 
   await setState(userId, 'order:input_target', { sku });
 
+  const detail =
+    `Produk : ${product.product_name}\n` +
+    `Brand  : ${product.brand}\n` +
+    `Harga  : ${rupiah(harga)}` +
+    (product.desc ? `\nKet.   : ${product.desc}` : '');
+
   const text =
-    `🛒 <b>DETAIL PRODUK</b>\n` +
-    `━━━━━━━━━━━━━━━━━━━━\n` +
-    `📦 Produk: <b>${escapeHtml(product.product_name)}</b>\n` +
-    `🏷 Brand: ${escapeHtml(product.brand)}\n` +
-    `💵 Harga: <b>${rupiah(harga)}</b>\n` +
-    (product.desc ? `📝 ${escapeHtml(product.desc)}\n` : '') +
-    `━━━━━━━━━━━━━━━━━━━━\n\n` +
-    `Silakan ketik <b>nomor tujuan</b> (HP / ID / No. pelanggan):`;
+    `<b>DETAIL PRODUK</b>\n` +
+    `${LINE}\n` +
+    `<code>${escapeHtml(detail)}</code>\n` +
+    `${LINE}\n` +
+    `Ketik <b>nomor tujuan</b> (HP / ID / No. pelanggan) di bawah.`;
 
   await editOrSend(bot, chatId, messageId, text, backButton('menu:order'));
 }
@@ -114,21 +117,24 @@ async function receiveTarget(bot, chatId, userId, target) {
 
   await setState(userId, 'order:confirm', { sku: product.buyer_sku_code, target: cleanTarget });
 
+  const detail =
+    `Produk : ${product.product_name}\n` +
+    `Tujuan : ${cleanTarget}\n` +
+    `Harga  : ${rupiah(harga)}\n` +
+    `Saldo  : ${rupiah(user.balance)}`;
+
   const text =
-    `🧾 <b>KONFIRMASI PEMBELIAN</b>\n` +
-    `━━━━━━━━━━━━━━━━━━━━\n` +
-    `📦 Produk: <b>${escapeHtml(product.product_name)}</b>\n` +
-    `🎯 Tujuan: <code>${escapeHtml(cleanTarget)}</code>\n` +
-    `💵 Harga: <b>${rupiah(harga)}</b>\n` +
-    `💳 Saldo: ${rupiah(user.balance)}\n` +
-    `━━━━━━━━━━━━━━━━━━━━\n` +
-    (user.balance < harga ? '\n⚠️ <b>Saldo tidak cukup.</b> Silakan top up dulu.\n' : '\nLanjutkan pembelian?');
+    `<b>KONFIRMASI</b>\n` +
+    `${LINE}\n` +
+    `<code>${escapeHtml(detail)}</code>\n` +
+    `${LINE}\n` +
+    (user.balance < harga ? '<b>Saldo tidak cukup.</b> Silakan top up dulu.' : 'Lanjut bayar?');
 
   const keyboard = {
     inline_keyboard: [
       [
         { text: '✅ Bayar', callback_data: 'order:pay' },
-        { text: '❌ Batal', callback_data: 'menu:order' },
+        { text: '✖ Batal', callback_data: 'menu:order' },
       ],
     ],
   };
@@ -186,7 +192,7 @@ async function pay(bot, chatId, messageId, userId, notifyAdmins) {
     addBalance(userId, harga);
     updateTransaction(refId, { status: 'Gagal', message: 'Gagal terhubung ke provider' });
     return editOrSend(bot, chatId, messageId,
-      `❌ <b>Transaksi Gagal</b>\nGagal menghubungi provider. Saldo dikembalikan.\nRef: <code>${refId}</code>`,
+      `<b>TRANSAKSI GAGAL</b> ❌\n${LINE}\nGagal menghubungi provider. Saldo dikembalikan.\nRef: <code>${refId}</code>`,
       backButton('menu:home'));
   }
 
@@ -198,7 +204,7 @@ async function pay(bot, chatId, messageId, userId, notifyAdmins) {
     addBalance(userId, harga);
     updateTransaction(refId, { status: 'Gagal', message, sn });
     return editOrSend(bot, chatId, messageId,
-      `❌ <b>Transaksi Gagal</b>\n${escapeHtml(message)}\nSaldo dikembalikan.\nRef: <code>${refId}</code>`,
+      `<b>TRANSAKSI GAGAL</b> ❌\n${LINE}\n${escapeHtml(message)}\nSaldo dikembalikan.\nRef: <code>${refId}</code>`,
       backButton('menu:home'));
   }
 
@@ -206,16 +212,18 @@ async function pay(bot, chatId, messageId, userId, notifyAdmins) {
   const updatedUser = getUser(userId);
 
   const statusIcon = status === 'Sukses' ? '✅' : '⏳';
+  const detail =
+    `Produk : ${product.product_name}\n` +
+    `Tujuan : ${target}\n` +
+    `Harga  : ${rupiah(harga)}\n` +
+    (sn ? `SN     : ${sn}\n` : '') +
+    `Ref    : ${refId}\n` +
+    `Sisa   : ${rupiah(updatedUser.balance)}`;
   const text =
-    `${statusIcon} <b>Transaksi ${status}</b>\n` +
-    `━━━━━━━━━━━━━━━━━━━━\n` +
-    `📦 ${escapeHtml(product.product_name)}\n` +
-    `🎯 Tujuan: <code>${escapeHtml(target)}</code>\n` +
-    `💵 Harga: ${rupiah(harga)}\n` +
-    (sn ? `🔑 SN: <code>${escapeHtml(sn)}</code>\n` : '') +
-    (message ? `💬 ${escapeHtml(message)}\n` : '') +
-    `🧾 Ref: <code>${refId}</code>\n` +
-    `💳 Sisa Saldo: ${rupiah(updatedUser.balance)}`;
+    `<b>TRANSAKSI ${status.toUpperCase()}</b> ${statusIcon}\n` +
+    `${LINE}\n` +
+    `<code>${escapeHtml(detail)}</code>` +
+    (message ? `\n${escapeHtml(message)}` : '');
 
   await editOrSend(bot, chatId, messageId, text, backButton('menu:home'));
 

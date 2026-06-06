@@ -8,7 +8,7 @@ const productService = require('../services/productService');
 const markupService = require('../services/markupService');
 const digiflazz = require('../services/digiflazz');
 const { setState, clearState, getState } = require('../utils/session');
-const { rupiah, escapeHtml, tanggal } = require('../utils/format');
+const { rupiah, escapeHtml, tanggal, LINE } = require('../utils/format');
 const logger = require('../utils/logger');
 
 function adminMenuKeyboard() {
@@ -32,7 +32,7 @@ function adminMenuKeyboard() {
 
 async function showAdminMenu(bot, chatId, messageId, from) {
   if (!isAdmin(from.id)) return;
-  const text = `⚙️ <b>PANEL ADMIN</b>\n━━━━━━━━━━━━━━━━━━━━\nPilih menu pengelolaan:`;
+  const text = `<b>PANEL ADMIN</b>\n${LINE}\nPilih menu pengelolaan:`;
   await edit(bot, chatId, messageId, text, adminMenuKeyboard());
 }
 
@@ -43,13 +43,13 @@ async function showStats(bot, chatId, messageId) {
   } catch (e) {
     logger.warn('Cek deposit gagal:', e.message);
   }
-  const text =
-    `📊 <b>STATISTIK</b>\n━━━━━━━━━━━━━━━━━━━━\n` +
-    `👥 Total Pengguna: ${userService.countUsers()}\n` +
-    `🧾 Total Transaksi: ${trxService.countTransactions()}\n` +
-    `💰 Omzet Hari Ini: ${rupiah(trxService.todayRevenue())}\n` +
-    `📦 Total Produk: ${productService.countProducts()}\n` +
-    `🏦 Saldo Digiflazz: ${deposit != null ? rupiah(deposit) : '(gagal cek)'}`;
+  const stat =
+    `Pengguna  : ${userService.countUsers()}\n` +
+    `Transaksi : ${trxService.countTransactions()}\n` +
+    `Omzet ini : ${rupiah(trxService.todayRevenue())}\n` +
+    `Produk    : ${productService.countProducts()}\n` +
+    `Digiflazz : ${deposit != null ? rupiah(deposit) : '(gagal cek)'}`;
+  const text = `<b>STATISTIK</b>\n${LINE}\n<code>${escapeHtml(stat)}</code>`;
   await edit(bot, chatId, messageId, text, back('menu:admin'));
 }
 
@@ -58,14 +58,14 @@ async function showPendingDeposits(bot, chatId, messageId) {
   if (!list.length) {
     return edit(bot, chatId, messageId, '🧾 Tidak ada top up pending.', back('menu:admin'));
   }
-  let text = `🧾 <b>TOP UP PENDING</b>\n━━━━━━━━━━━━━━━━━━━━\n`;
+  let text = `<b>TOP UP PENDING</b>\n${LINE}\n`;
   const rows = [];
   for (const t of list) {
     const u = userService.getUser(t.user_id);
-    text += `\n#${t.id} • ${escapeHtml(u ? u.name : t.user_id)} • ${rupiah(t.amount)} • ${tanggal(t.created_at)}`;
+    text += `#${t.id} · ${escapeHtml(u ? u.name : t.user_id)} · ${rupiah(t.amount)} · ${tanggal(t.created_at)}\n`;
     rows.push([
       { text: `✅ #${t.id}`, callback_data: `dp:ok:${t.id}` },
-      { text: `❌ #${t.id}`, callback_data: `dp:no:${t.id}` },
+      { text: `✖ #${t.id}`, callback_data: `dp:no:${t.id}` },
     ]);
   }
   rows.push([{ text: '« Kembali', callback_data: 'menu:admin' }]);
@@ -75,21 +75,21 @@ async function showPendingDeposits(bot, chatId, messageId) {
 async function askAddSaldo(bot, chatId, messageId, userId) {
   await setState(userId, 'adm:addsaldo', {});
   await edit(bot, chatId, messageId,
-    '➕ <b>Saldo Manual</b>\n\nKetik: <code>ID_TELEGRAM NOMINAL</code>\nContoh: <code>123456789 50000</code>\n(Nominal boleh negatif untuk mengurangi)',
+    `<b>SALDO MANUAL</b>\n${LINE}\nKetik: <code>ID_TELEGRAM NOMINAL</code>\nContoh: <code>123456789 50000</code>\n(Nominal boleh negatif untuk mengurangi)`,
     back('menu:admin'));
 }
 
 async function askSetRole(bot, chatId, messageId, userId) {
   await setState(userId, 'adm:setrole', {});
   await edit(bot, chatId, messageId,
-    '🎖 <b>Set Role</b>\n\nKetik: <code>ID_TELEGRAM ROLE</code>\nROLE: MEMBER / RESELLER / ADMIN\nContoh: <code>123456789 RESELLER</code>',
+    `<b>SET ROLE</b>\n${LINE}\nKetik: <code>ID_TELEGRAM ROLE</code>\nROLE: MEMBER / RESELLER / ADMIN\nContoh: <code>123456789 RESELLER</code>`,
     back('menu:admin'));
 }
 
 async function askBroadcast(bot, chatId, messageId, userId) {
   await setState(userId, 'adm:broadcast', {});
   await edit(bot, chatId, messageId,
-    '📢 <b>Broadcast</b>\n\nKetik pesan yang ingin dikirim ke semua pengguna:',
+    `<b>BROADCAST</b>\n${LINE}\nKetik pesan yang ingin dikirim ke semua pengguna:`,
     back('menu:admin'));
 }
 
