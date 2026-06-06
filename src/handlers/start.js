@@ -6,26 +6,35 @@ const { countTransactions, todayRevenue } = require('../services/trxService');
 const { mainMenu } = require('../keyboards/menus');
 const { rupiah, escapeHtml } = require('../utils/format');
 
+const LINE = '─────────────────────';
+
 function buildMenuText(user) {
   const totalTrx = countTransactions();
   const today = todayRevenue();
   const totalUsers = countUsers();
 
+  // blok data rata kolom (monospace) -> tampilan rapi & "premium"
+  const akun =
+    `Saldo : ${rupiah(user.balance)}\n` +
+    `Role  : ${escapeHtml(user.role)}`;
+  const stat =
+    `Transaksi : ${totalTrx}\n` +
+    `Hari ini  : ${rupiah(today)}\n` +
+    `Pengguna  : ${totalUsers}`;
+
   return (
-    `<b>MENU UTAMA</b> ✨\n` +
-    `━━━━━━━━━━━━━━━━━━━━\n\n` +
-    `Halo, <b>${escapeHtml(user.name)}</b>!\n\n` +
-    `Selamat datang di <b>${escapeHtml(config.store.name)}</b> !!!\n\n` +
-    `🛠 Maintenance: ${escapeHtml(config.store.maintenance)}\n\n` +
-    `Silakan pilih menu di bawah untuk melanjutkan.\n` +
-    `━━━━━━━━━━━━━━━━━━━━\n` +
-    `💳 <b>Saldo:</b> ${rupiah(user.balance)}\n` +
-    `🎖 <b>Role:</b> ${escapeHtml(user.role)}\n` +
-    `━━━━━━━━━━━━━━━━━━━━\n` +
-    `📊 <b>Statistik Bot:</b>\n` +
-    `<i>Total TRX:</i> ${totalTrx}\n` +
-    `<i>Transaksi Hari Ini:</i> ${rupiah(today)}\n` +
-    `<i>Total Pengguna:</i> ${totalUsers}`
+    `<b>${escapeHtml(config.store.name.toUpperCase())}</b>\n` +
+    `${LINE}\n` +
+    `Halo, <b>${escapeHtml(user.name)}</b> 👋\n\n` +
+    `<code>${akun}</code>\n` +
+    `${LINE}\n` +
+    `<b>Statistik</b>\n` +
+    `<code>${stat}</code>\n` +
+    `${LINE}\n` +
+    (config.store.maintenance && config.store.maintenance !== '-'
+      ? `<i>Maintenance ${escapeHtml(config.store.maintenance)}</i>\n`
+      : '') +
+    `Silakan pilih menu di bawah.`
   );
 }
 
