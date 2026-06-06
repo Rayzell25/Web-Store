@@ -99,7 +99,7 @@ async function receiveTarget(bot, chatId, userId, target) {
   const product = await getProduct(state.data.sku);
   if (!product) {
     await clearState(userId);
-    return bot.sendMessage(chatId, '⚠️ Produk sudah tidak tersedia.');
+    return bot.sendMessage(chatId, '⚠️ Produk sudah tidak tersedia.', { parse_mode: 'HTML' });
   }
   const user = await getUser(userId);
   const harga = sellPrice(product, user.role);
@@ -138,9 +138,10 @@ async function receiveTarget(bot, chatId, userId, target) {
   await bot.sendMessage(chatId, text, { parse_mode: 'HTML', reply_markup: { inline_keyboard: rows } });
 }
 
-async function pay(bot, chatId, messageId, userId, notifyAdmins) {
+async function pay(bot, chatId, messageId, userId, notifyAdmins, alert) {
   const state = await getState(userId);
   if (!state || state.action !== 'order:confirm') {
+    if (typeof alert === 'function') return alert('Sesi pembelian kedaluwarsa. Ulangi dari menu Beli Paket.');
     return editOrSend(bot, chatId, messageId, '⚠️ Sesi pembelian kedaluwarsa. Ulangi dari menu Beli Paket.', backButton('menu:order'));
   }
   const { sku, target } = state.data;
@@ -152,10 +153,12 @@ async function pay(bot, chatId, messageId, userId, notifyAdmins) {
   }
   const harga = sellPrice(product, user.role);
   if (user.balance < harga) {
-    await clearState(userId);
+    // popup alert (tanpa kirim chat). State dibiarkan supaya bisa pilih QRIS.
+    if (typeof alert === 'function') {
+      return alert(`Saldo tidak cukup. Kurang ${rupiah(harga - user.balance)}.`);
+    }
     return editOrSend(bot, chatId, messageId,
-      `⚠️ Saldo tidak cukup. Saldo: ${rupiah(user.balance)}, butuh: ${rupiah(harga)}.`,
-      backButton('menu:deposit'));
+      `⚠️ Saldo tidak cukup. Kurang ${rupiah(harga - user.balance)}.`, backButton('menu:deposit'));
   }
 
   const refId = trxCode('CHO');
@@ -164,6 +167,7 @@ async function pay(bot, chatId, messageId, userId, notifyAdmins) {
     await addBalance(userId, -harga); // potong dulu, refund jika gagal
   } catch (e) {
     await clearState(userId);
+    if (typeof alert === 'function') return alert(e.message);
     return editOrSend(bot, chatId, messageId, `⚠️ ${e.message}`, backButton('menu:deposit'));
   }
   await clearState(userId);

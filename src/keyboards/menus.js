@@ -2,8 +2,8 @@
 
 const { config } = require('../config');
 
-/** Keyboard inline menu utama. isAdminUser -> tampilkan tombol ADMIN */
-function mainMenu(isAdminUser) {
+/** Keyboard inline menu utama. (Tombol Admin dihapus; owner pakai /admin) */
+function mainMenu() {
   const rows = [
     [{ text: 'Beli Paket', callback_data: 'menu:order' }],
     [{ text: 'Top Up', callback_data: 'menu:deposit' }],
@@ -16,13 +16,6 @@ function mainMenu(isAdminUser) {
       { text: 'Bantuan', callback_data: 'menu:bantuan' },
     ],
   ];
-
-  if (isAdminUser) {
-    rows.push([{ text: 'Admin', callback_data: 'menu:admin' }]);
-  } else if (config.store.adminContact) {
-    rows.push([{ text: 'Admin', url: config.store.adminContact }]);
-  }
-
   return { inline_keyboard: rows };
 }
 

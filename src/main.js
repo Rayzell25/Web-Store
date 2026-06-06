@@ -37,6 +37,25 @@ async function main() {
 
   const bot = new TelegramBot(config.botToken, botOptions);
 
+  // ===== Bungkus SEMUA pesan teks HTML jadi expandable blockquote =====
+  // (caption foto QR & popup alert tidak terpengaruh)
+  function wrapHtml(text) {
+    if (typeof text === 'string' && !text.startsWith('<blockquote')) {
+      return `<blockquote expandable>${text}</blockquote>`;
+    }
+    return text;
+  }
+  const _send = bot.sendMessage.bind(bot);
+  bot.sendMessage = (chatId, text, opts = {}) => {
+    if (opts && opts.parse_mode === 'HTML') text = wrapHtml(text);
+    return _send(chatId, text, opts);
+  };
+  const _editText = bot.editMessageText.bind(bot);
+  bot.editMessageText = (text, opts = {}) => {
+    if (opts && opts.parse_mode === 'HTML') text = wrapHtml(text);
+    return _editText(text, opts);
+  };
+
   // ===== helper notifikasi admin =====
   function notifyAdmins(text, opts = {}) {
     for (const id of config.adminIds) {
@@ -69,11 +88,18 @@ async function main() {
 
   bot.onText(/^\/saldo\b/, async (msg) => {
     const u = await userService.ensureUser(msg.from);
-    bot.sendMessage(msg.chat.id, `💳 Saldo kamu: ${rupiah(u.balance)}`);
+    bot.sendMessage(msg.chat.id, `<b>Saldo kamu:</b> ${rupiah(u.balance)}`, { parse_mode: 'HTML' });
   });
 
   bot.onText(/^\/id\b/, (msg) => {
-    bot.sendMessage(msg.chat.id, `🆔 ID Telegram kamu: <code>${msg.from.id}</code>`, { parse_mode: 'HTML' });
+    bot.sendMessage(msg.chat.id, `<b>ID Telegram kamu:</b> <code>${msg.from.id}</code>`, { parse_mode: 'HTML' });
+  });
+
+  // panel admin khusus owner (tombol Admin di menu sudah dihapus)
+  bot.onText(/^\/admin\b/, async (msg) => {
+    if (!isAdmin(msg.from.id)) return;
+    await userService.ensureUser(msg.from);
+    await admin.showAdminMenu(bot, msg.chat.id, null, msg.from);
   });
 
   // ===== Pesan teks (alur multi-langkah) =====
@@ -107,7 +133,7 @@ async function main() {
       }
     } catch (e) {
       logger.error('message handler error:', e.message);
-      bot.sendMessage(chatId, '⚠️ Terjadi kesalahan. Coba lagi atau /start.').catch(() => {});
+      bot.sendMessage(chatId, '⚠️ Terjadi kesalahan. Coba lagi atau /start.', { parse_mode: 'HTML' }).catch(() => {});
     }
   });
 
@@ -117,6 +143,9 @@ async function main() {
     const messageId = q.message.message_id;
     const data = q.data || '';
     const from = q.from;
+
+    // popup alert (tanpa kirim chat, tanpa nama bot)
+    const alert = (text) => bot.answerCallbackQuery(q.id, { text, show_alert: true }).catch(() => {});
 
     const user = await userService.ensureUser(from);
     if (user.banned) {
@@ -152,7 +181,7 @@ async function main() {
       } else if (data.startsWith('order:prod:')) {
         await order.selectProduct(bot, chatId, messageId, data.slice('order:prod:'.length), from.id);
       } else if (data === 'order:pay:saldo') {
-        await order.pay(bot, chatId, messageId, from.id, notifyAdmins);
+        await order.pay(bot, chatId, messageId, from.id, notifyAdmins, alert);
       } else if (data === 'order:pay:qris') {
         await order.payQris(bot, chatId, messageId, from.id);
 

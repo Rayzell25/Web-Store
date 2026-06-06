@@ -43,7 +43,7 @@ async function sendMainMenu(bot, chatId, from) {
   const text = await buildMenuText(user);
   return bot.sendMessage(chatId, text, {
     parse_mode: 'HTML',
-    reply_markup: mainMenu(isAdmin(from.id)),
+    reply_markup: mainMenu(),
   });
 }
 
@@ -55,7 +55,7 @@ async function editToMainMenu(bot, chatId, messageId, from) {
       chat_id: chatId,
       message_id: messageId,
       parse_mode: 'HTML',
-      reply_markup: mainMenu(isAdmin(from.id)),
+      reply_markup: mainMenu(),
     });
   } catch (e) {
     // fallback kirim baru jika edit gagal (mis. pesan terlalu lama)
