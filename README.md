@@ -1,224 +1,120 @@
-# Rayzell Store PPOB
+# Rayzell Store PPOB — Panduan Backup & Restore
 
-Bot Telegram PPOB + Web Storefront — pulsa, paket data, token PLN, voucher game, e-money. Terhubung ke Digiflazz, pembayaran QRIS via AutoGoPay, database PostgreSQL, backup harian otomatis.
+Catatan cepat cara **backup** & **restore** database bot. Simpan di sini biar kalau lupa tinggal buka GitHub.
 
----
-
-## Fitur
-
-**Bot Telegram:**
-- Beli produk (pulsa, data, PLN, game, e-money) — pilih kategori → brand → produk → bayar SALDO atau QRIS
-- Top Up saldo via QRIS otomatis
-- Riwayat transaksi
-- Cek operator & cek area (Tools)
-- Foto banner di /start (dapat diganti admin)
-- Tombol "Buka Web" → buka web langsung dari bot
-- Panel admin via /admin: statistik, approve top up, saldo manual, set role, markup, sync produk Digiflazz, broadcast, set foto
-
-**Web (rayzelldigital.web.id/app.html):**
-- Login dengan Telegram (widget di browser / auto-login saat dibuka sebagai Mini App dari bot)
-- Beli produk langsung di web (bayar SALDO atau QRIS)
-- Top Up saldo via QRIS
-- Riwayat transaksi + top up
-- Panel admin web (/admin/): statistik, transaksi terbaru, approve top up
+> Semua perintah dijalankan di VPS, di dalam folder project (mis. `~/ppob`).
+> Database disimpan di PostgreSQL (container Docker), bukan file biasa.
 
 ---
 
-## Instalasi VPS Baru (Fresh)
+## Ringkasan
 
-**Support OS:** Ubuntu 20.04 / 22.04 / 24.04, Debian 10 / 11 / 12
-
-```bash
-# 1. Clone repo (ganti TOKEN dengan Personal Access Token GitHub kamu)
-git clone https://TOKEN@github.com/Rayzell25/ppob.git
-cd ppob
-
-# 2. Jalankan installer (otomatis install Docker, Redis, Node, PostgreSQL, Local Bot API, cron backup, systemd)
-bash install.sh
-```
-
-Installer akan menanyakan **3 hal**:
-```
-Token bot          :  ← token dari @BotFather
-ID owner           :  ← ID Telegram kamu (cek dengan /id setelah bot jalan)
-ID channel / grup  :  ← tujuan backup harian (ID channel/grup, atau ID kamu sendiri)
-```
-
-Setelah selesai, isi credentials lain di `.env`:
-```bash
-nano .env
-```
-
-| Variabel | Keterangan |
+| Hal | Nilai |
 |---|---|
-| `DIGIFLAZZ_USERNAME` | Username Digiflazz |
-| `DIGIFLAZZ_API_KEY` | API Key Digiflazz (Production) |
-| `AUTOGOPAY_API_KEY` | API Key AutoGoPay (QRIS) |
-| `BOT_USERNAME` | Username bot tanpa @ (untuk login web & tombol Buka Web) |
-| `WEB_ADMIN_USER` | Username login panel admin web (default: admin) |
-| `WEB_ADMIN_PASSWORD` | Password login panel admin web (wajib diganti!) |
-| `STORE_NAME` | Nama toko di menu bot |
-| `MAINTENANCE_INFO` | Jam maintenance yang ditampilkan |
+| Folder backup | `~/ppob/backups/` |
+| Format file | `ppob-YYYYMMDD-HHMMSS.zip` (ber-password AES-256) |
+| Backup otomatis | tiap hari **jam 03:00** (cron, dipasang `install.sh`) |
+| Disimpan | **14 file terbaru** (`BACKUP_KEEP`, sisanya dihapus otomatis) |
+| Dikirim ke | channel/grup Telegram (`BACKUP_CHAT_ID`) |
+| Password ZIP | dari `.env` → `BACKUP_ZIP_PASSWORD` (**SIMPAN baik-baik!**) |
 
-Setelah isi `.env`:
-```bash
-systemctl restart rayzell-ppob
-systemctl restart rayzell-web
-```
+⚠️ **Tanpa `BACKUP_ZIP_PASSWORD`, file backup tidak bisa dibuka/di-restore.** Catat password ini di tempat aman.
 
 ---
 
-## Update Bot (setelah ada perubahan kode)
+## 1. BACKUP
 
+### Backup manual (kapan saja)
 ```bash
 cd ~/ppob
-git pull
+bash scripts/backup.sh
+```
+Hasil:
+- File `.zip` baru di `~/ppob/backups/`
+- File dikirim ke channel Telegram backup (kalau `BACKUP_CHAT_ID` diisi)
+- File lama dirotasi (simpan 14 terbaru)
+
+### Backup otomatis
+Sudah jalan sendiri tiap **03:00** lewat cron. Cek jadwalnya:
+```bash
+crontab -l | grep backup
+```
+Cek log backup terakhir:
+```bash
+cat ~/ppob/backup.log | tail -20
+```
+Baris `[backup] terkirim ke Telegram.` = sukses terkirim (HTTP 200).
+
+---
+
+## 2. RESTORE (memulihkan database)
+
+> ⚠️ **PERINGATAN: restore MENIMPA data yang ada sekarang.** Pastikan file backup-nya benar. Disarankan backup dulu sebelum restore (`bash scripts/backup.sh`).
+
+### Langkah restore
+```bash
+cd ~/ppob
+
+# 1. lihat daftar file backup yang ada
+ls -lh backups/
+
+# 2. restore dari file pilihan
+bash scripts/restore.sh backups/ppob-20260607-030000.zip
+
+# 3. WAJIB restart bot setelah restore
 systemctl restart rayzell-ppob
 systemctl restart rayzell-web
 ```
+Script otomatis: ekstrak `.zip` (pakai `BACKUP_ZIP_PASSWORD` dari `.env`) → ambil file `.sql` → masukkan ke PostgreSQL.
+
+### Restore dari file yang ada di Telegram / komputer
+Kalau file backup-nya cuma ada di Telegram atau di komputer (tidak ada di VPS):
+1. Download file `.zip`-nya.
+2. Upload ke VPS lewat **SFTP** (FileZilla / WinSCP / `scp`) ke folder `~/ppob/backups/`.
+   ```bash
+   # contoh pakai scp dari komputer:
+   scp ppob-20260607-030000.zip root@IP_VPS:/root/ppob/backups/
+   ```
+3. Jalankan restore seperti di atas:
+   ```bash
+   cd ~/ppob
+   bash scripts/restore.sh backups/ppob-20260607-030000.zip
+   systemctl restart rayzell-ppob && systemctl restart rayzell-web
+   ```
+
+> SFTP hanya untuk **memindahkan file**. Proses restore tetap pakai `scripts/restore.sh`.
 
 ---
 
-## Setup Web + SSL (setelah domain di-pointing ke IP VPS)
+## 3. Pengaturan terkait (di `.env`)
 
-**1. Pointing domain** di panel DNS (Cloudflare / registrar):
-```
-Type: A    Name: @    Value: <IP VPS>    Proxy: DNS Only (grey cloud)
-```
-
-Cek IP VPS:
-```bash
-curl -s ifconfig.me
-```
-
-**2. Jalankan setup web** (setelah DNS sudah pointing):
-```bash
-sudo bash scripts/setup-web.sh rayzelldigital.web.id
-```
-Script ini otomatis: install Nginx, pasang reverse proxy, ambil SSL (Let's Encrypt), daftarkan service `rayzell-web`.
-
-**3. Set domain di @BotFather** (untuk Login Telegram di web browser):
-```
-/setdomain → pilih bot → rayzelldigital.web.id
-```
-
-**4. Set Mini App di @BotFather** (untuk buka web di dalam Telegram):
-```
-Bot Settings → Configure Mini App → URL: https://rayzelldigital.web.id/app.html
-```
-
-**5. Set BOT_USERNAME di .env** (agar tombol Buka Web di bot mengarah ke bot yang benar):
-```bash
-nano .env   # BOT_USERNAME=namabot_kamu  (tanpa @)
-systemctl restart rayzell-ppob && systemctl restart rayzell-web
-```
+| Variabel | Fungsi | Default |
+|---|---|---|
+| `BACKUP_ZIP_PASSWORD` | Password buka file ZIP backup (AES-256) | digenerate `install.sh` |
+| `BACKUP_CHAT_ID` | ID channel/grup Telegram tujuan backup | (kosong = tidak kirim) |
+| `BACKUP_BOT_TOKEN` | Token bot khusus backup (opsional) | fallback ke `BOT_TOKEN` |
+| `BACKUP_KEEP` | Jumlah file backup disimpan | `14` |
+| `PGUSER` / `PGDATABASE` | User & nama database | `ppob` / `ppob` |
+| `PG_CONTAINER` | Nama container PostgreSQL | `ppob-postgres` |
 
 ---
 
-## Perintah Berguna
+## 4. Troubleshooting
 
-```bash
-# Status service
-systemctl status rayzell-ppob      # bot Telegram
-systemctl status rayzell-web       # web storefront
-
-# Log realtime
-journalctl -u rayzell-ppob -f      # log bot
-journalctl -u rayzell-web -f       # log web
-
-# Docker (PostgreSQL + Local Bot API)
-docker compose ps
-docker compose logs postgres
-
-# Restart
-systemctl restart rayzell-ppob
-systemctl restart rayzell-web
-```
+| Gejala | Penyebab | Solusi |
+|---|---|---|
+| `restore.sh` minta password / gagal ekstrak | `BACKUP_ZIP_PASSWORD` di `.env` beda dengan saat backup dibuat | pakai password yang sama dengan saat file itu dibuat |
+| Backup otomatis tidak jalan | cron mati | `systemctl enable --now cron` lalu cek `crontab -l` |
+| Backup tidak terkirim ke Telegram | `BACKUP_CHAT_ID` kosong / bot belum admin channel | isi `BACKUP_CHAT_ID`, jadikan bot admin di channel |
+| `the input device is not a TTY` di log | (sudah diperbaiki) dump pakai `docker exec` tanpa `-t` | pastikan kode terbaru (`git pull`) |
+| Setelah restore data belum berubah | bot belum di-restart | `systemctl restart rayzell-ppob` |
 
 ---
 
-## Backup & Restore
-
-**Backup otomatis** jalan tiap hari jam 03:00 (dipasang otomatis oleh install.sh). File backup `.zip` ber-password AES-256 dikirim ke channel/grup yang diisi saat install. Backup juga tersimpan di `~/ppob/backups/` (14 file terbaru).
-
-**Tes backup manual:**
-```bash
-cd ~/ppob && bash scripts/backup.sh
-```
-
-**Restore dari backup:**
-```bash
-bash scripts/restore.sh backups/ppob-YYYYMMDD-HHMMSS.zip
-```
-> Password ZIP tersimpan di `.env` sebagai `BACKUP_ZIP_PASSWORD` (ditampilkan sekali saat install — simpan baik-baik!).
+## Catatan keamanan
+- **Jangan** commit file `.env` ke Git (sudah di-`.gitignore`).
+- Simpan `BACKUP_ZIP_PASSWORD` di tempat aman — tanpa itu backup tidak berguna.
+- Jangan tempel token bot / token GitHub ke chat atau tempat publik.
 
 ---
-
-## Setup Pertama Kali (setelah install)
-
-1. Buka bot → `/start` → ketik `/id` untuk cek ID Telegram kamu → isi ke `ADMIN_IDS` di `.env`
-2. `/admin` → **Sync Produk** → tarik daftar harga dari Digiflazz
-3. `/admin` → **Markup** → atur keuntungan per transaksi
-4. `/admin` → **Set Foto Sambutan** → kirim foto banner untuk tampil di /start (opsional)
-5. Top up deposit di dashboard Digiflazz (modal untuk transaksi provider)
-6. Whitelist IP VPS di dashboard Digiflazz (Pengaturan → Atur API → Whitelist IP → isi hasil `curl -s ifconfig.me`)
-
----
-
-## Markup / Keuntungan
-
-Atur dari bot: `/admin` → **Markup** → ketik perintah dengan pemisah `|`:
-
-| Perintah | Keterangan |
-|---|---|
-| `default\|flat\|500` | Markup default MEMBER: Rp 500/trx |
-| `default\|percent\|3` | Markup default: 3% dari modal |
-| `reseller\|flat\|250` | Markup RESELLER: Rp 250/trx |
-| `cat\|Pulsa\|flat\|1000` | Markup kategori Pulsa: Rp 1.000 |
-| `sku\|xld10\|flat\|800` | Markup produk spesifik |
-| `round\|100` | Pembulatan ke kelipatan Rp 100 |
-| `delcat\|Pulsa` | Hapus markup kategori |
-
----
-
-## Struktur Proyek
-
-```
-src/
-├── main.js                  # entry point + router semua callback
-├── config.js                # baca .env (tidak ada rahasia di sini)
-├── cache/redis.js           # session cache Redis (fallback in-memory)
-├── db/database.js           # PostgreSQL (pg Pool)
-├── services/
-│   ├── digiflazz.js         # API Digiflazz
-│   ├── autogopay.js         # API AutoGoPay (QRIS)
-│   ├── qrisPoller.js        # polling status QRIS otomatis
-│   ├── qrisService.js       # tracking transaksi QRIS di DB
-│   ├── userService.js       # user & saldo
-│   ├── trxService.js        # transaksi
-│   ├── depositService.js    # top up
-│   ├── productService.js    # produk
-│   └── markupService.js     # markup fleksibel (cache in-memory)
-├── handlers/                # 1 domain = 1 file
-│   ├── start.js  order.js  deposit.js  stok.js
-│   ├── riwayat.js  tools.js  help.js  admin.js
-├── keyboards/menus.js
-├── utils/                   # logger, format, session, registry
-└── web/
-    ├── server.js            # Express web + API member + API admin
-    └── public/
-        ├── index.html       # landing page
-        ├── app.html         # halaman belanja member (Mini App)
-        └── admin/           # panel admin web
-```
-
-> Data sensitif (token, API key, password) **hanya di `.env`** yang gitignored. `config.js` hanya membaca `process.env`.
-
----
-
-## Catatan Keamanan
-
-- Jangan commit `.env` ke GitHub
-- Whitelist IP VPS di dashboard Digiflazz sebelum live
-- Ganti `WEB_ADMIN_PASSWORD` dari default `admin123`
-- Gunakan API Key **Production** Digiflazz saat siap live (bukan Development)
+*Dokumentasi lain: lihat `docs/PREMIUM_EMOJI.md` untuk panduan custom/premium emoji.*
