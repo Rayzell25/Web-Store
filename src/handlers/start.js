@@ -27,7 +27,7 @@ async function buildMenuText(user) {
     `${pe('role')} Role : ${escapeHtml(user.role)}`;
   const stat =
     `${pe('transaksi')} Transaksi : ${totalTrx}\n` +
-    `Hari ini : ${rupiah(today)}\n` +
+    `${pe('hariini')} Hari ini : ${rupiah(today)}\n` +
     `${pe('pengguna')} Pengguna : ${totalUsers}`;
 
   const text = (
