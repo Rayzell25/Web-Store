@@ -50,9 +50,9 @@ async function showDepositMenu(bot, chatId, messageId, userId) {
 /** Nominal preset dipilih -> langsung tampilkan QRIS. */
 async function chooseNominal(bot, chatId, messageId, userId, amount, notifyAdmins) {
   const amt = parseInt(amount, 10);
-  if (!Number.isFinite(amt) || amt < config.topup.min) {
+  if (!Number.isFinite(amt) || amt <= 0) {
     return edit(bot, chatId, messageId,
-      `⚠️ Minimal top up ${rupiah(config.topup.min)}.`, backButton('menu:deposit'));
+      `⚠️ Nominal tidak valid.`, backButton('menu:deposit'));
   }
   await startQrisTopup(bot, chatId, messageId, userId, amt);
 }
@@ -63,8 +63,7 @@ async function askAmount(bot, chatId, messageId, userId) {
   const text =
     `<b>TOP UP SALDO</b>\n${LINE}\n` +
     `Ketik nominal yang ingin di-top up (angka saja).\n` +
-    `Contoh: <code>75000</code>\n\n` +
-    `Minimal: <b>${rupiah(config.topup.min)}</b>`;
+    `Contoh: <code>75000</code>`;
   await edit(bot, chatId, messageId, text, backButton('menu:deposit'));
 }
 
@@ -75,9 +74,6 @@ async function receiveAmount(bot, chatId, userId, text, notifyAdmins) {
   const amount = parseInt(String(text).replace(/[^\d]/g, ''), 10);
   if (!Number.isFinite(amount) || amount <= 0) {
     return bot.sendMessage(chatId, '⚠️ Nominal tidak valid. Ketik angka saja, contoh: 75000');
-  }
-  if (amount < config.topup.min) {
-    return bot.sendMessage(chatId, `⚠️ Minimal top up ${rupiah(config.topup.min)}.`);
   }
   await startQrisTopup(bot, chatId, null, userId, amount);
 }
