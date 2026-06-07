@@ -1,6 +1,6 @@
 'use strict';
 
-const { stripPremium, hasPremium } = require('./premoji');
+const { stripPremium, hasPremium, markupHasButtonIcon, downgradeButtonIcons } = require('./premoji');
 
 /**
  * Helper UI terpusat agar navigasi tombol SELALU mengedit pesan yang sama
@@ -53,6 +53,19 @@ function isEmojiError(e) {
   );
 }
 
+// Error yang kemungkinan disebabkan field tombol (mis. icon_custom_emoji_id
+// belum didukung Local Bot API lama / bot belum eligible).
+function isButtonError(e) {
+  const m = errText(e);
+  return (
+    isEmojiError(e) ||
+    m.includes('button') ||
+    m.includes('reply markup') ||
+    m.includes('reply_markup') ||
+    m.includes('keyboard')
+  );
+}
+
 async function editOrSend(bot, chatId, messageId, text, replyMarkup) {
   const opts = { parse_mode: 'HTML' };
   if (replyMarkup) opts.reply_markup = replyMarkup;
@@ -63,15 +76,23 @@ async function editOrSend(bot, chatId, messageId, text, replyMarkup) {
     } catch (e) {
       // Klik tombol yang sama -> jangan kirim chat baru, cukup diamkan.
       if (isNotModified(e)) return;
-      // Mungkin gagal karena premium emoji -> coba lagi tanpa tag premium.
-      if (hasPremium(text) && isEmojiError(e) && !isUneditable(e)) {
-        try {
-          return await bot.editMessageText(stripPremium(text), { chat_id: chatId, message_id: messageId, ...opts });
-        } catch (e2) {
-          if (isNotModified(e2)) return;
-          if (isUneditable(e2)) { try { await bot.deleteMessage(chatId, messageId); } catch (_) {} }
+      if (!isUneditable(e)) {
+        // Mungkin gagal karena premium emoji (teks) atau icon_custom_emoji_id
+        // (tombol) -> coba edit ulang dengan versi yang diturunkan ke unicode.
+        const needEmoji = hasPremium(text) && isEmojiError(e);
+        const needBtn = markupHasButtonIcon(opts.reply_markup) && isButtonError(e);
+        if (needEmoji || needBtn) {
+          const t2 = needEmoji ? stripPremium(text) : text;
+          const opts2 = { ...opts };
+          if (needBtn) opts2.reply_markup = downgradeButtonIcons(opts.reply_markup);
+          try {
+            return await bot.editMessageText(t2, { chat_id: chatId, message_id: messageId, ...opts2 });
+          } catch (e2) {
+            if (isNotModified(e2)) return;
+            if (isUneditable(e2)) { try { await bot.deleteMessage(chatId, messageId); } catch (_) {} }
+          }
         }
-      } else if (isUneditable(e)) {
+      } else {
         // Pesan foto / tidak bisa diedit -> buang pesan lama supaya tidak menumpuk.
         try { await bot.deleteMessage(chatId, messageId); } catch (_) { /* ignore */ }
       }
@@ -81,26 +102,40 @@ async function editOrSend(bot, chatId, messageId, text, replyMarkup) {
   return safeSend(bot, chatId, text, opts);
 }
 
-/** Kirim pesan baru; jika gagal karena premium emoji, kirim ulang tanpa tag. */
+/** Kirim pesan baru; fallback jika premium emoji / icon tombol tidak didukung. */
 async function safeSend(bot, chatId, text, opts) {
   try {
     return await bot.sendMessage(chatId, text, opts);
   } catch (e) {
-    if (hasPremium(text) && isEmojiError(e)) {
-      return bot.sendMessage(chatId, stripPremium(text), opts);
+    const opts2 = { ...(opts || {}) };
+    let text2 = text;
+    let changed = false;
+    if (hasPremium(text) && isEmojiError(e)) { text2 = stripPremium(text); changed = true; }
+    if (opts2.reply_markup && markupHasButtonIcon(opts2.reply_markup) && isButtonError(e)) {
+      opts2.reply_markup = downgradeButtonIcons(opts2.reply_markup);
+      changed = true;
     }
+    if (changed) return bot.sendMessage(chatId, text2, opts2);
     throw e;
   }
 }
 
-/** Kirim foto + caption; jika gagal karena premium emoji di caption, ulang tanpa tag. */
+/** Kirim foto + caption; fallback jika premium emoji / icon tombol tidak didukung. */
 async function safeSendPhoto(bot, chatId, photo, opts) {
   try {
     return await bot.sendPhoto(chatId, photo, opts);
   } catch (e) {
-    if (opts && hasPremium(opts.caption || '') && isEmojiError(e)) {
-      return bot.sendPhoto(chatId, photo, { ...opts, caption: stripPremium(opts.caption) });
+    const opts2 = { ...(opts || {}) };
+    let changed = false;
+    if (opts2.caption && hasPremium(opts2.caption) && isEmojiError(e)) {
+      opts2.caption = stripPremium(opts2.caption);
+      changed = true;
     }
+    if (opts2.reply_markup && markupHasButtonIcon(opts2.reply_markup) && isButtonError(e)) {
+      opts2.reply_markup = downgradeButtonIcons(opts2.reply_markup);
+      changed = true;
+    }
+    if (changed) return bot.sendPhoto(chatId, photo, opts2);
     throw e;
   }
 }

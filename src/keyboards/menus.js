@@ -1,27 +1,28 @@
 'use strict';
 
 const { config } = require('../config');
-const { pe } = require('../utils/premoji');
+const { iconId } = require('../utils/premoji');
 
 /** Keyboard inline menu utama. (Tombol Admin dihapus; owner pakai /admin)
- *  EKSPERIMEN: premium emoji (<tg-emoji>) ditaruh langsung di teks tombol.
- *  Catatan: teks tombol = plain text, jadi besar kemungkinan tag muncul mentah.
+ *  Emoji tombol pakai field icon_custom_emoji_id (Bot API 9.4+); teks dibuat
+ *  polos tanpa emoji unicode. Bila custom emoji belum didukung/eligible,
+ *  ui.js otomatis menurunkan ke unicode (lihat downgradeButtonIcons).
  */
 function mainMenu() {
   const rows = [];
-  rows.push([{ text: `${pe('beli')} BELI PAKET`, callback_data: 'menu:order' }]);
-  rows.push([{ text: `${pe('topup')} TOP UP`, callback_data: 'menu:deposit' }]);
+  rows.push([{ text: 'Beli Paket', callback_data: 'menu:order', icon_custom_emoji_id: iconId('beli') }]);
+  rows.push([{ text: 'Top Up Saldo', callback_data: 'menu:deposit', icon_custom_emoji_id: iconId('topup') }]);
   rows.push([
-    { text: `${pe('riwayat')} RIWAYAT`, callback_data: 'menu:riwayat' },
-    { text: `${pe('harga')} CEK HARGA`, callback_data: 'menu:stok' },
+    { text: 'Riwayat', callback_data: 'menu:riwayat', icon_custom_emoji_id: iconId('riwayat') },
+    { text: 'Cek Harga', callback_data: 'menu:stok', icon_custom_emoji_id: iconId('harga') },
   ]);
   rows.push([
-    { text: `${pe('tools')} TOOLS`, callback_data: 'menu:tools' },
-    { text: `${pe('bantuan')} BANTUAN`, callback_data: 'menu:bantuan' },
+    { text: 'Tools', callback_data: 'menu:tools', icon_custom_emoji_id: iconId('tools') },
+    { text: 'Bantuan', callback_data: 'menu:bantuan', icon_custom_emoji_id: iconId('bantuan') },
   ]);
   if (config.webUrl) {
     const base = config.webUrl.replace(/\/+$/, '');
-    rows.push([{ text: `${pe('web')} BUKA WEB`, web_app: { url: `${base}/app.html` } }]);
+    rows.push([{ text: 'Buka Web', web_app: { url: `${base}/app.html` }, icon_custom_emoji_id: iconId('web') }]);
   }
   return { inline_keyboard: rows };
 }
