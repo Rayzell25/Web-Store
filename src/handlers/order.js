@@ -14,7 +14,7 @@ const autogopay = require('../services/autogopay');
 const qrisService = require('../services/qrisService');
 const { config } = require('../config');
 const { tokenFor, valueOf } = require('../utils/registry');
-const { setState, clearState, getState } = require('../utils/session');
+const { setState, clearState, getState, claimState } = require('../utils/session');
 const { gridKeyboard, backButton } = require('../keyboards/menus');
 const { rupiah, escapeHtml, trxCode, truncate, LINE } = require('../utils/format');
 const { editOrSend } = require('../utils/ui');
@@ -161,6 +161,11 @@ async function pay(bot, chatId, messageId, userId, notifyAdmins, alert) {
     return editOrSend(bot, chatId, messageId,
       `⚠️ Saldo tidak cukup. Kurang ${rupiah(harga - user.balance)}.`, backButton('menu:deposit'));
   }
+
+  // Klaim state ATOMIK tepat sebelum memotong saldo -> cegah double-charge bila
+  // tombol SALDO ditap 2x cepat (dua callback konkuren). Hanya 1 yang lolos.
+  const claimed = await claimState(userId, 'order:confirm');
+  if (!claimed) return; // tap kedua / sudah diproses -> diam, jangan potong lagi
 
   const refId = trxCode('CHO');
 

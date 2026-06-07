@@ -50,4 +50,30 @@ async function clearState(userId) {
   mem.delete(Number(userId));
 }
 
-module.exports = { setState, getState, clearState };
+/**
+ * Klaim state secara ATOMIK (baca + hapus sekaligus). Mengembalikan state HANYA
+ * ke pemanggil PERTAMA; pemanggil berikutnya (mis. tombol di-tap 2x cepat) dapat
+ * null. Dipakai untuk mencegah double-proses (mis. double-charge saat bayar SALDO).
+ */
+async function claimState(userId, expectedAction) {
+  const redis = getClient();
+  if (redis) {
+    const raw = await redis.get(key(userId));
+    if (!raw) return null;
+    let state;
+    try { state = JSON.parse(raw); } catch (e) { return null; }
+    if (expectedAction && state.action !== expectedAction) return null;
+    // DEL atomik: dari sekian pemanggil konkuren, hanya 1 yang dapat hasil 1.
+    const removed = await redis.del(key(userId));
+    return removed === 1 ? state : null;
+  }
+  // in-memory: get+delete sinkron (single-thread) -> atomik tanpa await di tengah.
+  const s = mem.get(Number(userId));
+  if (!s) return null;
+  if (Date.now() > s.expires) { mem.delete(Number(userId)); return null; }
+  if (expectedAction && s.action !== expectedAction) return null;
+  mem.delete(Number(userId));
+  return { action: s.action, data: s.data };
+}
+
+module.exports = { setState, getState, clearState, claimState };
