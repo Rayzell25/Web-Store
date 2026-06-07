@@ -76,4 +76,41 @@ async function claimState(userId, expectedAction) {
   return { action: s.action, data: s.data };
 }
 
-module.exports = { setState, getState, clearState, claimState };
+// ===== last-menu tracking (Opsi A: hapus menu lama tiap /start baru) =====
+// TTL 47 jam (< 48 jam batas Telegram deleteMessage) supaya nggak coba hapus
+// pesan yang sudah terlalu tua (akan ditolak Telegram).
+const MENU_TTL_SEC = 47 * 60 * 60;
+const memMenu = new Map(); // chatId -> { messageId, expires }
+
+function menuKey(chatId) {
+  return `lastmenu:${chatId}`;
+}
+
+async function setLastMenu(chatId, messageId) {
+  const redis = getClient();
+  if (redis) {
+    await redis.set(menuKey(chatId), String(messageId), { EX: MENU_TTL_SEC });
+    return;
+  }
+  memMenu.set(Number(chatId), { messageId, expires: Date.now() + MENU_TTL_SEC * 1000 });
+}
+
+async function getLastMenu(chatId) {
+  const redis = getClient();
+  if (redis) {
+    const v = await redis.get(menuKey(chatId));
+    return v ? Number(v) : null;
+  }
+  const s = memMenu.get(Number(chatId));
+  if (!s) return null;
+  if (Date.now() > s.expires) { memMenu.delete(Number(chatId)); return null; }
+  return s.messageId;
+}
+
+async function clearLastMenu(chatId) {
+  const redis = getClient();
+  if (redis) { await redis.del(menuKey(chatId)); return; }
+  memMenu.delete(Number(chatId));
+}
+
+module.exports = { setState, getState, clearState, claimState, setLastMenu, getLastMenu, clearLastMenu };
