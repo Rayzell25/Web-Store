@@ -6,6 +6,7 @@ const { countTransactions, todayRevenue } = require('../services/trxService');
 const { mainMenu } = require('../keyboards/menus');
 const { rupiah, escapeHtml, LINE } = require('../utils/format');
 const { editOrSend, safeSend, safeSendPhoto } = require('../utils/ui');
+const { pe } = require('../utils/premoji');
 const { one } = require('../db/database');
 
 async function buildMenuText(user) {
@@ -18,26 +19,28 @@ async function buildMenuText(user) {
 
   const bannerPhoto = bannerRow ? bannerRow.value : null;
 
-  // blok data rata kolom (monospace) -> tampilan rapi & "premium"
+  // Baris data: tiap baris diberi premium emoji di depan.
+  // CATATAN: TIDAK boleh dibungkus <code> — premium emoji tidak render di
+  // dalam blok code/pre, makanya pakai teks biasa + tag <tg-emoji>.
   const akun =
-    `Saldo : ${rupiah(user.balance)}\n` +
-    `Role  : ${escapeHtml(user.role)}`;
+    `${pe('saldo')} Saldo : ${rupiah(user.balance)}\n` +
+    `${pe('role')} Role : ${escapeHtml(user.role)}`;
   const stat =
-    `Transaksi : ${totalTrx}\n` +
-    `Hari ini  : ${rupiah(today)}\n` +
-    `Pengguna  : ${totalUsers}`;
+    `${pe('transaksi')} Transaksi : ${totalTrx}\n` +
+    `Hari ini : ${rupiah(today)}\n` +
+    `${pe('pengguna')} Pengguna : ${totalUsers}`;
 
   const text = (
     `<b>${escapeHtml(config.store.name.toUpperCase())}</b>\n` +
     `${LINE}\n` +
-    `Halo, <b>${escapeHtml(user.name)}</b> 👋\n\n` +
-    `<code>${akun}</code>\n` +
+    `${pe('halo')} Halo, <b>${escapeHtml(user.name)}</b>\n\n` +
+    `${akun}\n` +
     `${LINE}\n` +
-    `<b>Statistik</b>\n` +
-    `<code>${stat}</code>\n` +
+    `${pe('statistik')} <b>Statistik</b>\n` +
+    `${stat}\n` +
     `${LINE}\n` +
     (config.store.maintenance && config.store.maintenance !== '-'
-      ? `<i>Maintenance ${escapeHtml(config.store.maintenance)}</i>\n`
+      ? `${pe('maintenance')} <i>Maintenance ${escapeHtml(config.store.maintenance)}</i>\n`
       : '') +
     `Silakan pilih menu di bawah.`
   );
