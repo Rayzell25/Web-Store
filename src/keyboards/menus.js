@@ -2,26 +2,26 @@
 
 const { config } = require('../config');
 
-/** Keyboard inline menu utama. (Tombol Admin dihapus; owner pakai /admin)
- *  Emoji tombol pakai UNICODE biasa di teks. Telegram TIDAK mendukung custom/
- *  premium emoji pada tombol inline (field icon_custom_emoji_id diabaikan),
- *  jadi unicode adalah satu-satunya cara emoji tampil di tombol.
+/** [TES] Keyboard inline menu utama memakai icon_custom_emoji_id (Bot API).
+ *  CATATAN: berdasarkan dokumentasi resmi & tes langsung sebelumnya, Telegram
+ *  mengabaikan field ini di tombol -> kemungkinan besar tombol tampil sebagai
+ *  teks polos TANPA emoji. Branch ini khusus untuk diuji owner.
  */
 function mainMenu() {
   const rows = [];
-  rows.push([{ text: '🛒 Beli Paket', callback_data: 'menu:order' }]);
-  rows.push([{ text: '💰 Top Up Saldo', callback_data: 'menu:deposit' }]);
+  rows.push([{ text: 'Beli Paket', callback_data: 'menu:order', icon_custom_emoji_id: '5864095106096698177' }]);
+  rows.push([{ text: 'Top Up Saldo', callback_data: 'menu:deposit', icon_custom_emoji_id: '5282843764451195532' }]);
   rows.push([
-    { text: '🧾 Riwayat', callback_data: 'menu:riwayat' },
-    { text: '🏷️ Cek Harga', callback_data: 'menu:stok' },
+    { text: 'Riwayat', callback_data: 'menu:riwayat', icon_custom_emoji_id: '5215209935188534658' },
+    { text: 'Cek Harga', callback_data: 'menu:stok', icon_custom_emoji_id: '5231012545799666522' },
   ]);
   rows.push([
-    { text: '🛠️ Tools', callback_data: 'menu:tools' },
-    { text: '💬 Bantuan', callback_data: 'menu:bantuan' },
+    { text: 'Tools', callback_data: 'menu:tools', icon_custom_emoji_id: '4920401966946845302' },
+    { text: 'Bantuan', callback_data: 'menu:bantuan', icon_custom_emoji_id: '5215538577496090960' },
   ]);
   if (config.webUrl) {
     const base = config.webUrl.replace(/\/+$/, '');
-    rows.push([{ text: '🌐 Buka Web', web_app: { url: `${base}/app.html` } }]);
+    rows.push([{ text: 'Buka Web', web_app: { url: `${base}/app.html` }, icon_custom_emoji_id: '5375346433610235523' }]);
   }
   return { inline_keyboard: rows };
 }
