@@ -13,7 +13,7 @@ async function showBantuan(bot, chatId, messageId) {
     `3. Masukkan nomor tujuan\n` +
     `4. Konfirmasi & bayar pakai saldo\n\n` +
     `<b>Top up saldo</b>\n` +
-    `Menu Top Up Saldo → masukkan nominal → transfer → konfirmasi admin.\n\n` +
+    `Menu Top Up Saldo → pilih nominal → scan QRIS → saldo masuk otomatis.\n\n` +
     `<b>Catatan</b>\n` +
     `• Pastikan nomor tujuan benar sebelum bayar.\n` +
     `• Transaksi gagal otomatis refund saldo.\n` +
