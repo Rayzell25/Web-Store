@@ -10,6 +10,7 @@ const { getUser } = require('../services/userService');
 const { tokenFor, valueOf } = require('../utils/registry');
 const { gridKeyboard, backButton } = require('../keyboards/menus');
 const { rupiah, escapeHtml, truncate, LINE } = require('../utils/format');
+const { editOrSend: edit } = require('../utils/ui');
 
 /**
  * Menu STOK: hanya untuk MELIHAT daftar produk + harga + status
@@ -62,17 +63,6 @@ async function showList(bot, chatId, messageId, catToken, brandToken, userId) {
     }
   }
   await edit(bot, chatId, messageId, text, backButton(`stok:cat:${catToken}`));
-}
-
-async function edit(bot, chatId, messageId, text, replyMarkup) {
-  const opts = { parse_mode: 'HTML' };
-  if (replyMarkup) opts.reply_markup = replyMarkup;
-  if (messageId) {
-    try {
-      return await bot.editMessageText(text, { chat_id: chatId, message_id: messageId, ...opts });
-    } catch (e) { /* fall through */ }
-  }
-  return bot.sendMessage(chatId, text, opts);
 }
 
 module.exports = { showCategories, showBrands, showList };

@@ -17,6 +17,7 @@ const { tokenFor, valueOf } = require('../utils/registry');
 const { setState, clearState, getState } = require('../utils/session');
 const { gridKeyboard, backButton } = require('../keyboards/menus');
 const { rupiah, escapeHtml, trxCode, truncate, LINE } = require('../utils/format');
+const { editOrSend } = require('../utils/ui');
 const logger = require('../utils/logger');
 
 async function showCategories(bot, chatId, messageId) {
@@ -233,17 +234,6 @@ async function pay(bot, chatId, messageId, userId, notifyAdmins, alert) {
       `🔔 Transaksi ${status}\nUser: ${user.name} (${userId})\n${product.product_name} → ${target}\nHarga: ${rupiah(harga)} | Ref: ${refId}`
     );
   }
-}
-
-async function editOrSend(bot, chatId, messageId, text, replyMarkup) {
-  const opts = { parse_mode: 'HTML' };
-  if (replyMarkup) opts.reply_markup = replyMarkup;
-  if (messageId) {
-    try {
-      return await bot.editMessageText(text, { chat_id: chatId, message_id: messageId, ...opts });
-    } catch (e) { /* fall through */ }
-  }
-  return bot.sendMessage(chatId, text, opts);
 }
 
 /** Bayar order via QRIS: generate QR, kirim foto, catat untuk di-poll. */

@@ -5,6 +5,7 @@ const { ensureUser, countUsers } = require('../services/userService');
 const { countTransactions, todayRevenue } = require('../services/trxService');
 const { mainMenu } = require('../keyboards/menus');
 const { rupiah, escapeHtml, LINE } = require('../utils/format');
+const { editOrSend } = require('../utils/ui');
 const { one } = require('../db/database');
 
 async function buildMenuText(user) {
@@ -62,22 +63,11 @@ async function sendMainMenu(bot, chatId, from) {
 
 async function editToMainMenu(bot, chatId, messageId, from) {
   const user = await ensureUser(from);
-  const { text, bannerPhoto } = await buildMenuText(user);
-  if (bannerPhoto) {
-    try { await bot.deleteMessage(chatId, messageId); } catch (e) { /* ignore */ }
-    return bot.sendPhoto(chatId, bannerPhoto, { caption: text, parse_mode: 'HTML', reply_markup: mainMenu() });
-  }
-  try {
-    await bot.editMessageText(text, {
-      chat_id: chatId,
-      message_id: messageId,
-      parse_mode: 'HTML',
-      reply_markup: mainMenu(),
-    });
-  } catch (e) {
-    // fallback kirim baru jika edit gagal (mis. pesan terlalu lama)
-    await sendMainMenu(bot, chatId, from);
-  }
+  const { text } = await buildMenuText(user);
+  // Selalu edit pesan yang sama supaya tetap 1 chat. Jika pesan saat ini berupa
+  // foto (mis. banner /start), editOrSend otomatis menghapusnya lalu mengirim
+  // satu pesan teks sebagai pengganti — tidak menumpuk chat baru.
+  return editOrSend(bot, chatId, messageId, text, mainMenu());
 }
 
 module.exports = { sendMainMenu, editToMainMenu, buildMenuText };

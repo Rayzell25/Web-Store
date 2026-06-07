@@ -12,6 +12,7 @@ const qrisService = require('../services/qrisService');
 const { setState, clearState, getState } = require('../utils/session');
 const { backButton } = require('../keyboards/menus');
 const { rupiah, escapeHtml, tanggal, LINE } = require('../utils/format');
+const { editOrSend: edit } = require('../utils/ui');
 
 const PRESETS = [10000, 20000, 50000, 100000, 200000, 500000];
 
@@ -167,23 +168,8 @@ async function reject(bot, chatId, messageId, adminFrom, depositId) {
   } catch (e) { /* ignore */ }
 }
 
-async function edit(bot, chatId, messageId, text, replyMarkup) {
-  const opts = { parse_mode: 'HTML' };
-  if (replyMarkup) opts.reply_markup = replyMarkup;
-  if (messageId) {
-    try {
-      return await bot.editMessageText(text, { chat_id: chatId, message_id: messageId, ...opts });
-    } catch (e) { /* fall through */ }
-  }
-  return bot.sendMessage(chatId, text, opts);
-}
-
 async function answerEdit(bot, chatId, messageId, text) {
-  try {
-    await bot.editMessageText(text, { chat_id: chatId, message_id: messageId, parse_mode: 'HTML' });
-  } catch (e) {
-    await bot.sendMessage(chatId, text, { parse_mode: 'HTML' });
-  }
+  return edit(bot, chatId, messageId, text, null);
 }
 
 module.exports = {

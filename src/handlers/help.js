@@ -2,6 +2,7 @@
 
 const { config } = require('../config');
 const { escapeHtml, LINE } = require('../utils/format');
+const { editOrSend } = require('../utils/ui');
 
 async function showBantuan(bot, chatId, messageId) {
   const text =
@@ -22,13 +23,7 @@ async function showBantuan(bot, chatId, messageId) {
   if (config.store.adminContact) rows.push([{ text: 'HUBUNGI ADMIN', url: config.store.adminContact }]);
   rows.push([{ text: '« KEMBALI', callback_data: 'menu:home' }]);
 
-  const opts = { parse_mode: 'HTML', reply_markup: { inline_keyboard: rows } };
-  if (messageId) {
-    try {
-      return await bot.editMessageText(text, { chat_id: chatId, message_id: messageId, ...opts });
-    } catch (e) { /* fall through */ }
-  }
-  return bot.sendMessage(chatId, text, opts);
+  return editOrSend(bot, chatId, messageId, text, { inline_keyboard: rows });
 }
 
 module.exports = { showBantuan };
