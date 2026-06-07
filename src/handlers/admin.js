@@ -24,6 +24,10 @@ function adminMenuKeyboard() {
         { text: 'Markup', callback_data: 'adm:markup' },
         { text: 'Sync Produk', callback_data: 'adm:sync' },
       ],
+      [
+        { text: 'Set Foto Sambutan', callback_data: 'adm:setfoto' },
+        { text: 'Hapus Foto', callback_data: 'adm:delfoto' },
+      ],
       [{ text: 'Broadcast', callback_data: 'adm:broadcast' }],
       [{ text: '« Kembali', callback_data: 'menu:home' }],
     ],
@@ -131,6 +135,19 @@ async function syncProducts(bot, chatId, messageId) {
       `❌ Sync gagal: ${escapeHtml(e.message)}\n\nPastikan DIGIFLAZZ_USERNAME & DIGIFLAZZ_API_KEY benar.`,
       back('menu:admin'));
   }
+}
+
+async function showSetFoto(bot, chatId, messageId, userId) {
+  await require('../utils/session').setState(userId, 'adm:set_foto', {});
+  await edit(bot, chatId, messageId,
+    `<b>SET FOTO SAMBUTAN</b>\n${require('../utils/format').LINE}\nKirim foto/gambar yang ingin ditampilkan di atas pesan /start.\n\nTips: gunakan foto landscape/banner agar terlihat proporsional.`,
+    back('menu:admin'));
+}
+
+async function deleteFoto(bot, chatId, messageId) {
+  const { query } = require('../db/database');
+  await query("DELETE FROM settings WHERE key = 'banner_photo'");
+  await edit(bot, chatId, messageId, '✅ Foto sambutan dihapus.', back('menu:admin'));
 }
 
 /** Tangani input teks admin sesuai state. Return true jika ditangani. */
@@ -269,5 +286,7 @@ module.exports = {
   askBroadcast,
   showMarkup,
   syncProducts,
+  showSetFoto,
+  deleteFoto,
   handleAdminText,
 };

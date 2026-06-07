@@ -5,13 +5,17 @@ const { ensureUser, countUsers } = require('../services/userService');
 const { countTransactions, todayRevenue } = require('../services/trxService');
 const { mainMenu } = require('../keyboards/menus');
 const { rupiah, escapeHtml, LINE } = require('../utils/format');
+const { one } = require('../db/database');
 
 async function buildMenuText(user) {
-  const [totalTrx, today, totalUsers] = await Promise.all([
+  const [totalTrx, today, totalUsers, bannerRow] = await Promise.all([
     countTransactions(),
     todayRevenue(),
     countUsers(),
+    one("SELECT value FROM settings WHERE key = 'banner_photo'"),
   ]);
+
+  const bannerPhoto = bannerRow ? bannerRow.value : null;
 
   // blok data rata kolom (monospace) -> tampilan rapi & "premium"
   const akun =
@@ -22,7 +26,7 @@ async function buildMenuText(user) {
     `Hari ini  : ${rupiah(today)}\n` +
     `Pengguna  : ${totalUsers}`;
 
-  return (
+  const text = (
     `<b>${escapeHtml(config.store.name.toUpperCase())}</b>\n` +
     `${LINE}\n` +
     `Halo, <b>${escapeHtml(user.name)}</b> 👋\n\n` +
@@ -36,11 +40,20 @@ async function buildMenuText(user) {
       : '') +
     `Silakan pilih menu di bawah.`
   );
+
+  return { text, bannerPhoto };
 }
 
 async function sendMainMenu(bot, chatId, from) {
   const user = await ensureUser(from);
-  const text = await buildMenuText(user);
+  const { text, bannerPhoto } = await buildMenuText(user);
+  if (bannerPhoto) {
+    return bot.sendPhoto(chatId, bannerPhoto, {
+      caption: text,
+      parse_mode: 'HTML',
+      reply_markup: mainMenu(),
+    });
+  }
   return bot.sendMessage(chatId, text, {
     parse_mode: 'HTML',
     reply_markup: mainMenu(),
@@ -49,7 +62,11 @@ async function sendMainMenu(bot, chatId, from) {
 
 async function editToMainMenu(bot, chatId, messageId, from) {
   const user = await ensureUser(from);
-  const text = await buildMenuText(user);
+  const { text, bannerPhoto } = await buildMenuText(user);
+  if (bannerPhoto) {
+    try { await bot.deleteMessage(chatId, messageId); } catch (e) { /* ignore */ }
+    return bot.sendPhoto(chatId, bannerPhoto, { caption: text, parse_mode: 'HTML', reply_markup: mainMenu() });
+  }
   try {
     await bot.editMessageText(text, {
       chat_id: chatId,

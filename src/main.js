@@ -104,6 +104,24 @@ async function main() {
 
   // ===== Pesan teks (alur multi-langkah) =====
   bot.on('message', async (msg) => {
+    // Admin kirim foto untuk banner /start
+    if (msg.photo && msg.photo.length > 0 && isAdmin(msg.from.id)) {
+      const userId = msg.from.id;
+      const chatId = msg.chat.id;
+      const state = await getState(userId);
+      if (state && state.action === 'adm:set_foto') {
+        await clearState(userId);
+        const fileId = msg.photo[msg.photo.length - 1].file_id; // ambil resolusi tertinggi
+        const { query } = require('./db/database');
+        await query(
+          "INSERT INTO settings (key, value) VALUES ('banner_photo', $1) ON CONFLICT (key) DO UPDATE SET value = $2",
+          [fileId, fileId]
+        );
+        await bot.sendMessage(chatId, '<b>Foto sambutan berhasil disimpan!</b>\nKetik /start untuk lihat hasilnya.', { parse_mode: 'HTML' });
+        return;
+      }
+    }
+
     if (!msg.text || msg.text.startsWith('/')) return;
     const userId = msg.from.id;
     const chatId = msg.chat.id;
@@ -231,6 +249,10 @@ async function main() {
         if (isAdmin(from.id)) await admin.askBroadcast(bot, chatId, messageId, from.id);
       } else if (data === 'adm:sync') {
         if (isAdmin(from.id)) await admin.syncProducts(bot, chatId, messageId);
+      } else if (data === 'adm:setfoto') {
+        if (isAdmin(from.id)) await admin.showSetFoto(bot, chatId, messageId, from.id);
+      } else if (data === 'adm:delfoto') {
+        if (isAdmin(from.id)) await admin.deleteFoto(bot, chatId, messageId);
       }
     } catch (e) {
       logger.error('callback error:', e.message);
