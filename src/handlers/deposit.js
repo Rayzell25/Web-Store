@@ -46,14 +46,14 @@ async function showDepositMenu(bot, chatId, messageId, userId) {
   await edit(bot, chatId, messageId, text, { inline_keyboard: rows });
 }
 
-/** Nominal preset dipilih -> langsung ke pilih metode. */
+/** Nominal preset dipilih -> langsung tampilkan QRIS. */
 async function chooseNominal(bot, chatId, messageId, userId, amount, notifyAdmins) {
   const amt = parseInt(amount, 10);
   if (!Number.isFinite(amt) || amt < config.topup.min) {
     return edit(bot, chatId, messageId,
       `⚠️ Minimal top up ${rupiah(config.topup.min)}.`, backButton('menu:deposit'));
   }
-  await presentMethod(bot, chatId, messageId, userId, amt, notifyAdmins);
+  await startQrisTopup(bot, chatId, messageId, userId, amt);
 }
 
 /** "Nominal Lain" -> minta user ketik angka. */
@@ -78,96 +78,18 @@ async function receiveAmount(bot, chatId, userId, text, notifyAdmins) {
   if (amount < config.topup.min) {
     return bot.sendMessage(chatId, `⚠️ Minimal top up ${rupiah(config.topup.min)}.`);
   }
-  await presentMethod(bot, chatId, null, userId, amount, notifyAdmins);
+  await startQrisTopup(bot, chatId, null, userId, amount);
 }
 
-/** Tampilkan pilihan metode (QRIS / Transfer Manual) untuk sebuah nominal. */
-async function presentMethod(bot, chatId, messageId, userId, amount, notifyAdmins) {
-  // QRIS mati -> langsung buat tagihan manual
-  if (!config.qris.enabled) {
-    await clearState(userId);
-    if (messageId) { try { await bot.deleteMessage(chatId, messageId); } catch (e) { /* ignore */ } }
-    return createManualDeposit(bot, chatId, userId, amount, notifyAdmins);
-  }
-
-  await setState(userId, 'deposit:method', { amount });
-  const kb = {
-    inline_keyboard: [
-      [
-        { text: 'QRIS', callback_data: 'deposit:qris' },
-        { text: 'Transfer Manual', callback_data: 'deposit:manual' },
-      ],
-      [{ text: '« Kembali', callback_data: 'menu:deposit' }],
-    ],
-  };
-  const text =
-    `<b>PILIH METODE TOP UP</b>\n${LINE}\n` +
-    `<code>${escapeHtml(`Nominal : ${rupiah(amount)}`)}</code>\n${LINE}\n` +
-    `Saldo masuk penuh ${rupiah(amount)} setelah pembayaran.`;
-  await edit(bot, chatId, messageId, text, kb);
-}
-
-/** Top up via transfer manual (perlu approve admin). */
-async function chooseManual(bot, chatId, messageId, userId, notifyAdmins) {
-  const state = await getState(userId);
-  if (!state || state.action !== 'deposit:method') {
-    return edit(bot, chatId, messageId, '⚠️ Sesi top up kedaluwarsa. Ulangi dari menu.', backButton('menu:deposit'));
-  }
-  const amount = state.data.amount;
+/** Top up via QRIS otomatis langsung dari nominal (saldo masuk sendiri setelah bayar). */
+async function startQrisTopup(bot, chatId, messageId, userId, amount) {
   await clearState(userId);
-  try { await bot.deleteMessage(chatId, messageId); } catch (e) { /* ignore */ }
-  await createManualDeposit(bot, chatId, userId, amount, notifyAdmins);
-}
 
-async function createManualDeposit(bot, chatId, userId, amount, notifyAdmins) {
-  const deposit = await createDeposit(userId, amount);
-  const user = await getUser(userId);
-
-  const info =
-    `ID     : ${deposit.id}\n` +
-    `Nominal: ${rupiah(amount)}`;
-  const userText =
-    `<b>PERMINTAAN TOP UP DIBUAT</b>\n` +
-    `${LINE}\n` +
-    `<code>${escapeHtml(info)}</code>\n` +
-    `${LINE}\n` +
-    `<b>Transfer ke:</b>\n${escapeHtml(config.topup.info)}\n\n` +
-    `Setelah transfer, kirim bukti ke admin. Saldo masuk setelah dikonfirmasi.`;
-
-  await bot.sendMessage(chatId, userText, { parse_mode: 'HTML', reply_markup: backButton('menu:home') });
-
-  if (typeof notifyAdmins === 'function') {
-    const ainfo =
-      `#${deposit.id}\n` +
-      `User : ${user.name} (${userId})` +
-      (user.username ? ` @${user.username}` : '') + `\n` +
-      `Nilai: ${rupiah(amount)}\n` +
-      `Waktu: ${tanggal(deposit.created_at)}`;
-    const adminKb = {
-      inline_keyboard: [
-        [
-          { text: 'Setujui', callback_data: `dp:ok:${deposit.id}` },
-          { text: 'Tolak', callback_data: `dp:no:${deposit.id}` },
-        ],
-      ],
-    };
-    notifyAdmins(`<b>PERMINTAAN TOP UP</b> 🔔\n${LINE}\n<code>${escapeHtml(ainfo)}</code>`,
-      { parse_mode: 'HTML', reply_markup: adminKb });
-  }
-}
-
-/** Top up via QRIS otomatis (saldo masuk sendiri setelah bayar). */
-async function chooseQris(bot, chatId, messageId, userId) {
   if (!config.qris.enabled) {
     return edit(bot, chatId, messageId, '⚠️ QRIS sedang tidak tersedia.', backButton('menu:deposit'));
   }
-  const state = await getState(userId);
-  if (!state || state.action !== 'deposit:method') {
-    return edit(bot, chatId, messageId, '⚠️ Sesi top up kedaluwarsa. Ulangi dari menu.', backButton('menu:deposit'));
-  }
-  const amount = state.data.amount;
-  const { total } = autogopay.computeTotal(amount);
-  await clearState(userId);
+
+  const { total, fee } = autogopay.computeTotal(amount);
 
   let qr;
   try {
@@ -176,7 +98,7 @@ async function chooseQris(bot, chatId, messageId, userId) {
     return edit(bot, chatId, messageId, `⚠️ Gagal membuat QRIS: ${escapeHtml(e.message)}`, backButton('menu:deposit'));
   }
 
-  try { await bot.deleteMessage(chatId, messageId); } catch (e) { /* ignore */ }
+  if (messageId) { try { await bot.deleteMessage(chatId, messageId); } catch (e) { /* ignore */ } }
 
   const caption =
     `<b>TOP UP via QRIS</b>\n${LINE}\n` +
@@ -269,8 +191,6 @@ module.exports = {
   chooseNominal,
   askAmount,
   receiveAmount,
-  chooseManual,
-  chooseQris,
   approve,
   reject,
 };

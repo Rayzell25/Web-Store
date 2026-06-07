@@ -197,10 +197,6 @@ async function main() {
         await deposit.askAmount(bot, chatId, messageId, from.id);
       } else if (data.startsWith('deposit:nom:')) {
         await deposit.chooseNominal(bot, chatId, messageId, from.id, data.slice('deposit:nom:'.length), notifyAdmins);
-      } else if (data === 'deposit:qris') {
-        await deposit.chooseQris(bot, chatId, messageId, from.id);
-      } else if (data === 'deposit:manual') {
-        await deposit.chooseManual(bot, chatId, messageId, from.id, notifyAdmins);
       } else if (data.startsWith('qris:check:')) {
         await qrisPoller.checkNow(data.slice('qris:check:'.length));
         bot.answerCallbackQuery(q.id, { text: 'Mengecek pembayaran...' }).catch(() => {});
