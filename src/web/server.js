@@ -4,13 +4,17 @@ const path = require('path');
 const crypto = require('crypto');
 const express = require('express');
 const { all, one, init } = require('../db/database');
+const { config } = require('../config');
 const markupService = require('../services/markupService');
+const productService = require('../services/productService');
 const { sellPrice } = require('../services/productService');
 const userService = require('../services/userService');
 const trxService = require('../services/trxService');
 const depositService = require('../services/depositService');
 const digiflazz = require('../services/digiflazz');
-const { rupiah, tanggal } = require('../utils/format');
+const autogopay = require('../services/autogopay');
+const qrisService = require('../services/qrisService');
+const { rupiah, tanggal, trxCode } = require('../utils/format');
 const logger = require('../utils/logger');
 
 const PORT = Number(process.env.WEB_PORT || 3000);
@@ -29,6 +33,38 @@ function genToken() {
   return t;
 }
 function verifyToken(t) { return tokens.has(t); }
+
+// ===== Login member via Telegram Login Widget =====
+// Verifikasi data login Telegram secara server-side (anti-palsu).
+function verifyTelegramAuth(data) {
+  const botToken = process.env.BOT_TOKEN || '';
+  if (!botToken || !data || !data.hash) return false;
+  const { hash, ...fields } = data;
+  const checkString = Object.keys(fields).sort()
+    .map((k) => `${k}=${fields[k]}`).join('\n');
+  const secret = crypto.createHash('sha256').update(botToken).digest();
+  const hmac = crypto.createHmac('sha256', secret).update(checkString).digest('hex');
+  if (hmac !== hash) return false;
+  const authDate = Number(fields.auth_date || 0);
+  if (Date.now() / 1000 - authDate > 86400) return false; // maks 1 hari
+  return true;
+}
+
+// Token member (terpisah dari token admin di atas).
+const memberTokens = new Map(); // token -> userId
+function genMemberToken(userId) {
+  const t = crypto.randomBytes(32).toString('hex');
+  memberTokens.set(t, Number(userId));
+  setTimeout(() => memberTokens.delete(t), 7 * 24 * 3600 * 1000); // 7 hari
+  return t;
+}
+function requireUser(req, res, next) {
+  const t = (req.headers.authorization || '').replace(/^Bearer\s+/i, '').trim();
+  const uid = memberTokens.get(t);
+  if (!uid) return res.status(401).json({ ok: false, message: 'Silakan login dulu.' });
+  req.userId = uid;
+  next();
+}
 
 function waNumber() {
   let n = String(process.env.CONTACT_WA || '6287826532525').replace(/[^\d]/g, '');
@@ -114,10 +150,304 @@ app.get('/api/trx/:refId', async (req, res) => {
 
 // info kontak & nama toko
 app.get('/api/info', (req, res) => {
-  res.json({ ok: true, data: { store: STORE_NAME, ...CONTACT } });
+  const botUsername = String(process.env.BOT_USERNAME || '').replace(/^@/, '');
+  res.json({ ok: true, data: { store: STORE_NAME, botUsername, ...CONTACT } });
 });
 
 app.get('/health', (req, res) => res.json({ ok: true }));
+
+// ===================== MEMBER API (web belanja) =====================
+
+// login via Telegram Login Widget
+app.post('/api/auth/telegram', async (req, res) => {
+  try {
+    const data = req.body || {};
+    if (!verifyTelegramAuth(data)) {
+      return res.status(401).json({ ok: false, message: 'Verifikasi Telegram gagal.' });
+    }
+    const u = await userService.ensureUser({
+      id: data.id,
+      first_name: data.first_name,
+      last_name: data.last_name,
+      username: data.username,
+    });
+    const token = genMemberToken(data.id);
+    res.json({ ok: true, token, user: { name: u.name, balance: u.balance, role: u.role } });
+  } catch (e) {
+    logger.error('web /api/auth/telegram:', e.message);
+    res.status(500).json({ ok: false, message: 'Terjadi kesalahan saat login.' });
+  }
+});
+
+// profil member (saldo dll)
+app.get('/api/me', requireUser, async (req, res) => {
+  try {
+    const u = await userService.getUser(req.userId);
+    if (!u) return res.status(401).json({ ok: false, message: 'Akun tidak ditemukan.' });
+    res.json({ ok: true, data: { name: u.name, balance: u.balance, role: u.role } });
+  } catch (e) {
+    logger.error('web /api/me:', e.message);
+    res.json({ ok: false, message: e.message });
+  }
+});
+
+// katalog kategori (publik) — sama seperti /api/products
+app.get('/api/catalog', async (req, res) => {
+  try {
+    const rows = await all(
+      `SELECT category, COUNT(*)::int AS count, MIN(price)::bigint AS minprice
+         FROM products WHERE status = 'active'
+        GROUP BY category ORDER BY category`
+    );
+    const data = rows.map((r) => {
+      const harga = sellPrice(
+        { price: Number(r.minprice), category: r.category, buyer_sku_code: '' },
+        'MEMBER'
+      );
+      return { category: r.category, count: r.count, startFrom: harga, startFromText: rupiah(harga) };
+    });
+    res.json({ ok: true, data });
+  } catch (e) {
+    logger.error('web /api/catalog:', e.message);
+    res.json({ ok: false, data: [] });
+  }
+});
+
+// brand per kategori (publik)
+app.get('/api/catalog/brands', async (req, res) => {
+  try {
+    const category = String(req.query.category || '').trim();
+    if (!category) return res.json({ ok: false, data: [] });
+    const rows = await productService.getBrands(category);
+    res.json({ ok: true, data: rows.map((r) => ({ brand: r.brand, c: r.c })) });
+  } catch (e) {
+    logger.error('web /api/catalog/brands:', e.message);
+    res.json({ ok: false, data: [] });
+  }
+});
+
+// produk per brand (publik) — harga jual role MEMBER
+app.get('/api/catalog/items', async (req, res) => {
+  try {
+    const category = String(req.query.category || '').trim();
+    const brand = String(req.query.brand || '').trim();
+    if (!category || !brand) return res.json({ ok: false, data: [] });
+    const rows = await productService.getProductsByBrand(category, brand);
+    const data = rows.map((p) => {
+      const price = sellPrice(p, 'MEMBER');
+      return { sku: p.buyer_sku_code, name: p.product_name, price, priceText: rupiah(price) };
+    });
+    res.json({ ok: true, data });
+  } catch (e) {
+    logger.error('web /api/catalog/items:', e.message);
+    res.json({ ok: false, data: [] });
+  }
+});
+
+// beli produk (SALDO atau QRIS)
+app.post('/api/order', requireUser, async (req, res) => {
+  try {
+    const { sku, target, method } = req.body || {};
+    const product = await productService.getProduct(sku);
+    if (!product) return res.json({ ok: false, message: 'Produk tidak ditemukan.' });
+
+    const user = await userService.getUser(req.userId);
+    if (!user) return res.status(401).json({ ok: false, message: 'Akun tidak ditemukan.' });
+
+    const harga = sellPrice(product, user.role);
+    const tujuan = String(target || '').trim();
+    if (!tujuan) return res.json({ ok: false, message: 'Nomor tujuan tidak boleh kosong.' });
+
+    // ===== Bayar pakai SALDO =====
+    if (method === 'saldo') {
+      if (user.balance < harga) return res.json({ ok: false, message: 'Saldo tidak cukup.' });
+
+      const refId = trxCode('CHO');
+      try {
+        await userService.addBalance(req.userId, -harga); // potong dulu
+      } catch (e) {
+        return res.json({ ok: false, message: e.message || 'Gagal memotong saldo.' });
+      }
+
+      await trxService.createTransaction({
+        ref_id: refId,
+        user_id: req.userId,
+        buyer_sku_code: sku,
+        product_name: product.product_name,
+        target: tujuan,
+        cost_price: product.price,
+        sell_price: harga,
+        status: 'Pending',
+      });
+
+      let result;
+      try {
+        result = await digiflazz.topUp({ buyerSkuCode: sku, customerNo: tujuan, refId });
+      } catch (e) {
+        logger.error('web order digiflazz error:', e.message);
+        await userService.addBalance(req.userId, harga); // refund
+        await trxService.updateTransaction(refId, { status: 'Gagal', message: 'Gagal terhubung ke provider' });
+        return res.json({ ok: false, message: 'Gagal menghubungi provider. Saldo dikembalikan.' });
+      }
+
+      const status = digiflazz.mapStatus(result.status);
+      if (status === 'Gagal') {
+        await userService.addBalance(req.userId, harga); // refund
+        await trxService.updateTransaction(refId, { status: 'Gagal', message: result.message || '', sn: result.sn || null });
+        return res.json({ ok: false, message: result.message || 'Transaksi gagal, saldo dikembalikan.' });
+      }
+
+      await trxService.updateTransaction(refId, { status, sn: result.sn || null, message: result.message || '' });
+      const updated = await userService.getUser(req.userId);
+      return res.json({
+        ok: true,
+        method: 'saldo',
+        ref: refId,
+        status,
+        sn: result.sn || null,
+        product: product.product_name,
+        target: tujuan,
+        balance: updated.balance,
+      });
+    }
+
+    // ===== Bayar pakai QRIS =====
+    if (method === 'qris') {
+      if (!config.qris.enabled) return res.json({ ok: false, message: 'QRIS sedang tidak tersedia.' });
+      const { total, fee } = autogopay.computeTotal(harga);
+      let qr;
+      try {
+        qr = await autogopay.generateQris(total);
+      } catch (e) {
+        logger.error('web order generateQris error:', e.message);
+        return res.json({ ok: false, message: 'Gagal membuat QRIS. Coba lagi.' });
+      }
+      await qrisService.create({
+        transaction_id: qr.transaction_id,
+        order_id: qr.order_id,
+        user_id: req.userId,
+        chat_id: req.userId,
+        message_id: null,
+        purpose: 'order',
+        base_amount: harga,
+        fee,
+        amount: total,
+        payload: { sku, target: tujuan, product_name: product.product_name, cost_price: product.price },
+        expiry_at: autogopay.parseExpiry(qr.expiry_time),
+      });
+      return res.json({
+        ok: true,
+        method: 'qris',
+        transaction_id: qr.transaction_id,
+        qr_url: qr.qr_url,
+        amount: total,
+        amountText: rupiah(total),
+      });
+    }
+
+    return res.json({ ok: false, message: 'Metode pembayaran tidak dikenal.' });
+  } catch (e) {
+    logger.error('web /api/order:', e.message);
+    res.json({ ok: false, message: 'Terjadi kesalahan saat memproses pesanan.' });
+  }
+});
+
+// top up saldo (QRIS only)
+app.post('/api/topup', requireUser, async (req, res) => {
+  try {
+    const amount = parseInt(req.body && req.body.amount, 10);
+    if (!Number.isFinite(amount) || amount < config.topup.min) {
+      return res.json({ ok: false, message: `Minimal top up ${rupiah(config.topup.min)}.` });
+    }
+    if (!config.qris.enabled) return res.json({ ok: false, message: 'QRIS sedang tidak tersedia.' });
+
+    const { total, fee } = autogopay.computeTotal(amount);
+    let qr;
+    try {
+      qr = await autogopay.generateQris(total);
+    } catch (e) {
+      logger.error('web topup generateQris error:', e.message);
+      return res.json({ ok: false, message: 'Gagal membuat QRIS. Coba lagi.' });
+    }
+    await qrisService.create({
+      transaction_id: qr.transaction_id,
+      order_id: qr.order_id,
+      user_id: req.userId,
+      chat_id: req.userId,
+      message_id: null,
+      purpose: 'topup',
+      base_amount: amount,
+      fee,
+      amount: total,
+      payload: { nominal: amount },
+      expiry_at: autogopay.parseExpiry(qr.expiry_time),
+    });
+    res.json({
+      ok: true,
+      transaction_id: qr.transaction_id,
+      qr_url: qr.qr_url,
+      amount,
+      amountText: rupiah(amount),
+    });
+  } catch (e) {
+    logger.error('web /api/topup:', e.message);
+    res.json({ ok: false, message: 'Terjadi kesalahan saat membuat top up.' });
+  }
+});
+
+// status pembayaran QRIS (milik member sendiri)
+app.get('/api/qris/:txId', requireUser, async (req, res) => {
+  try {
+    const row = await qrisService.get(String(req.params.txId || '').trim());
+    if (!row || Number(row.user_id) !== Number(req.userId)) {
+      return res.status(404).json({ ok: false });
+    }
+    res.json({ ok: true, status: row.status, purpose: row.purpose });
+  } catch (e) {
+    logger.error('web /api/qris:', e.message);
+    res.status(404).json({ ok: false });
+  }
+});
+
+// riwayat gabungan (beli + top up)
+app.get('/api/history', requireUser, async (req, res) => {
+  try {
+    const [trx, tops] = await Promise.all([
+      trxService.getUserTransactions(req.userId, 15),
+      depositService.userDeposits(req.userId, 15),
+    ]);
+    const items = [];
+    for (const t of trx) {
+      items.push({
+        created_at: Number(t.created_at),
+        type: 'beli',
+        title: t.product_name || 'Pembelian',
+        target: maskTarget(t.target),
+        amountText: rupiah(t.sell_price),
+        status: t.status,
+        waktu: tanggal(Number(t.created_at)),
+        ref: t.ref_id,
+      });
+    }
+    for (const d of tops) {
+      items.push({
+        created_at: Number(d.created_at),
+        type: 'topup',
+        title: 'Top Up Saldo',
+        target: null,
+        amountText: rupiah(d.amount),
+        status: d.status,
+        waktu: tanggal(Number(d.created_at)),
+        ref: `#${d.id}`,
+      });
+    }
+    items.sort((a, b) => b.created_at - a.created_at);
+    res.json({ ok: true, data: items.slice(0, 12) });
+  } catch (e) {
+    logger.error('web /api/history:', e.message);
+    res.json({ ok: false, data: [] });
+  }
+});
 
 // ===================== ADMIN API =====================
 

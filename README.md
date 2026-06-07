@@ -170,11 +170,20 @@ bash scripts/restore.sh backups/ppob-YYYYMMDD-HHMMSS.zip
 
 ## Web Storefront (rayzelldigital.web.id)
 
-Web etalase + cek transaksi, terhubung ke database bot (read-only via localhost). Tombol **Beli** mengarahkan ke bot Telegram (transaksi tetap di bot).
+Web etalase + **belanja langsung dari web** (login Telegram, beli pakai SALDO/QRIS, top up QRIS, riwayat) — **nyatu dengan bot**: saldo & riwayat sama persis dengan akun Telegram.
 
-- Kode: `src/web/server.js` (Express) + `src/web/public/index.html` (Tailwind CDN).
-- API: `/api/products` (etalase per kategori), `/api/trx/:refId` (cek status), `/api/info` (kontak).
+- Kode: `src/web/server.js` (Express) + `src/web/public/index.html` (landing) + `src/web/public/app.html` (halaman belanja member).
+- API publik: `/api/products` & `/api/catalog` (etalase), `/api/trx/:refId` (cek status), `/api/info` (kontak + `botUsername`).
+- API member (perlu login Telegram): `/api/auth/telegram`, `/api/me`, `/api/order` (saldo/qris), `/api/topup` (qris), `/api/qris/:txId`, `/api/history`.
+- Pembayaran QRIS dari web memakai poller bot yang sama (`chat_id` = Telegram user id), jadi struk & saldo otomatis terkirim ke Telegram member.
 - Jalan di `127.0.0.1:WEB_PORT` (default 3000), di-expose lewat Nginx + SSL.
+
+### Login web (Telegram Login Widget)
+1. Set **`BOT_USERNAME`** di `.env` (username bot jualan, **tanpa @**) — WAJIB untuk tombol Login Telegram.
+2. **WAJIB** daftarkan domain bot di [@BotFather](https://t.me/BotFather): `/setdomain` → pilih bot → kirim `rayzelldigital.web.id`.
+3. `systemctl restart rayzell-web`. Buka `https://rayzelldigital.web.id/app.html`, klik **Login dengan Telegram**.
+
+> Tanpa `/setdomain` di BotFather, tombol login Telegram tidak akan muncul / gagal otorisasi.
 
 ### 1. Pointing domain
 Di panel DNS domain `rayzelldigital.web.id`, buat **A record**:

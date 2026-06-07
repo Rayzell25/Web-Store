@@ -44,11 +44,14 @@
           </span>
           <span class="font-bold tracking-tight" id="brand">Rayzell Store PPOB</span>
         </a>
-        <nav class="hidden gap-7 text-sm text-slate-400 sm:flex">
-          <a href="#layanan" class="transition hover:text-white">Layanan</a>
-          <a href="#cek" class="transition hover:text-white">Cek Transaksi</a>
-          <a href="#kontak" class="transition hover:text-white">Kontak</a>
-        </nav>
+        <div class="flex items-center gap-6">
+          <nav class="hidden gap-7 text-sm text-slate-400 sm:flex">
+            <a href="#layanan" class="transition hover:text-white">Layanan</a>
+            <a href="#cek" class="transition hover:text-white">Cek Transaksi</a>
+            <a href="#kontak" class="transition hover:text-white">Kontak</a>
+          </nav>
+          <a href="/app.html" class="rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-100 backdrop-blur transition hover:bg-white/10">Masuk</a>
+        </div>
       </div>
     </header>
 
@@ -66,12 +69,12 @@
         Pulsa, Paket Data, Token PLN, Voucher Game &amp; E-Money — harga bersaing, proses otomatis langsung dari Telegram.
       </p>
       <div class="fade-up d3 mt-9 flex flex-wrap justify-center gap-3">
-        <a id="cta-buy" href="#" target="_blank" rel="noopener"
+        <a id="cta-buy" href="/app.html"
            class="btn-grad rounded-xl px-7 py-3.5 font-semibold text-white shadow-lg shadow-indigo-500/30 transition">
-          Mulai Beli di Telegram
+          Masuk &amp; Belanja
         </a>
-        <a href="#layanan" class="rounded-xl border border-white/15 bg-white/5 px-7 py-3.5 font-semibold text-slate-100 backdrop-blur transition hover:bg-white/10">
-          Lihat Layanan
+        <a id="cta-tg" href="#" target="_blank" rel="noopener" class="rounded-xl border border-white/15 bg-white/5 px-7 py-3.5 font-semibold text-slate-100 backdrop-blur transition hover:bg-white/10">
+          Lewat Telegram
         </a>
       </div>
 
@@ -168,7 +171,7 @@
       $('#brand').textContent = data.store;
       $('#brandFoot').textContent = data.store;
       document.title = data.store + ' — Pulsa, Paket Data, PLN, Game, E-Money';
-      $('#cta-buy').href = data.botLink;
+      $('#cta-tg').href = data.botLink;
       $('#wa').href = data.waLink;
       $('#tg').href = data.tgLink;
     }).catch(() => {});
@@ -179,7 +182,7 @@
         grid.innerHTML = '<div class="col-span-full rounded-2xl border border-white/10 bg-white/5 p-6 text-center text-slate-400">Produk belum tersedia. Coba lagi nanti.</div>';
         return;
       }
-      const botLink = $('#cta-buy').href || '#';
+      const botLink = $('#cta-tg').href || '#';
       grid.innerHTML = data.map(d => `
         <div class="group rounded-2xl border border-white/10 bg-white/5 p-5 transition hover:-translate-y-0.5 hover:border-indigo-400/30 hover:bg-white/[0.07]">
           <div class="grid h-11 w-11 place-items-center rounded-xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 text-2xl">${iconFor(d.category)}</div>

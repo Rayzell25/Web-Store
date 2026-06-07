@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Belanja — Rayzell Store PPOB</title>
+  <meta name="description" content="Belanja pulsa, paket data, token PLN, voucher game & e-money langsung dari web. Bayar pakai saldo atau QRIS, nyatu dengan akun Telegram." />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%236366f1'/><stop offset='1' stop-color='%23a855f7'/></linearGradient></defs><rect width='32' height='32' rx='8' fill='url(%23g)'/><path d='M17.5 6 9 18h6l-1.5 8 8.5-12h-6z' fill='white'/></svg>" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .fade-up { opacity: 0; transform: translateY(12px); animation: fu .5s ease forwards; }
+    @keyframes fu { to { opacity: 1; transform: none; } }
+    .glow { background:
+      radial-gradient(40rem 22rem at 50% -8%, rgba(99,102,241,.28), transparent 60%),
+      radial-gradient(28rem 18rem at 85% 8%, rgba(168,85,247,.20), transparent 60%),
+      radial-gradient(26rem 18rem at 12% 14%, rgba(56,189,248,.14), transparent 60%); }
+    .grid-bg { background-image:
+      linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px);
+      background-size: 44px 44px;
+      mask-image: radial-gradient(60rem 30rem at 50% 0%, #000 30%, transparent 75%); }
+    .gradient-text { background: linear-gradient(100deg,#a5b4fc,#e9d5ff 45%,#7dd3fc); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    .btn-grad { background: linear-gradient(100deg,#6366f1,#a855f7); }
+    .btn-grad:hover { filter: brightness(1.08); }
+    .spin { animation: sp 1s linear infinite; } @keyframes sp { to { transform: rotate(360deg); } }
+    ::-webkit-scrollbar { width: 8px; height: 8px; } ::-webkit-scrollbar-thumb { background: rgba(255,255,255,.12); border-radius: 8px; }
+  </style>
+</head>
+<body class="relative min-h-screen bg-slate-950 text-slate-100 antialiased">
+  <div class="pointer-events-none fixed inset-0 glow"></div>
+  <div class="pointer-events-none fixed inset-0 grid-bg"></div>
+
+  <div class="relative">
+    <!-- NAV -->
+    <header class="sticky top-0 z-30 border-b border-white/5 bg-slate-950/70 backdrop-blur-xl">
+      <div class="mx-auto flex max-w-3xl items-center justify-between px-5 py-4">
+        <a href="/" class="flex items-center gap-2.5">
+          <span class="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 shadow-lg shadow-indigo-500/30">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z" fill="white"/></svg>
+          </span>
+          <span class="font-bold tracking-tight" id="brand">Rayzell Store PPOB</span>
+        </a>
+        <div id="userBox" class="hidden items-center gap-3 text-sm">
+          <div class="text-right leading-tight">
+            <div class="text-[11px] text-slate-500">Saldo</div>
+            <div class="font-semibold text-white" id="balance">Rp 0</div>
+          </div>
+          <button id="logoutBtn" class="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:bg-white/10">Keluar</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="mx-auto max-w-3xl px-5 py-8">
+      <!-- GATE LOGIN -->
+      <section id="gate" class="hidden">
+        <div class="fade-up mx-auto mt-10 max-w-md rounded-3xl border border-white/10 bg-gradient-to-br from-white/[0.07] to-white/[0.02] p-8 text-center">
+          <div class="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-500 shadow-lg shadow-indigo-500/30">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z" fill="white"/></svg>
+          </div>
+          <h1 class="mt-5 text-2xl font-extrabold tracking-tight">Masuk untuk mulai <span class="gradient-text">belanja</span></h1>
+          <p class="mt-2 text-sm text-slate-400">Login dengan Telegram. Saldo & riwayatmu otomatis nyatu dengan akun bot.</p>
+          <div id="loginWidget" class="mt-7 flex min-h-[48px] justify-center"></div>
+          <div id="loginNote" class="mt-3 hidden text-xs text-rose-400"></div>
+          <p class="mt-5 text-[11px] text-slate-500">Data login diverifikasi aman di server. Kami tidak menyimpan kata sandi apa pun.</p>
+        </div>
+      </section>
+
+      <!-- APP (setelah login) -->
+      <section id="app" class="hidden">
+        <!-- TABS -->
+        <div class="mb-6 grid grid-cols-3 gap-2 rounded-2xl border border-white/10 bg-white/5 p-1.5">
+          <button data-tab="beli"    class="tabBtn rounded-xl px-4 py-2.5 text-sm font-semibold transition">Beli</button>
+          <button data-tab="topup"   class="tabBtn rounded-xl px-4 py-2.5 text-sm font-semibold transition">Top Up</button>
+          <button data-tab="riwayat" class="tabBtn rounded-xl px-4 py-2.5 text-sm font-semibold transition">Riwayat</button>
+        </div>
+
+        <!-- TAB: BELI -->
+        <div id="tab-beli" class="tabPane">
+          <div id="crumb" class="mb-4 flex items-center gap-2 text-sm text-slate-400"></div>
+          <div id="beliView"></div>
+        </div>
+
+        <!-- TAB: TOP UP -->
+        <div id="tab-topup" class="tabPane hidden">
+          <div class="rounded-2xl border border-white/10 bg-white/5 p-6">
+            <h2 class="text-lg font-bold">Top Up Saldo</h2>
+            <p class="mt-1 text-sm text-slate-400">Pilih nominal lalu bayar via QRIS. Saldo masuk otomatis.</p>
+            <div id="presetGrid" class="mt-5 grid grid-cols-2 gap-3"></div>
+            <div class="mt-4">
+              <label class="text-xs text-slate-400">Nominal lain</label>
+              <div class="mt-1.5 flex flex-col gap-3 sm:flex-row">
+                <input id="topupAmount" type="number" inputmode="numeric" min="0" placeholder="Mis. 75000"
+                  class="w-full rounded-xl border border-white/10 bg-slate-900/70 px-4 py-3 text-slate-100 outline-none placeholder:text-slate-500 focus:border-indigo-400/60" />
+                <button id="topupBtn" class="btn-grad rounded-xl px-7 py-3 font-semibold text-white shadow-lg shadow-indigo-500/30 transition">Top Up</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB: RIWAYAT -->
+        <div id="tab-riwayat" class="tabPane hidden">
+          <div class="mb-4 flex items-center justify-between">
+            <h2 class="text-lg font-bold">Riwayat Transaksi</h2>
+            <button id="histRefresh" class="text-xs font-medium text-slate-400 transition hover:text-white">Refresh</button>
+          </div>
+          <div id="histView" class="space-y-2.5"></div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="border-t border-white/5">
+      <div class="mx-auto flex max-w-3xl flex-col items-center gap-2 px-5 py-8 text-center text-xs text-slate-500">
+        © <span id="year"></span> <span id="brandFoot">Rayzell Store PPOB</span>. Belanja aman & otomatis.
+      </div>
+    </footer>
+  </div>
+
+  <!-- MODAL QRIS -->
+  <div id="qrisModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 p-5 backdrop-blur-sm">
+    <div class="w-full max-w-sm rounded-3xl border border-white/10 bg-slate-900 p-6 text-center shadow-2xl">
+      <h3 class="text-lg font-bold" id="qrisTitle">Bayar via QRIS</h3>
+      <p class="mt-1 text-sm text-slate-400">Scan & bayar. Saldo/pesanan diproses otomatis.</p>
+      <div class="mx-auto mt-5 w-fit rounded-2xl bg-white p-3">
+        <img id="qrisImg" alt="QRIS" class="h-56 w-56 object-contain" />
+      </div>
+      <div class="mt-4 text-2xl font-extrabold" id="qrisAmount">Rp 0</div>
+      <div class="mt-2 text-xs text-slate-400" id="qrisCountdown"></div>
+      <div id="qrisStatus" class="mt-4 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-300">
+        <span class="inline-flex items-center gap-2"><span class="h-2 w-2 animate-pulse rounded-full bg-amber-400"></span> Menunggu pembayaran…</span>
+      </div>
+      <button id="qrisClose" class="mt-5 w-full rounded-xl border border-white/15 bg-white/5 px-5 py-3 font-semibold text-slate-100 transition hover:bg-white/10">Tutup</button>
+    </div>
+  </div>
+
+  <script>
+    const $ = (s) => document.querySelector(s);
+    const $$ = (s) => Array.from(document.querySelectorAll(s));
+    document.getElementById('year').textContent = new Date().getFullYear();
+    const rupiah = (n) => 'Rp ' + Number(n || 0).toLocaleString('id-ID');
+    function token() { return localStorage.getItem('member_token') || ''; }
+
+    function statusColor(s) {
+      const v = String(s || '').toLowerCase();
+      if (['sukses', 'approved', 'done'].includes(v)) return 'text-emerald-400';
+      if (['gagal', 'rejected', 'failed', 'canceled', 'expired'].includes(v)) return 'text-rose-400';
+      return 'text-amber-400';
+    }
+
+    // ---- fetch helper member (auto handle 401) ----
+    async function api(path, opts = {}) {
+      const headers = Object.assign({}, opts.headers || {});
+      if (opts.body) headers['Content-Type'] = 'application/json';
+      if (token()) headers['Authorization'] = 'Bearer ' + token();
+      const r = await fetch(path, Object.assign({}, opts, { headers }));
+      if (r.status === 401) { localStorage.removeItem('member_token'); location.reload(); throw new Error('unauthorized'); }
+      return r.json();
+    }
+
+    let INFO = {};
+
+    // ===================== BOOT =====================
+    (async function boot() {
+      try {
+        const info = await fetch('/api/info').then(r => r.json());
+        INFO = (info && info.data) || {};
+        if (INFO.store) {
+          $('#brand').textContent = INFO.store;
+          $('#brandFoot').textContent = INFO.store;
+          document.title = 'Belanja — ' + INFO.store;
+        }
+      } catch (e) {}
+
+      if (token()) { showApp(); } else { showGate(); }
+    })();
+
+    // ===================== LOGIN GATE =====================
+    function showGate() {
+      $('#gate').classList.remove('hidden');
+      $('#app').classList.add('hidden');
+      $('#userBox').classList.add('hidden');
+
+      const uname = (INFO.botUsername || '').trim();
+      const widget = $('#loginWidget');
+      const note = $('#loginNote');
+      if (!uname) {
+        note.classList.remove('hidden');
+        note.textContent = 'Login Telegram belum dikonfigurasi (set BOT_USERNAME).';
+        return;
+      }
+      widget.innerHTML = '';
+      const s = document.createElement('script');
+      s.async = true;
+      s.src = 'https://telegram.org/js/telegram-widget.js?22';
+      s.setAttribute('data-telegram-login', uname);
+      s.setAttribute('data-size', 'large');
+      s.setAttribute('data-userpic', 'false');
+      s.setAttribute('data-onauth', 'onTelegramAuth(user)');
+      s.setAttribute('data-request-access', 'write');
+      widget.appendChild(s);
+    }
+
+    window.onTelegramAuth = async (user) => {
+      try {
+        const r = await fetch('/api/auth/telegram', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(user),
+        });
+        const j = await r.json();
+        if (!j.ok) { alert(j.message || 'Login gagal.'); return; }
+        localStorage.setItem('member_token', j.token);
+        location.reload();
+      } catch (e) {
+        alert('Gagal login. Coba lagi.');
+      }
+    };
+
+    $('#logoutBtn').addEventListener('click', () => {
+      localStorage.removeItem('member_token');
+      location.reload();
+    });
+
+    // ===================== APP =====================
+    async function showApp() {
+      $('#gate').classList.add('hidden');
+      $('#app').classList.remove('hidden');
+      $('#userBox').classList.remove('hidden');
+      await refreshMe();
+      setActiveTab('beli');
+      renderTopupPresets();
+      loadCategories();
+    }
+
+    async function refreshMe() {
+      try {
+        const j = await api('/api/me');
+        if (j.ok) $('#balance').textContent = rupiah(j.data.balance);
+      } catch (e) {}
+    }
+
+    // ---- TABS ----
+    function setActiveTab(name) {
+      $$('.tabBtn').forEach((b) => {
+        const on = b.dataset.tab === name;
+        b.className = 'tabBtn rounded-xl px-4 py-2.5 text-sm font-semibold transition ' +
+          (on ? 'btn-grad text-white shadow-lg shadow-indigo-500/30' : 'text-slate-400 hover:text-white');
+      });
+      $$('.tabPane').forEach((p) => p.classList.add('hidden'));
+      $('#tab-' + name).classList.remove('hidden');
+      if (name === 'riwayat') loadHistory();
+    }
+    $$('.tabBtn').forEach((b) => b.addEventListener('click', () => setActiveTab(b.dataset.tab)));
+
+    // ===================== TAB BELI =====================
+    const nav = { level: 'cat', category: null, brand: null, product: null };
+
+    function crumbHtml() {
+      const parts = ['<button data-go="cat" class="crumbLink transition hover:text-white">Kategori</button>'];
+      if (nav.category) parts.push('<span class="text-slate-600">/</span><button data-go="brand" class="crumbLink transition hover:text-white">' + esc(nav.category) + '</button>');
+      if (nav.brand) parts.push('<span class="text-slate-600">/</span><button data-go="items" class="crumbLink transition hover:text-white">' + esc(nav.brand) + '</button>');
+      if (nav.product) parts.push('<span class="text-slate-600">/</span><span class="text-white">' + esc(nav.product.name) + '</span>');
+      return parts.join(' ');
+    }
+    function renderCrumb() {
+      $('#crumb').innerHTML = crumbHtml();
+      $$('#crumb .crumbLink').forEach((el) => el.addEventListener('click', () => {
+        const go = el.dataset.go;
+        if (go === 'cat') loadCategories();
+        else if (go === 'brand') loadBrands(nav.category);
+        else if (go === 'items') loadItems(nav.category, nav.brand);
+      }));
+    }
+    function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+    function loadingCard(msg) { return '<div class="rounded-2xl border border-white/10 bg-white/5 p-6 text-center text-slate-400">' + (msg || 'Memuat…') + '</div>'; }
+
+    function iconFor(cat) {
+      const c = (cat || '').toLowerCase();
+      if (c.includes('pulsa')) return '📱';
+      if (c.includes('data')) return '🌐';
+      if (c.includes('pln') || c.includes('listrik')) return '⚡';
+      if (c.includes('game')) return '🎮';
+      if (c.includes('emoney') || c.includes('e-money') || c.includes('saldo')) return '💳';
+      if (c.includes('voucher')) return '🎟️';
+      if (c.includes('tv')) return '📺';
+      return '📦';
+    }
+
+    async function loadCategories() {
+      nav.level = 'cat'; nav.category = null; nav.brand = null; nav.product = null;
+      renderCrumb();
+      $('#beliView').innerHTML = loadingCard();
+      try {
+        const j = await api('/api/catalog');
+        if (!j.ok || !j.data.length) { $('#beliView').innerHTML = loadingCard('Produk belum tersedia.'); return; }
+        $('#beliView').innerHTML = '<div class="grid grid-cols-2 gap-3 sm:grid-cols-3">' + j.data.map((d) => `
+          <button data-cat="${esc(d.category)}" class="catCard group rounded-2xl border border-white/10 bg-white/5 p-4 text-left transition hover:-translate-y-0.5 hover:border-indigo-400/30 hover:bg-white/[0.07]">
+            <div class="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 text-xl">${iconFor(d.category)}</div>
+            <div class="mt-3 font-semibold text-sm">${esc(d.category)}</div>
+            <div class="text-[11px] text-slate-400">${d.count} produk</div>
+            <div class="mt-1 text-xs text-slate-300">Mulai <span class="font-semibold text-white">${d.startFromText}</span></div>
+          </button>`).join('') + '</div>';
+        $$('#beliView .catCard').forEach((el) => el.addEventListener('click', () => loadBrands(el.dataset.cat)));
+      } catch (e) { $('#beliView').innerHTML = loadingCard('Gagal memuat. Coba lagi.'); }
+    }
+
+    async function loadBrands(category) {
+      nav.level = 'brand'; nav.category = category; nav.brand = null; nav.product = null;
+      renderCrumb();
+      $('#beliView').innerHTML = loadingCard();
+      try {
+        const j = await api('/api/catalog/brands?category=' + encodeURIComponent(category));
+        if (!j.ok || !j.data.length) { $('#beliView').innerHTML = loadingCard('Brand belum tersedia.'); return; }
+        $('#beliView').innerHTML = '<div class="grid grid-cols-2 gap-3 sm:grid-cols-3">' + j.data.map((b) => `
+          <button data-brand="${esc(b.brand)}" class="brandCard rounded-2xl border border-white/10 bg-white/5 p-4 text-left transition hover:-translate-y-0.5 hover:border-indigo-400/30 hover:bg-white/[0.07]">
+            <div class="font-semibold text-sm">${esc(b.brand)}</div>
+            <div class="text-[11px] text-slate-400">${b.c} produk</div>
+          </button>`).join('') + '</div>';
+        $$('#beliView .brandCard').forEach((el) => el.addEventListener('click', () => loadItems(category, el.dataset.brand)));
+      } catch (e) { $('#beliView').innerHTML = loadingCard('Gagal memuat. Coba lagi.'); }
+    }
+
+    async function loadItems(category, brand) {
+      nav.level = 'items'; nav.category = category; nav.brand = brand; nav.product = null;
+      renderCrumb();
+      $('#beliView').innerHTML = loadingCard();
+      try {
+        const j = await api('/api/catalog/items?category=' + encodeURIComponent(category) + '&brand=' + encodeURIComponent(brand));
+        if (!j.ok || !j.data.length) { $('#beliView').innerHTML = loadingCard('Produk belum tersedia.'); return; }
+        $('#beliView').innerHTML = '<div class="space-y-2.5">' + j.data.map((p) => `
+          <div class="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/5 p-4">
+            <div class="min-w-0">
+              <div class="truncate font-semibold text-sm">${esc(p.name)}</div>
+              <div class="text-sm text-indigo-300 font-semibold">${p.priceText}</div>
+            </div>
+            <button data-sku="${esc(p.sku)}" data-name="${esc(p.name)}" data-price="${p.price}" data-pricetext="${esc(p.priceText)}"
+              class="pickBtn shrink-0 btn-grad rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition">Pilih</button>
+          </div>`).join('') + '</div>';
+        $$('#beliView .pickBtn').forEach((el) => el.addEventListener('click', () => {
+          selectProduct({ sku: el.dataset.sku, name: el.dataset.name, price: Number(el.dataset.price), priceText: el.dataset.pricetext });
+        }));
+      } catch (e) { $('#beliView').innerHTML = loadingCard('Gagal memuat. Coba lagi.'); }
+    }
+
+    function selectProduct(p) {
+      nav.level = 'product'; nav.product = p;
+      renderCrumb();
+      $('#beliView').innerHTML = `
+        <div class="rounded-2xl border border-white/10 bg-white/5 p-6">
+          <div class="text-xs text-slate-400">Produk</div>
+          <div class="mt-0.5 font-semibold">${esc(p.name)}</div>
+          <div class="mt-1 text-lg font-extrabold text-white">${p.priceText}</div>
+          <div class="mt-5">
+            <label class="text-xs text-slate-400">Nomor tujuan (HP / ID / No. pelanggan)</label>
+            <input id="orderTarget" type="text" inputmode="numeric" placeholder="Masukkan nomor tujuan…"
+              class="mt-1.5 w-full rounded-xl border border-white/10 bg-slate-900/70 px-4 py-3 text-slate-100 outline-none placeholder:text-slate-500 focus:border-indigo-400/60" />
+          </div>
+          <div class="mt-5 grid grid-cols-2 gap-3">
+            <button id="paySaldo" class="rounded-xl border border-white/15 bg-white/5 px-5 py-3 font-semibold text-slate-100 transition hover:bg-white/10">Bayar Saldo</button>
+            <button id="payQris" class="btn-grad rounded-xl px-5 py-3 font-semibold text-white shadow-lg shadow-indigo-500/30 transition">Bayar QRIS</button>
+          </div>
+          <button id="backToItems" class="mt-4 text-xs text-slate-400 transition hover:text-white">‹ Kembali ke daftar produk</button>
+          <div id="orderResult" class="mt-5"></div>
+        </div>`;
+      $('#backToItems').addEventListener('click', () => loadItems(nav.category, nav.brand));
+      $('#paySaldo').addEventListener('click', () => doOrder('saldo'));
+      $('#payQris').addEventListener('click', () => doOrder('qris'));
+    }
+
+    let ordering = false;
+    async function doOrder(method) {
+      if (ordering) return;
+      const target = ($('#orderTarget').value || '').trim();
+      const box = $('#orderResult');
+      if (!target) { box.innerHTML = resultCard('rose', 'Nomor tujuan tidak boleh kosong.'); return; }
+      ordering = true;
+      $('#paySaldo').disabled = true; $('#payQris').disabled = true;
+      box.innerHTML = '<div class="flex items-center gap-2 text-sm text-slate-400"><svg class="spin h-4 w-4" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="3" stroke-opacity=".25"/><path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg> Memproses…</div>';
+      try {
+        const j = await api('/api/order', { method: 'POST', body: JSON.stringify({ sku: nav.product.sku, target, method }) });
+        if (!j.ok) { box.innerHTML = resultCard('rose', j.message || 'Transaksi gagal.'); return; }
+        if (j.method === 'qris') {
+          box.innerHTML = '';
+          openQris({ title: 'Bayar Pesanan', txId: j.transaction_id, qr_url: j.qr_url, amountText: j.amountText });
+        } else {
+          const okStatus = String(j.status).toLowerCase() === 'sukses';
+          box.innerHTML = `
+            <div class="rounded-xl border ${okStatus ? 'border-emerald-400/30 bg-emerald-400/5' : 'border-amber-400/30 bg-amber-400/5'} p-4 text-sm">
+              <div class="font-semibold ${statusColor(j.status)}">Transaksi ${esc(j.status)}</div>
+              <div class="mt-2 grid gap-1 text-slate-300">
+                <div class="flex justify-between"><span class="text-slate-500">Produk</span><span>${esc(j.product)}</span></div>
+                <div class="flex justify-between"><span class="text-slate-500">Tujuan</span><span>${esc(j.target)}</span></div>
+                ${j.sn ? `<div class="flex justify-between"><span class="text-slate-500">SN</span><span class="font-mono text-xs">${esc(j.sn)}</span></div>` : ''}
+                <div class="flex justify-between"><span class="text-slate-500">Ref</span><span class="font-mono text-xs">${esc(j.ref)}</span></div>
+                <div class="flex justify-between"><span class="text-slate-500">Sisa saldo</span><span class="font-semibold text-white">${rupiah(j.balance)}</span></div>
+              </div>
+            </div>`;
+          $('#balance').textContent = rupiah(j.balance);
+        }
+      } catch (e) {
+        if (e.message !== 'unauthorized') box.innerHTML = resultCard('rose', 'Gagal terhubung. Coba lagi.');
+      } finally {
+        ordering = false;
+        if ($('#paySaldo')) $('#paySaldo').disabled = false;
+        if ($('#payQris')) $('#payQris').disabled = false;
+      }
+    }
+    function resultCard(tone, msg) {
+      const border = tone === 'rose' ? 'border-rose-400/30 bg-rose-400/5 text-rose-300' : 'border-emerald-400/30 bg-emerald-400/5 text-emerald-300';
+      return '<div class="rounded-xl border ' + border + ' p-4 text-sm">' + esc(msg) + '</div>';
+    }
+
+    // ===================== TAB TOP UP =====================
+    const PRESETS = [10000, 20000, 50000, 100000, 200000, 500000];
+    function renderTopupPresets() {
+      $('#presetGrid').innerHTML = PRESETS.map((n) => `
+        <button data-amt="${n}" class="presetBtn rounded-xl border border-white/10 bg-white/5 px-4 py-3 font-semibold transition hover:-translate-y-0.5 hover:border-indigo-400/30 hover:bg-white/[0.07]">${rupiah(n)}</button>`).join('');
+      $$('#presetGrid .presetBtn').forEach((el) => el.addEventListener('click', () => doTopup(Number(el.dataset.amt))));
+    }
+    let topuping = false;
+    async function doTopup(amount) {
+      if (topuping) return;
+      const amt = Number(amount) || parseInt($('#topupAmount').value, 10);
+      if (!Number.isFinite(amt) || amt <= 0) { alert('Masukkan nominal yang valid.'); return; }
+      topuping = true;
+      try {
+        const j = await api('/api/topup', { method: 'POST', body: JSON.stringify({ amount: amt }) });
+        if (!j.ok) { alert(j.message || 'Gagal membuat top up.'); return; }
+        openQris({ title: 'Top Up Saldo', txId: j.transaction_id, qr_url: j.qr_url, amountText: j.amountText });
+      } catch (e) {
+        if (e.message !== 'unauthorized') alert('Gagal terhubung. Coba lagi.');
+      } finally { topuping = false; }
+    }
+    $('#topupBtn').addEventListener('click', () => doTopup());
+
+    // ===================== TAB RIWAYAT =====================
+    async function loadHistory() {
+      $('#histView').innerHTML = loadingCard();
+      try {
+        const j = await api('/api/history');
+        if (!j.ok || !j.data.length) { $('#histView').innerHTML = loadingCard('Belum ada transaksi.'); return; }
+        $('#histView').innerHTML = j.data.map((it) => `
+          <div class="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/5 p-4">
+            <div class="min-w-0">
+              <div class="flex items-center gap-2">
+                <span class="rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${it.type === 'topup' ? 'bg-sky-500/15 text-sky-300' : 'bg-indigo-500/15 text-indigo-300'}">${it.type === 'topup' ? 'TOP UP' : 'BELI'}</span>
+                <span class="truncate font-semibold text-sm">${esc(it.title)}</span>
+              </div>
+              ${it.target ? `<div class="mt-0.5 text-xs text-slate-400">${esc(it.target)}</div>` : ''}
+              <div class="mt-0.5 text-[11px] text-slate-500 font-mono">${esc(it.ref)} · ${esc(it.waktu)}</div>
+            </div>
+            <div class="shrink-0 text-right">
+              <div class="font-semibold">${it.amountText}</div>
+              <div class="text-xs font-semibold ${statusColor(it.status)}">${esc(it.status)}</div>
+            </div>
+          </div>`).join('');
+      } catch (e) {
+        if (e.message !== 'unauthorized') $('#histView').innerHTML = loadingCard('Gagal memuat. Coba lagi.');
+      }
+    }
+    $('#histRefresh').addEventListener('click', loadHistory);
+
+    // ===================== MODAL QRIS =====================
+    let qrisPoll = null, qrisCountdownTimer = null, qrisDone = false;
+    function openQris({ title, txId, qr_url, amountText }) {
+      qrisDone = false;
+      $('#qrisTitle').textContent = title || 'Bayar via QRIS';
+      $('#qrisImg').src = qr_url;
+      $('#qrisAmount').textContent = amountText || '';
+      $('#qrisStatus').innerHTML = '<span class="inline-flex items-center gap-2"><span class="h-2 w-2 animate-pulse rounded-full bg-amber-400"></span> Menunggu pembayaran…</span>';
+      $('#qrisModal').classList.remove('hidden');
+      $('#qrisModal').classList.add('flex');
+
+      // countdown ~5 menit (informasi saja; backend yang menentukan kedaluwarsa)
+      let left = 5 * 60;
+      $('#qrisCountdown').textContent = fmtLeft(left);
+      qrisCountdownTimer = setInterval(() => {
+        left -= 1;
+        if (left <= 0) { clearInterval(qrisCountdownTimer); $('#qrisCountdown').textContent = 'Waktu habis'; }
+        else $('#qrisCountdown').textContent = fmtLeft(left);
+      }, 1000);
+
+      qrisPoll = setInterval(() => pollQris(txId), 3000);
+      pollQris(txId);
+    }
+    function fmtLeft(s) {
+      const m = Math.floor(s / 60), sec = s % 60;
+      return 'Berlaku ' + m + ':' + String(sec).padStart(2, '0');
+    }
+    async function pollQris(txId) {
+      try {
+        const j = await api('/api/qris/' + encodeURIComponent(txId));
+        if (!j.ok) return;
+        const st = String(j.status || '').toLowerCase();
+        if (st === 'done') {
+          qrisDone = true;
+          stopQrisPoll();
+          $('#qrisStatus').innerHTML = '<span class="font-semibold text-emerald-400">Pembayaran diterima!</span><div class="mt-1 text-xs text-slate-400">Saldo/pesanan diproses. Cek tab Riwayat atau Telegram.</div>';
+          $('#qrisCountdown').textContent = '';
+          refreshMe();
+        } else if (st === 'expired' || st === 'canceled') {
+          stopQrisPoll();
+          $('#qrisStatus').innerHTML = '<span class="font-semibold text-rose-400">QRIS kedaluwarsa/dibatalkan.</span>';
+          $('#qrisCountdown').textContent = '';
+        } else if (st === 'failed') {
+          stopQrisPoll();
+          $('#qrisStatus').innerHTML = '<span class="font-semibold text-rose-400">Pembayaran gagal diproses.</span>';
+        }
+      } catch (e) { /* abaikan, lanjut poll */ }
+    }
+    function stopQrisPoll() {
+      if (qrisPoll) { clearInterval(qrisPoll); qrisPoll = null; }
+      if (qrisCountdownTimer) { clearInterval(qrisCountdownTimer); qrisCountdownTimer = null; }
+    }
+    function closeQris() {
+      stopQrisPoll();
+      $('#qrisModal').classList.add('hidden');
+      $('#qrisModal').classList.remove('flex');
+      if (qrisDone) { loadHistory(); refreshMe(); }
+    }
+    $('#qrisClose').addEventListener('click', closeQris);
+    $('#qrisModal').addEventListener('click', (e) => { if (e.target === $('#qrisModal')) closeQris(); });
+  </script>
+</body>
+</html>
