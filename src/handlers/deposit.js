@@ -16,6 +16,15 @@ const { editOrSend: edit } = require('../utils/ui');
 
 const PRESETS = [10000, 20000, 50000, 100000, 200000, 500000];
 
+/** Kirim pesan lalu hapus otomatis setelah ttlSec detik (default 15). */
+async function sendAutoDelete(bot, chatId, text, ttlSec = 15) {
+  const sent = await bot.sendMessage(chatId, text, { parse_mode: 'HTML' });
+  setTimeout(() => {
+    bot.deleteMessage(chatId, sent.message_id).catch(() => {});
+  }, Math.max(1, ttlSec) * 1000);
+  return sent;
+}
+
 /** Menu utama Top Up: saldo + preset nominal. */
 async function showDepositMenu(bot, chatId, messageId, userId) {
   const user = await getUser(userId);
@@ -74,6 +83,9 @@ async function receiveAmount(bot, chatId, userId, text, notifyAdmins) {
   const amount = parseInt(String(text).replace(/[^\d]/g, ''), 10);
   if (!Number.isFinite(amount) || amount <= 0) {
     return bot.sendMessage(chatId, '⚠️ Nominal tidak valid. Ketik angka saja, contoh: 75000');
+  }
+  if (amount < config.topup.min) {
+    return sendAutoDelete(bot, chatId, `⚠️ Minimal top up ${rupiah(config.topup.min)}.`);
   }
   await startQrisTopup(bot, chatId, null, userId, amount);
 }
