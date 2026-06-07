@@ -61,6 +61,14 @@
     </header>
 
     <main class="mx-auto max-w-3xl px-5 py-8">
+      <!-- LOADING -->
+      <section id="loading">
+        <div class="fade-up mx-auto mt-16 max-w-md rounded-3xl border border-white/10 bg-white/5 p-10 text-center">
+          <svg class="spin mx-auto h-9 w-9 text-indigo-400" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="3" stroke-opacity=".25"/><path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>
+          <p class="mt-5 text-sm text-slate-400">Menyiapkan akun…</p>
+        </div>
+      </section>
+
       <!-- GATE LOGIN -->
       <section id="gate" class="hidden">
         <div class="fade-up mx-auto mt-10 max-w-md rounded-3xl border border-white/10 bg-gradient-to-br from-white/[0.07] to-white/[0.02] p-8 text-center">
@@ -170,6 +178,10 @@
 
     // ===================== BOOT =====================
     (async function boot() {
+      const showLoading = (on) => { const el = $('#loading'); if (el) el.classList.toggle('hidden', !on); };
+      showLoading(true);
+      $('#gate').classList.add('hidden');
+      $('#app').classList.add('hidden');
       try {
         const info = await fetch('/api/info').then(r => r.json());
         INFO = (info && info.data) || {};
@@ -195,6 +207,7 @@
         } catch (e) {}
       }
 
+      showLoading(false);
       if (token()) { showApp(); } else { showGate(); }
     })();
 
@@ -203,6 +216,16 @@
       $('#gate').classList.remove('hidden');
       $('#app').classList.add('hidden');
       $('#userBox').classList.add('hidden');
+
+      const tgApp = window.Telegram && window.Telegram.WebApp;
+      if (tgApp && tgApp.initData && tgApp.initData.length > 0) {
+        // Di dalam Telegram tapi auto-login gagal — widget tidak berfungsi di sini.
+        const w = $('#loginWidget');
+        const note = $('#loginNote');
+        if (w) w.innerHTML = '<button onclick="location.reload()" class="btn-grad rounded-xl px-6 py-3 font-semibold text-white">Coba Lagi</button>';
+        if (note) { note.classList.remove('hidden'); note.textContent = 'Sesi Telegram belum terbaca. Tap "Coba Lagi", atau tutup lalu buka ulang dari tombol Belanja di bot.'; }
+        return;
+      }
 
       const uname = (INFO.botUsername || '').trim();
       const widget = $('#loginWidget');
