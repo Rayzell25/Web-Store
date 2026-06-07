@@ -100,6 +100,7 @@
     function token() { return localStorage.getItem('admin_token') || ''; }
     function ah() { return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token() }; }
     function rupiah(n) { return 'Rp ' + Number(n||0).toLocaleString('id-ID'); }
+    function esc(s) { return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
     function badge(s) {
       const m = { Sukses:'text-emerald-400', Gagal:'text-rose-400', Pending:'text-amber-400' };
       return `<span class="font-semibold ${m[s]||'text-slate-400'}">${s}</span>`;
@@ -123,12 +124,12 @@
         const tb = document.getElementById('trxBody');
         if (!j.ok||!j.data.length) { tb.innerHTML='<tr><td colspan="6" class="px-6 py-8 text-center" style="color:var(--muted)">Belum ada transaksi.</td></tr>'; }
         else tb.innerHTML = j.data.map(t=>`<tr class="border-b hover:opacity-80" style="border-color:var(--border);background:var(--row)">
-          <td class="px-6 py-3 font-mono text-xs">${t.ref_id}</td>
-          <td class="px-6 py-3">${t.product_name||'—'}</td>
-          <td class="px-6 py-3">${t.target||'—'}</td>
+          <td class="px-6 py-3 font-mono text-xs">${esc(t.ref_id)}</td>
+          <td class="px-6 py-3">${esc(t.product_name||'—')}</td>
+          <td class="px-6 py-3">${esc(t.target||'—')}</td>
           <td class="px-6 py-3">${rupiah(t.sell_price)}</td>
           <td class="px-6 py-3">${badge(t.status)}</td>
-          <td class="px-6 py-3 text-xs" style="color:var(--muted)">${t.waktu}</td>
+          <td class="px-6 py-3 text-xs" style="color:var(--muted)">${esc(t.waktu)}</td>
         </tr>`).join('');
       } catch(e){}
       try {
@@ -140,10 +141,10 @@
         else {
           b.textContent = j.data.length; b.classList.remove('hidden');
           tb.innerHTML = j.data.map(d=>`<tr class="border-b hover:opacity-80" style="border-color:var(--border);background:var(--row)">
-            <td class="px-6 py-3 text-xs">#${d.id}</td>
-            <td class="px-6 py-3">${d.user_name} <span class="text-xs" style="color:var(--muted)">(${d.user_id})</span></td>
+            <td class="px-6 py-3 text-xs">#${esc(d.id)}</td>
+            <td class="px-6 py-3">${esc(d.user_name)} <span class="text-xs" style="color:var(--muted)">(${esc(d.user_id)})</span></td>
             <td class="px-6 py-3 font-semibold">${rupiah(d.amount)}</td>
-            <td class="px-6 py-3 text-xs" style="color:var(--muted)">${d.waktu}</td>
+            <td class="px-6 py-3 text-xs" style="color:var(--muted)">${esc(d.waktu)}</td>
             <td class="px-6 py-3">
               <button onclick="act(${d.id},'approve')" class="mr-2 rounded-lg px-3 py-1 text-xs font-semibold hover:opacity-80" style="background:#10b981;color:#fff">Setujui</button>
               <button onclick="act(${d.id},'reject')"  class="rounded-lg px-3 py-1 text-xs font-semibold hover:opacity-80" style="background:#f43f5e;color:#fff">Tolak</button>
