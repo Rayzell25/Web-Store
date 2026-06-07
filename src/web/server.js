@@ -24,6 +24,27 @@ const STORE_NAME = process.env.STORE_NAME || 'Rayzell Store PPOB';
 const WEB_ADMIN_USER = process.env.WEB_ADMIN_USER || 'admin';
 const WEB_ADMIN_PASS = process.env.WEB_ADMIN_PASSWORD || 'admin123';
 
+// Rate-limit login admin: max 10 percobaan per IP per 15 menit (anti brute-force).
+const loginAttempts = new Map(); // ip -> { count, resetAt }
+const LOGIN_LIMIT = 10;
+const LOGIN_WINDOW_MS = 15 * 60 * 1000;
+function checkLoginRate(ip) {
+  const now = Date.now();
+  const entry = loginAttempts.get(ip);
+  if (!entry || now > entry.resetAt) {
+    loginAttempts.set(ip, { count: 1, resetAt: now + LOGIN_WINDOW_MS });
+    return true;
+  }
+  entry.count += 1;
+  if (entry.count > LOGIN_LIMIT) return false;
+  return true;
+}
+// Warn sekali saat start kalau password masih default.
+if (WEB_ADMIN_PASS === 'admin123') {
+  // eslint-disable-next-line no-console
+  console.warn('[SECURITY] WEB_ADMIN_PASSWORD masih default "admin123" — ganti di .env!');
+}
+
 // token sederhana in-memory (cukup untuk 1 admin)
 const tokens = new Set();
 function genToken() {
@@ -513,6 +534,11 @@ app.get('/api/history', requireUser, async (req, res) => {
 
 // login
 app.post('/api/admin/login', (req, res) => {
+  const ip = req.ip || req.socket.remoteAddress || 'unknown';
+  if (!checkLoginRate(ip)) {
+    logger.warn(`[admin-login] rate-limit hit ip=${ip}`);
+    return res.status(429).json({ ok: false, message: 'Terlalu banyak percobaan. Coba lagi 15 menit lagi.' });
+  }
   const { username, password } = req.body || {};
   if (username === WEB_ADMIN_USER && password === WEB_ADMIN_PASS) {
     return res.json({ ok: true, token: genToken() });
