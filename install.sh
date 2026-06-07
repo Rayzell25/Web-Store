@@ -123,6 +123,12 @@ fi
 
 # ===== 8. jalankan container (Postgres + Local Bot API) =====
 step "Menjalankan PostgreSQL + Local Bot API (docker compose)"
+# Tarik image terbaru dulu. WAJIB: Local Bot API harus versi 9.4+ supaya
+# custom/premium emoji di tombol (icon_custom_emoji_id) dikenali server.
+# Tanpa pull, install ulang di VPS lama akan tetap pakai image basi -> emoji
+# premium tidak muncul.
+log "Menarik image terbaru (termasuk Local Bot API 9.4+)..."
+docker compose pull || warn "docker compose pull gagal (lanjut pakai image yang ada)."
 docker compose up -d
 
 log "Menunggu PostgreSQL siap..."
