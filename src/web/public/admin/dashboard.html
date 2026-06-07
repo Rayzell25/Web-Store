@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard Admin — Rayzell Store PPOB</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    [data-theme="dark"]  { --bg:#020817;--card:#0f172a;--border:rgba(255,255,255,.08);--text:#f1f5f9;--muted:#94a3b8;--btn:#fff;--btn-text:#0f172a;--row:rgba(255,255,255,.03); }
+    [data-theme="light"] { --bg:#f8fafc;--card:#ffffff;--border:rgba(0,0,0,.08);--text:#0f172a;--muted:#64748b;--btn:#0f172a;--btn-text:#fff;--row:rgba(0,0,0,.02); }
+  </style>
+</head>
+<body style="background:var(--bg);color:var(--text)" class="min-h-screen transition-colors duration-200">
+  <header class="sticky top-0 z-20 border-b" style="background:var(--card);border-color:var(--border)">
+    <div class="mx-auto flex max-w-6xl items-center justify-between px-5 py-3">
+      <div class="flex items-center gap-2">
+        <div class="grid h-8 w-8 place-items-center rounded-lg font-extrabold text-sm" style="background:var(--btn);color:var(--btn-text)">R</div>
+        <span class="font-semibold text-sm">Rayzell Store PPOB <span style="color:var(--muted)" class="font-normal">— Admin</span></span>
+      </div>
+      <div class="flex items-center gap-3">
+        <button onclick="toggleTheme()" class="rounded-full border px-3 py-1 text-xs font-medium" style="border-color:var(--border);color:var(--muted)"><span id="themeLabel">Light</span></button>
+        <button onclick="logout()" class="rounded-full border px-3 py-1 text-xs font-medium" style="border-color:var(--border);color:var(--muted)">Keluar</button>
+      </div>
+    </div>
+  </header>
+  <main class="mx-auto max-w-6xl px-5 py-8">
+    <!-- STATS -->
+    <div class="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div class="rounded-2xl p-5" style="background:var(--card);border:1px solid var(--border)">
+        <div class="text-xs font-medium" style="color:var(--muted)">Total Pengguna</div>
+        <div class="mt-2 text-2xl font-bold" id="statUsers">—</div>
+      </div>
+      <div class="rounded-2xl p-5" style="background:var(--card);border:1px solid var(--border)">
+        <div class="text-xs font-medium" style="color:var(--muted)">Total Transaksi</div>
+        <div class="mt-2 text-2xl font-bold" id="statTrx">—</div>
+      </div>
+      <div class="rounded-2xl p-5" style="background:var(--card);border:1px solid var(--border)">
+        <div class="text-xs font-medium" style="color:var(--muted)">Omzet Hari Ini</div>
+        <div class="mt-2 text-2xl font-bold" id="statRevenue">—</div>
+      </div>
+      <div class="rounded-2xl p-5" style="background:var(--card);border:1px solid var(--border)">
+        <div class="text-xs font-medium" style="color:var(--muted)">Saldo Digiflazz</div>
+        <div class="mt-2 text-2xl font-bold" id="statDeposit">—</div>
+      </div>
+    </div>
+    <!-- TRANSAKSI -->
+    <div class="rounded-2xl mb-6" style="background:var(--card);border:1px solid var(--border)">
+      <div class="flex items-center justify-between border-b px-6 py-4" style="border-color:var(--border)">
+        <h2 class="font-semibold">Transaksi Terbaru</h2>
+        <button onclick="loadData()" class="text-xs font-medium hover:opacity-70" style="color:var(--muted)">Refresh</button>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead><tr class="border-b" style="border-color:var(--border)">
+            <th class="px-6 py-3 text-left text-xs font-medium" style="color:var(--muted)">Ref ID</th>
+            <th class="px-6 py-3 text-left text-xs font-medium" style="color:var(--muted)">Produk</th>
+            <th class="px-6 py-3 text-left text-xs font-medium" style="color:var(--muted)">Tujuan</th>
+            <th class="px-6 py-3 text-left text-xs font-medium" style="color:var(--muted)">Harga</th>
+            <th class="px-6 py-3 text-left text-xs font-medium" style="color:var(--muted)">Status</th>
+            <th class="px-6 py-3 text-left text-xs font-medium" style="color:var(--muted)">Waktu</th>
+          </tr></thead>
+          <tbody id="trxBody"><tr><td colspan="6" class="px-6 py-8 text-center text-sm" style="color:var(--muted)">Memuat…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+    <!-- TOP UP PENDING -->
+    <div class="rounded-2xl" style="background:var(--card);border:1px solid var(--border)">
+      <div class="flex items-center justify-between border-b px-6 py-4" style="border-color:var(--border)">
+        <h2 class="font-semibold">Top Up Pending <span id="pendingBadge" class="ml-2 hidden rounded-full bg-amber-500 px-2 py-0.5 text-xs text-white"></span></h2>
+        <button onclick="loadData()" class="text-xs font-medium hover:opacity-70" style="color:var(--muted)">Refresh</button>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead><tr class="border-b" style="border-color:var(--border)">
+            <th class="px-6 py-3 text-left text-xs font-medium" style="color:var(--muted)">#</th>
+            <th class="px-6 py-3 text-left text-xs font-medium" style="color:var(--muted)">User</th>
+            <th class="px-6 py-3 text-left text-xs font-medium" style="color:var(--muted)">Nominal</th>
+            <th class="px-6 py-3 text-left text-xs font-medium" style="color:var(--muted)">Waktu</th>
+            <th class="px-6 py-3 text-left text-xs font-medium" style="color:var(--muted)">Aksi</th>
+          </tr></thead>
+          <tbody id="topupBody"><tr><td colspan="5" class="px-6 py-8 text-center text-sm" style="color:var(--muted)">Memuat…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+  <script>
+    const saved = localStorage.getItem('theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', saved);
+    document.getElementById('themeLabel').textContent = saved === 'dark' ? 'Light' : 'Dark';
+    function toggleTheme() {
+      const cur = document.documentElement.getAttribute('data-theme');
+      const next = cur === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('theme', next);
+      document.getElementById('themeLabel').textContent = next === 'dark' ? 'Light' : 'Dark';
+    }
+    function logout() { localStorage.removeItem('admin_token'); window.location = '/admin/'; }
+    function token() { return localStorage.getItem('admin_token') || ''; }
+    function ah() { return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token() }; }
+    function rupiah(n) { return 'Rp ' + Number(n||0).toLocaleString('id-ID'); }
+    function badge(s) {
+      const m = { Sukses:'text-emerald-400', Gagal:'text-rose-400', Pending:'text-amber-400' };
+      return `<span class="font-semibold ${m[s]||'text-slate-400'}">${s}</span>`;
+    }
+    async function loadData() {
+      if (!token()) { window.location = '/admin/'; return; }
+      try {
+        const r = await fetch('/api/admin/stats', { headers: ah() });
+        if (r.status === 401) { logout(); return; }
+        const j = await r.json();
+        if (j.ok) {
+          document.getElementById('statUsers').textContent = j.data.users;
+          document.getElementById('statTrx').textContent = j.data.transactions;
+          document.getElementById('statRevenue').textContent = rupiah(j.data.todayRevenue);
+          document.getElementById('statDeposit').textContent = j.data.digiDeposit != null ? rupiah(j.data.digiDeposit) : '—';
+        }
+      } catch(e){}
+      try {
+        const r = await fetch('/api/admin/transactions?limit=20', { headers: ah() });
+        const j = await r.json();
+        const tb = document.getElementById('trxBody');
+        if (!j.ok||!j.data.length) { tb.innerHTML='<tr><td colspan="6" class="px-6 py-8 text-center" style="color:var(--muted)">Belum ada transaksi.</td></tr>'; }
+        else tb.innerHTML = j.data.map(t=>`<tr class="border-b hover:opacity-80" style="border-color:var(--border);background:var(--row)">
+          <td class="px-6 py-3 font-mono text-xs">${t.ref_id}</td>
+          <td class="px-6 py-3">${t.product_name||'—'}</td>
+          <td class="px-6 py-3">${t.target||'—'}</td>
+          <td class="px-6 py-3">${rupiah(t.sell_price)}</td>
+          <td class="px-6 py-3">${badge(t.status)}</td>
+          <td class="px-6 py-3 text-xs" style="color:var(--muted)">${t.waktu}</td>
+        </tr>`).join('');
+      } catch(e){}
+      try {
+        const r = await fetch('/api/admin/topups/pending', { headers: ah() });
+        const j = await r.json();
+        const tb = document.getElementById('topupBody');
+        const b  = document.getElementById('pendingBadge');
+        if (!j.ok||!j.data.length) { tb.innerHTML='<tr><td colspan="5" class="px-6 py-8 text-center" style="color:var(--muted)">Tidak ada top up pending.</td></tr>'; b.classList.add('hidden'); }
+        else {
+          b.textContent = j.data.length; b.classList.remove('hidden');
+          tb.innerHTML = j.data.map(d=>`<tr class="border-b hover:opacity-80" style="border-color:var(--border);background:var(--row)">
+            <td class="px-6 py-3 text-xs">#${d.id}</td>
+            <td class="px-6 py-3">${d.user_name} <span class="text-xs" style="color:var(--muted)">(${d.user_id})</span></td>
+            <td class="px-6 py-3 font-semibold">${rupiah(d.amount)}</td>
+            <td class="px-6 py-3 text-xs" style="color:var(--muted)">${d.waktu}</td>
+            <td class="px-6 py-3">
+              <button onclick="act(${d.id},'approve')" class="mr-2 rounded-lg px-3 py-1 text-xs font-semibold hover:opacity-80" style="background:#10b981;color:#fff">Setujui</button>
+              <button onclick="act(${d.id},'reject')"  class="rounded-lg px-3 py-1 text-xs font-semibold hover:opacity-80" style="background:#f43f5e;color:#fff">Tolak</button>
+            </td>
+          </tr>`).join('');
+        }
+      } catch(e){}
+    }
+    async function act(id, action) {
+      const label = action === 'approve' ? 'Setujui' : 'Tolak';
+      if (!confirm(`${label} top up #${id}?`)) return;
+      const r = await fetch(`/api/admin/topups/${id}/${action}`, { method:'POST', headers: ah() });
+      const j = await r.json();
+      alert(j.message || (j.ok ? 'Berhasil.' : 'Gagal.'));
+      loadData();
+    }
+    if (!token()) window.location = '/admin/';
+    else { loadData(); setInterval(loadData, 30000); }
+  </script>
+</body>
+</html>

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Setup web storefront: systemd service + Nginx reverse proxy + SSL (Let's Encrypt).
+# Setup web storefront: npm install + systemd service + Nginx reverse proxy + SSL (Let's Encrypt).
 # Jalankan SETELAH domain di-pointing ke IP VPS.
 #
 # Pemakaian:
@@ -22,8 +22,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$PROJECT_DIR"
 
-# Baca .env pakai grep (aman, tidak di-source — tidak ada error dari value yang punya spasi)
-get_env() { grep -m1 "^${1}=" .env 2>/dev/null | cut -d= -f2- || true; }
+# Baca .env pakai grep (aman, tidak di-source)
+get_env() { grep -m1 "^${1}=" .env 2>/dev/null | cut -d= -f2- | tr -d '"' || true; }
 
 DOMAIN="${1:-}"
 if [ -z "$DOMAIN" ]; then
@@ -41,12 +41,17 @@ NODE_BIN="$(command -v node)"
 log "Domain   : $DOMAIN"
 log "Web port : $WEB_PORT"
 
-# ===== 1. paket =====
+# ===== 1. paket sistem =====
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -y
 apt-get install -y nginx certbot python3-certbot-nginx
 
-# ===== 2. systemd service web =====
+# ===== 2. npm install (pastikan express & semua dep tersedia) =====
+log "Install dependency Node..."
+npm install --omit=dev --no-audit --no-fund
+log "npm install selesai."
+
+# ===== 3. systemd service web =====
 cat > /etc/systemd/system/rayzell-web.service <<EOF
 [Unit]
 Description=Rayzell Store PPOB Web
@@ -67,9 +72,16 @@ EOF
 systemctl daemon-reload
 systemctl enable rayzell-web >/dev/null 2>&1 || true
 systemctl restart rayzell-web
-log "Service rayzell-web jalan."
+sleep 2
 
-# ===== 3. Nginx reverse proxy =====
+# cek web nyala
+if systemctl is-active --quiet rayzell-web; then
+  log "Service rayzell-web jalan."
+else
+  warn "Service rayzell-web gagal start. Cek: journalctl -u rayzell-web -n 30"
+fi
+
+# ===== 4. Nginx reverse proxy =====
 cat > /etc/nginx/sites-available/rayzell <<EOF
 server {
     listen 80;
@@ -91,12 +103,12 @@ rm -f /etc/nginx/sites-enabled/default 2>/dev/null || true
 nginx -t && systemctl reload nginx
 log "Nginx terpasang untuk $DOMAIN."
 
-# ===== 4. SSL Let's Encrypt =====
+# ===== 5. SSL Let's Encrypt =====
 if certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos \
      --redirect --register-unsafely-without-email; then
   log "SSL aktif (HTTPS)."
 else
-  warn "SSL gagal. Pastikan '$DOMAIN' sudah pointing ke IP VPS ini, lalu jalankan ulang:"
+  warn "SSL gagal. Pastikan '$DOMAIN' sudah pointing ke IP VPS ini, lalu:"
   warn "  certbot --nginx -d $DOMAIN"
 fi
 
