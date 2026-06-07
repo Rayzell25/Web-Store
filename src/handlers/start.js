@@ -8,6 +8,7 @@ const { rupiah, escapeHtml, LINE } = require('../utils/format');
 const { editOrSend, safeSend, safeSendPhoto } = require('../utils/ui');
 const { pe } = require('../utils/premoji');
 const { one } = require('../db/database');
+const { setLastMenu, getLastMenu, clearLastMenu } = require('../utils/session');
 
 async function buildMenuText(user) {
   const [totalTrx, today, totalUsers, bannerRow] = await Promise.all([
@@ -51,17 +52,31 @@ async function buildMenuText(user) {
 async function sendMainMenu(bot, chatId, from) {
   const user = await ensureUser(from);
   const { text, bannerPhoto } = await buildMenuText(user);
+
+  // Opsi A: hapus menu lama (kalau ada & masih < 48 jam) sebelum kirim baru
+  // supaya nggak numpuk tiap /start. Nggak perlu await — best-effort.
+  const oldId = await getLastMenu(chatId).catch(() => null);
+  if (oldId) bot.deleteMessage(chatId, oldId).catch(() => {});
+
+  let sent;
   if (bannerPhoto) {
-    return safeSendPhoto(bot, chatId, bannerPhoto, {
+    sent = await safeSendPhoto(bot, chatId, bannerPhoto, {
       caption: text,
       parse_mode: 'HTML',
       reply_markup: mainMenu(),
     });
+  } else {
+    sent = await safeSend(bot, chatId, text, {
+      parse_mode: 'HTML',
+      reply_markup: mainMenu(),
+    });
   }
-  return safeSend(bot, chatId, text, {
-    parse_mode: 'HTML',
-    reply_markup: mainMenu(),
-  });
+
+  // Simpan id menu baru untuk dihapus saat /start berikutnya.
+  if (sent && sent.message_id) {
+    setLastMenu(chatId, sent.message_id).catch(() => {});
+  }
+  return sent;
 }
 
 async function editToMainMenu(bot, chatId, messageId, from) {
