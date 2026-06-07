@@ -6,7 +6,6 @@ const { countTransactions, todayRevenue } = require('../services/trxService');
 const { mainMenu } = require('../keyboards/menus');
 const { rupiah, escapeHtml, LINE } = require('../utils/format');
 const { editOrSend, safeSend, safeSendPhoto } = require('../utils/ui');
-const { pe } = require('../utils/premoji');
 const { one } = require('../db/database');
 
 async function buildMenuText(user) {
@@ -28,16 +27,6 @@ async function buildMenuText(user) {
     `Hari ini  : ${rupiah(today)}\n` +
     `Pengguna  : ${totalUsers}`;
 
-  // Daftar menu dengan PREMIUM EMOJI (render di teks pesan, bukan di tombol).
-  const menuList =
-    `${pe('beli')} <b>Beli Paket</b>\n` +
-    `${pe('topup')} <b>Top Up Saldo</b>\n` +
-    `${pe('riwayat')} <b>Riwayat</b>\n` +
-    `${pe('harga')} <b>Cek Harga</b>\n` +
-    `${pe('tools')} <b>Tools</b>\n` +
-    `${pe('bantuan')} <b>Bantuan</b>\n` +
-    `${pe('web')} <b>Buka Web</b>`;
-
   const text = (
     `<b>${escapeHtml(config.store.name.toUpperCase())}</b>\n` +
     `${LINE}\n` +
@@ -46,8 +35,6 @@ async function buildMenuText(user) {
     `${LINE}\n` +
     `<b>Statistik</b>\n` +
     `<code>${stat}</code>\n` +
-    `${LINE}\n` +
-    `${menuList}\n` +
     `${LINE}\n` +
     (config.store.maintenance && config.store.maintenance !== '-'
       ? `<i>Maintenance ${escapeHtml(config.store.maintenance)}</i>\n`
