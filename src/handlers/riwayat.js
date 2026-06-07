@@ -73,8 +73,8 @@ async function showRiwayat(bot, chatId, messageId, userId) {
 
   const keyboard = {
     inline_keyboard: [
-      [{ text: 'Refresh', callback_data: 'menu:riwayat' }],
-      [{ text: '« Menu Utama', callback_data: 'menu:home' }],
+      [{ text: 'REFRESH', callback_data: 'menu:riwayat' }],
+      [{ text: '« MENU UTAMA', callback_data: 'menu:home' }],
     ],
   };
 

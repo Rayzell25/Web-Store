@@ -119,7 +119,7 @@ async function receiveTarget(bot, chatId, userId, target) {
   }
   methodRow.push({ text: 'SALDO', callback_data: 'order:pay:saldo' });
   rows.push(methodRow);
-  rows.push([{ text: 'Batal', callback_data: 'menu:order' }]);
+  rows.push([{ text: 'BATAL', callback_data: 'menu:order' }]);
 
   let qrisLine = '';
   if (config.qris.enabled) {
@@ -290,8 +290,8 @@ async function payQris(bot, chatId, messageId, userId) {
   const kb = {
     inline_keyboard: [
       [
-        { text: 'Cek Sekarang', callback_data: `qris:check:${qr.transaction_id}` },
-        { text: 'Batal', callback_data: `qris:cancel:${qr.transaction_id}` },
+        { text: 'CEK SEKARANG', callback_data: `qris:check:${qr.transaction_id}` },
+        { text: 'BATAL', callback_data: `qris:cancel:${qr.transaction_id}` },
       ],
     ],
   };

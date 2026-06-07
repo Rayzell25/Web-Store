@@ -14,22 +14,22 @@ const logger = require('../utils/logger');
 function adminMenuKeyboard() {
   return {
     inline_keyboard: [
-      [{ text: 'Statistik', callback_data: 'adm:stats' }],
-      [{ text: 'Top Up Pending', callback_data: 'adm:deposits' }],
+      [{ text: 'STATISTIK', callback_data: 'adm:stats' }],
+      [{ text: 'TOP UP PENDING', callback_data: 'adm:deposits' }],
       [
-        { text: 'Saldo Manual', callback_data: 'adm:addsaldo' },
-        { text: 'Set Role', callback_data: 'adm:setrole' },
+        { text: 'SALDO MANUAL', callback_data: 'adm:addsaldo' },
+        { text: 'SET ROLE', callback_data: 'adm:setrole' },
       ],
       [
-        { text: 'Markup', callback_data: 'adm:markup' },
-        { text: 'Sync Produk', callback_data: 'adm:sync' },
+        { text: 'MARKUP', callback_data: 'adm:markup' },
+        { text: 'SYNC PRODUK', callback_data: 'adm:sync' },
       ],
       [
-        { text: 'Set Foto Sambutan', callback_data: 'adm:setfoto' },
-        { text: 'Hapus Foto', callback_data: 'adm:delfoto' },
+        { text: 'SET FOTO SAMBUTAN', callback_data: 'adm:setfoto' },
+        { text: 'HAPUS FOTO', callback_data: 'adm:delfoto' },
       ],
-      [{ text: 'Broadcast', callback_data: 'adm:broadcast' }],
-      [{ text: '« Kembali', callback_data: 'menu:home' }],
+      [{ text: 'BROADCAST', callback_data: 'adm:broadcast' }],
+      [{ text: '« KEMBALI', callback_data: 'menu:home' }],
     ],
   };
 }
@@ -74,11 +74,11 @@ async function showPendingDeposits(bot, chatId, messageId) {
     const u = await userService.getUser(t.user_id);
     text += `#${t.id} · ${escapeHtml(u ? u.name : t.user_id)} · ${rupiah(t.amount)} · ${tanggal(t.created_at)}\n`;
     rows.push([
-      { text: `Setujui #${t.id}`, callback_data: `dp:ok:${t.id}` },
-      { text: `Tolak #${t.id}`, callback_data: `dp:no:${t.id}` },
+      { text: `SETUJUI #${t.id}`, callback_data: `dp:ok:${t.id}` },
+      { text: `TOLAK #${t.id}`, callback_data: `dp:no:${t.id}` },
     ]);
   }
-  rows.push([{ text: '« Kembali', callback_data: 'menu:admin' }]);
+  rows.push([{ text: '« KEMBALI', callback_data: 'menu:admin' }]);
   await edit(bot, chatId, messageId, text, { inline_keyboard: rows });
 }
 
@@ -274,7 +274,7 @@ async function edit(bot, chatId, messageId, text, replyMarkup) {
 }
 
 function back(target) {
-  return { inline_keyboard: [[{ text: '« Kembali', callback_data: target }]] };
+  return { inline_keyboard: [[{ text: '« KEMBALI', callback_data: target }]] };
 }
 
 module.exports = {

@@ -40,8 +40,8 @@ async function showDepositMenu(bot, chatId, messageId, userId) {
       }))
     );
   }
-  rows.push([{ text: 'Nominal Lain', callback_data: 'deposit:custom' }]);
-  rows.push([{ text: '« Kembali', callback_data: 'menu:home' }]);
+  rows.push([{ text: 'NOMINAL LAIN', callback_data: 'deposit:custom' }]);
+  rows.push([{ text: '« KEMBALI', callback_data: 'menu:home' }]);
 
   await edit(bot, chatId, messageId, text, { inline_keyboard: rows });
 }
@@ -108,8 +108,8 @@ async function startQrisTopup(bot, chatId, messageId, userId, amount) {
   const kb = {
     inline_keyboard: [
       [
-        { text: 'Cek Sekarang', callback_data: `qris:check:${qr.transaction_id}` },
-        { text: 'Batal', callback_data: `qris:cancel:${qr.transaction_id}` },
+        { text: 'CEK SEKARANG', callback_data: `qris:check:${qr.transaction_id}` },
+        { text: 'BATAL', callback_data: `qris:cancel:${qr.transaction_id}` },
       ],
     ],
   };

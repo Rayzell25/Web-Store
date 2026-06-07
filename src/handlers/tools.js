@@ -78,10 +78,10 @@ async function showTools(bot, chatId, messageId) {
   const keyboard = {
     inline_keyboard: [
       [
-        { text: 'Cek Pulsa', callback_data: 'tools:pulsa' },
-        { text: 'Cek Area', callback_data: 'tools:area' },
+        { text: 'CEK PULSA', callback_data: 'tools:pulsa' },
+        { text: 'CEK AREA', callback_data: 'tools:area' },
       ],
-      [{ text: '« Kembali', callback_data: 'menu:home' }],
+      [{ text: '« KEMBALI', callback_data: 'menu:home' }],
     ],
   };
   await edit(bot, chatId, messageId, text, keyboard);
