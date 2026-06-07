@@ -3,6 +3,7 @@
 const { setState, clearState } = require('../utils/session');
 const { backButton } = require('../keyboards/menus');
 const { escapeHtml, LINE } = require('../utils/format');
+const { editOrSend: edit } = require('../utils/ui');
 
 /** Deteksi operator dari prefix nomor HP Indonesia */
 function detectOperator(number) {
@@ -125,17 +126,6 @@ async function receiveArea(bot, chatId, userId, number) {
   }
   await bot.sendMessage(chatId, `<b>CEK AREA</b>\n${LINE}\n${body}`,
     { parse_mode: 'HTML', reply_markup: backButton('menu:tools') });
-}
-
-async function edit(bot, chatId, messageId, text, replyMarkup) {
-  const opts = { parse_mode: 'HTML' };
-  if (replyMarkup) opts.reply_markup = replyMarkup;
-  if (messageId) {
-    try {
-      return await bot.editMessageText(text, { chat_id: chatId, message_id: messageId, ...opts });
-    } catch (e) { /* fall through */ }
-  }
-  return bot.sendMessage(chatId, text, opts);
 }
 
 module.exports = { showTools, askPulsa, askArea, receivePulsa, receiveArea, detectOperator, areaInfo };

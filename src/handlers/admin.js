@@ -9,6 +9,7 @@ const markupService = require('../services/markupService');
 const digiflazz = require('../services/digiflazz');
 const { setState, clearState, getState } = require('../utils/session');
 const { rupiah, escapeHtml, tanggal, LINE } = require('../utils/format');
+const { editOrSend: edit } = require('../utils/ui');
 const logger = require('../utils/logger');
 
 function adminMenuKeyboard() {
@@ -260,17 +261,6 @@ async function applyMarkupCommand(text) {
   } catch (e) {
     return `⚠️ Gagal: ${escapeHtml(e.message)}`;
   }
-}
-
-async function edit(bot, chatId, messageId, text, replyMarkup) {
-  const opts = { parse_mode: 'HTML' };
-  if (replyMarkup) opts.reply_markup = replyMarkup;
-  if (messageId) {
-    try {
-      return await bot.editMessageText(text, { chat_id: chatId, message_id: messageId, ...opts });
-    } catch (e) { /* fall through */ }
-  }
-  return bot.sendMessage(chatId, text, opts);
 }
 
 function back(target) {

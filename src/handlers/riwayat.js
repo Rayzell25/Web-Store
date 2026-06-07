@@ -3,6 +3,7 @@
 const { getUserTransactions } = require('../services/trxService');
 const { userDeposits } = require('../services/depositService');
 const { rupiah, escapeHtml, tanggal, LINE } = require('../utils/format');
+const { editOrSend } = require('../utils/ui');
 
 function icon(status) {
   const s = String(status).toLowerCase();
@@ -78,19 +79,9 @@ async function showRiwayat(bot, chatId, messageId, userId) {
     ],
   };
 
-  // Selalu edit pesan yang sama (tetap 1 chat). Kalau gagal edit & belum ada
-  // pesan (dipanggil tanpa messageId), baru kirim baru.
-  if (messageId) {
-    try {
-      await bot.editMessageText(text, {
-        chat_id: chatId, message_id: messageId, parse_mode: 'HTML', reply_markup: keyboard,
-      });
-    } catch (e) {
-      // mis. "message is not modified" -> abaikan, jangan kirim chat baru
-    }
-    return;
-  }
-  return bot.sendMessage(chatId, text, { parse_mode: 'HTML', reply_markup: keyboard });
+  // Selalu edit pesan yang sama (tetap 1 chat). editOrSend mengabaikan error
+  // "not modified" dan menangani kasus pesan foto secara otomatis.
+  return editOrSend(bot, chatId, messageId, text, keyboard);
 }
 
 module.exports = { showRiwayat };
