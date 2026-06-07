@@ -9,12 +9,6 @@ function rupiah(value) {
   return 'Rp ' + n.toLocaleString('id-ID');
 }
 
-/** Format angka dengan pemisah ribuan tanpa "Rp" */
-function ribuan(value) {
-  const n = Math.round(Number(value) || 0);
-  return n.toLocaleString('id-ID');
-}
-
 /** Escape karakter untuk parse_mode HTML Telegram */
 function escapeHtml(text) {
   if (text == null) return '';
@@ -46,4 +40,4 @@ function truncate(text, max = 30) {
   return s.length > max ? s.slice(0, max - 1) + '…' : s;
 }
 
-module.exports = { LINE, rupiah, ribuan, escapeHtml, tanggal, trxCode, truncate };
+module.exports = { LINE, rupiah, escapeHtml, tanggal, trxCode, truncate };

@@ -6,6 +6,7 @@ const autogopay = require('./autogopay');
 const qrisService = require('./qrisService');
 const userService = require('./userService');
 const trxService = require('./trxService');
+const depositService = require('./depositService');
 const digiflazz = require('./digiflazz');
 const { rupiah, escapeHtml, trxCode, LINE } = require('../utils/format');
 
@@ -108,6 +109,13 @@ async function fulfill(row) {
 
 async function fulfillTopup(row) {
   const newBal = await userService.addBalance(row.user_id, row.base_amount);
+  // Catat ke tabel topups (Approved) supaya muncul di riwayat. Dibungkus try/catch
+  // agar kegagalan pencatatan TIDAK mengganggu saldo yang sudah masuk.
+  try {
+    await depositService.recordTopup(row.user_id, row.base_amount, 'Approved', 'QRIS otomatis');
+  } catch (e) {
+    logger.error('recordTopup (qris) error:', e.message);
+  }
   const detail =
     `Nominal : ${rupiah(row.base_amount)}\n` +
     `Saldo   : ${rupiah(newBal)}`;

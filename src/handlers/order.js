@@ -253,7 +253,7 @@ async function payQris(bot, chatId, messageId, userId) {
     return editOrSend(bot, chatId, messageId, '⚠️ Produk tidak tersedia.', backButton('menu:order'));
   }
   const base = sellPrice(product, user.role);
-  const { total } = autogopay.computeTotal(base);
+  const { total, fee } = autogopay.computeTotal(base);
 
   await clearState(userId);
 
