@@ -162,13 +162,32 @@ async function main() {
     const data = q.data || '';
     const from = q.from;
 
+    // Jawab callback query SEKALI saja (guard) -> tombol responsif, popup tak dobel.
+    let answered = false;
+    const ack = (opts) => {
+      if (answered) return Promise.resolve();
+      answered = true;
+      return bot.answerCallbackQuery(q.id, opts).catch(() => {});
+    };
     // popup alert (tanpa kirim chat, tanpa nama bot)
-    const alert = (text) => bot.answerCallbackQuery(q.id, { text, show_alert: true }).catch(() => {});
+    const alert = (text) => ack({ text, show_alert: true });
 
     const user = await userService.ensureUser(from);
     if (user.banned) {
-      return bot.answerCallbackQuery(q.id, { text: 'Akun kamu diblokir.', show_alert: true });
+      return ack({ text: 'Akun kamu diblokir.', show_alert: true });
     }
+
+    // Tombol navigasi (mayoritas): JAWAB DULUAN biar animasi loading di tombol
+    // langsung hilang (anti-"ngendat"). Tombol yang butuh popup teks/alert
+    // (beli saldo, cek/batal QRIS, approve/reject admin) dibiarkan dijawab oleh
+    // cabangnya sendiri lewat ack() supaya teks popup-nya tetap muncul.
+    const needsPopup =
+      data === 'order:pay:saldo' ||
+      data.startsWith('qris:check:') ||
+      data.startsWith('qris:cancel:') ||
+      data.startsWith('dp:ok:') ||
+      data.startsWith('dp:no:');
+    if (!needsPopup) ack();
 
     try {
       // ---- Menu utama ----
@@ -217,15 +236,15 @@ async function main() {
         await deposit.chooseNominal(bot, chatId, messageId, from.id, data.slice('deposit:nom:'.length), notifyAdmins);
       } else if (data.startsWith('qris:check:')) {
         await qrisPoller.checkNow(data.slice('qris:check:'.length));
-        bot.answerCallbackQuery(q.id, { text: 'Mengecek pembayaran...' }).catch(() => {});
+        ack({ text: 'Mengecek pembayaran...' });
       } else if (data.startsWith('qris:cancel:')) {
         const ok = await qrisPoller.cancel(data.slice('qris:cancel:'.length));
-        bot.answerCallbackQuery(q.id, { text: ok ? 'Dibatalkan.' : 'Tidak bisa dibatalkan.' }).catch(() => {});
+        ack({ text: ok ? 'Dibatalkan.' : 'Tidak bisa dibatalkan.' });
       } else if (data.startsWith('dp:ok:')) {
-        if (!isAdmin(from.id)) return bot.answerCallbackQuery(q.id, { text: 'Khusus admin.', show_alert: true });
+        if (!isAdmin(from.id)) return ack({ text: 'Khusus admin.', show_alert: true });
         await deposit.approve(bot, chatId, messageId, from, Number(data.slice('dp:ok:'.length)));
       } else if (data.startsWith('dp:no:')) {
-        if (!isAdmin(from.id)) return bot.answerCallbackQuery(q.id, { text: 'Khusus admin.', show_alert: true });
+        if (!isAdmin(from.id)) return ack({ text: 'Khusus admin.', show_alert: true });
         await deposit.reject(bot, chatId, messageId, from, Number(data.slice('dp:no:'.length)));
 
       // ---- Tools ----
@@ -257,7 +276,7 @@ async function main() {
     } catch (e) {
       logger.error('callback error:', e.message);
     } finally {
-      bot.answerCallbackQuery(q.id).catch(() => {});
+      ack();
     }
   });
 
