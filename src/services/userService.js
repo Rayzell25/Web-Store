@@ -90,10 +90,6 @@ async function allUserIds() {
   return rows.map((r) => r.id);
 }
 
-function searchUsers(limit = 20) {
-  return all('SELECT * FROM users ORDER BY updated_at DESC LIMIT $1', [limit]);
-}
-
 module.exports = {
   ensureUser,
   getUser,
@@ -103,5 +99,4 @@ module.exports = {
   setBanned,
   countUsers,
   allUserIds,
-  searchUsers,
 };
