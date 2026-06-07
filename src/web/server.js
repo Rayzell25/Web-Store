@@ -74,7 +74,10 @@ function verifyMemberToken(token) {
 function requireUser(req, res, next) {
   const t = (req.headers.authorization || '').replace(/^Bearer\s+/i, '').trim();
   const uid = verifyMemberToken(t);
-  if (!uid) return res.status(401).json({ ok: false, message: 'Silakan login dulu.' });
+  if (!uid) {
+    logger.warn(`[auth] member 401 hasToken=${!!t} path=${req.path}`);
+    return res.status(401).json({ ok: false, message: 'Silakan login dulu.' });
+  }
   req.userId = uid;
   next();
 }
@@ -175,7 +178,10 @@ app.get('/health', (req, res) => res.json({ ok: true }));
 app.post('/api/auth/telegram', async (req, res) => {
   try {
     const data = req.body || {};
-    if (!verifyTelegramAuth(data)) {
+    const authDelta = data && data.auth_date ? Math.floor(Date.now() / 1000 - Number(data.auth_date)) : null;
+    const valid = verifyTelegramAuth(data);
+    logger.info(`[login] id=${data && data.id} hasHash=${!!(data && data.hash)} valid=${valid} authDeltaSec=${authDelta}`);
+    if (!valid) {
       return res.status(401).json({ ok: false, message: 'Verifikasi Telegram gagal.' });
     }
     const u = await userService.ensureUser({
