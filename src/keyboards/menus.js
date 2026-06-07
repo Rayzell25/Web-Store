@@ -10,7 +10,7 @@ const { config } = require('../config');
 function mainMenu() {
   const rows = [];
   rows.push([{ text: 'Beli Paket', callback_data: 'menu:order', icon_custom_emoji_id: '5864095106096698177' }]);
-  rows.push([{ text: 'Top Up Saldo', callback_data: 'menu:deposit', icon_custom_emoji_id: '5282843764451195532' }]);
+  rows.push([{ text: 'Top Up Saldo', callback_data: 'menu:deposit', icon_custom_emoji_id: '5445353829304387411' }]);
   rows.push([
     { text: 'Riwayat', callback_data: 'menu:riwayat', icon_custom_emoji_id: '5215209935188534658' },
     { text: 'Cek Harga', callback_data: 'menu:stok', icon_custom_emoji_id: '5231012545799666522' },
