@@ -1,5 +1,7 @@
 'use strict';
 
+const { stripPremium, hasPremium } = require('./premoji');
+
 /**
  * Helper UI terpusat agar navigasi tombol SELALU mengedit pesan yang sama
  * (cukup 1 chat), bukan mengirim chat baru tiap klik.
@@ -12,6 +14,11 @@
  *       -> hapus pesan lama lalu kirim teks baru, jadi tetap 1 gelembung.
  *     • Error lain -> kirim baru sebagai fallback.
  *  - Jika tidak ada messageId: kirim baru.
+ *
+ * Premium emoji: bila teks mengandung <tg-emoji> dan bot ternyata BELUM
+ * eligible (bukan bot ber-username Fragment), Telegram menolak. Maka kita
+ * coba ulang dengan tag premium di-strip -> fallback unicode, supaya pesan
+ * tetap tampil dan tidak error.
  */
 
 function errText(e) {
@@ -34,6 +41,18 @@ function isUneditable(e) {
   );
 }
 
+// Error yang kemungkinan disebabkan premium/custom emoji tidak diizinkan.
+function isEmojiError(e) {
+  const m = errText(e);
+  return (
+    m.includes('custom_emoji') ||
+    m.includes('custom emoji') ||
+    m.includes("can't parse entities") ||
+    m.includes('emoji') ||
+    m.includes('entit')
+  );
+}
+
 async function editOrSend(bot, chatId, messageId, text, replyMarkup) {
   const opts = { parse_mode: 'HTML' };
   if (replyMarkup) opts.reply_markup = replyMarkup;
@@ -44,14 +63,46 @@ async function editOrSend(bot, chatId, messageId, text, replyMarkup) {
     } catch (e) {
       // Klik tombol yang sama -> jangan kirim chat baru, cukup diamkan.
       if (isNotModified(e)) return;
-      // Pesan foto / tidak bisa diedit -> buang pesan lama supaya tidak menumpuk.
-      if (isUneditable(e)) {
+      // Mungkin gagal karena premium emoji -> coba lagi tanpa tag premium.
+      if (hasPremium(text) && isEmojiError(e) && !isUneditable(e)) {
+        try {
+          return await bot.editMessageText(stripPremium(text), { chat_id: chatId, message_id: messageId, ...opts });
+        } catch (e2) {
+          if (isNotModified(e2)) return;
+          if (isUneditable(e2)) { try { await bot.deleteMessage(chatId, messageId); } catch (_) {} }
+        }
+      } else if (isUneditable(e)) {
+        // Pesan foto / tidak bisa diedit -> buang pesan lama supaya tidak menumpuk.
         try { await bot.deleteMessage(chatId, messageId); } catch (_) { /* ignore */ }
       }
       // selain itu: jatuh ke kirim baru
     }
   }
-  return bot.sendMessage(chatId, text, opts);
+  return safeSend(bot, chatId, text, opts);
 }
 
-module.exports = { editOrSend, isNotModified, isUneditable };
+/** Kirim pesan baru; jika gagal karena premium emoji, kirim ulang tanpa tag. */
+async function safeSend(bot, chatId, text, opts) {
+  try {
+    return await bot.sendMessage(chatId, text, opts);
+  } catch (e) {
+    if (hasPremium(text) && isEmojiError(e)) {
+      return bot.sendMessage(chatId, stripPremium(text), opts);
+    }
+    throw e;
+  }
+}
+
+/** Kirim foto + caption; jika gagal karena premium emoji di caption, ulang tanpa tag. */
+async function safeSendPhoto(bot, chatId, photo, opts) {
+  try {
+    return await bot.sendPhoto(chatId, photo, opts);
+  } catch (e) {
+    if (opts && hasPremium(opts.caption || '') && isEmojiError(e)) {
+      return bot.sendPhoto(chatId, photo, { ...opts, caption: stripPremium(opts.caption) });
+    }
+    throw e;
+  }
+}
+
+module.exports = { editOrSend, safeSend, safeSendPhoto, isNotModified, isUneditable };
