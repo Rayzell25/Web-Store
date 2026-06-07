@@ -167,21 +167,19 @@ EOF
 systemctl daemon-reload
 systemctl enable rayzell-ppob >/dev/null 2>&1 || true
 
-# ===== 11. prompt konfigurasi (HANYA 4) =====
+# ===== 11. prompt konfigurasi (3) =====
 echo
 echo "═══════════════════════════════════════════"
 echo "   SETUP RAYZELL STORE PPOB"
 echo "═══════════════════════════════════════════"
 read -rp "Token bot          : " IN_BOT_TOKEN </dev/tty
 read -rp "ID owner           : " IN_OWNER_ID </dev/tty
-read -rp "Token bot backup   : " IN_BACKUP_TOKEN </dev/tty
 read -rp "ID channel / grup  : " IN_BACKUP_CHAT </dev/tty
 echo "═══════════════════════════════════════════"
 
-[ -n "${IN_BOT_TOKEN:-}" ]    && set_env BOT_TOKEN "$IN_BOT_TOKEN" || true
-[ -n "${IN_OWNER_ID:-}" ]     && set_env ADMIN_IDS "$IN_OWNER_ID" || true
-[ -n "${IN_BACKUP_TOKEN:-}" ] && set_env BACKUP_BOT_TOKEN "$IN_BACKUP_TOKEN" || true
-[ -n "${IN_BACKUP_CHAT:-}" ]  && set_env BACKUP_CHAT_ID "$IN_BACKUP_CHAT" || true
+[ -n "${IN_BOT_TOKEN:-}" ]   && set_env BOT_TOKEN "$IN_BOT_TOKEN" || true
+[ -n "${IN_OWNER_ID:-}" ]    && set_env ADMIN_IDS "$IN_OWNER_ID" || true
+[ -n "${IN_BACKUP_CHAT:-}" ] && set_env BACKUP_CHAT_ID "$IN_BACKUP_CHAT" || true
 
 # ===== 12. start bot =====
 step "Menjalankan bot"
@@ -200,9 +198,11 @@ echo " Password DB        : ${PGPASS_V}"
 echo " Password ZIP backup: ${BZP_V}"
 warn "SIMPAN 2 password di atas! (password ZIP dipakai untuk membuka file backup)"
 echo
-warn "Belum diisi (isi nanti di .env lalu: systemctl restart rayzell-ppob):"
+warn "Credentials berikut diisi manual di .env lalu: systemctl restart rayzell-ppob"
 echo "   - DIGIFLAZZ_USERNAME / DIGIFLAZZ_API_KEY  (provider produk)"
 echo "   - AUTOGOPAY_API_KEY                       (pembayaran QRIS)"
+echo "   - BOT_USERNAME                            (username bot tanpa @)"
+echo "   (Backup otomatis menggunakan BOT_TOKEN yang sudah diisi di atas)"
 echo
 echo " Langkah berikutnya: buka bot di Telegram -> /start"
 echo "═══════════════════════════════════════════"
