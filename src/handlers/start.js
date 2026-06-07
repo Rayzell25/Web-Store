@@ -29,7 +29,7 @@ async function buildMenuText(user) {
   const text = (
     `<b>${escapeHtml(config.store.name.toUpperCase())}</b>\n` +
     `${LINE}\n` +
-    `<tg-emoji emoji-id="EMOJI_ID_1">⚡</tg-emoji> Halo, <b>${escapeHtml(user.name)}</b> <tg-emoji emoji-id="EMOJI_ID_2">👋</tg-emoji>\n\n` +
+    `Halo, <b>${escapeHtml(user.name)}</b> 👋\n\n` +
     `<code>${akun}</code>\n` +
     `${LINE}\n` +
     `<b>Statistik</b>\n` +
