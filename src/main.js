@@ -83,6 +83,8 @@ async function main() {
   // ===== Commands =====
   bot.onText(/^\/(start|menu)\b/, async (msg) => {
     await clearState(msg.from.id);
+    // Hapus pesan perintah /start dari user supaya chat tetap bersih.
+    bot.deleteMessage(msg.chat.id, msg.message_id).catch(() => {});
     start.sendMainMenu(bot, msg.chat.id, msg.from).catch((e) => logger.error(e));
   });
 
