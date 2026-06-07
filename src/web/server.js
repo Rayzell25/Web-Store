@@ -50,17 +50,30 @@ function verifyTelegramAuth(data) {
   return true;
 }
 
-// Token member (terpisah dari token admin di atas).
-const memberTokens = new Map(); // token -> userId
+// Token member STATELESS (ditandatangani HMAC) — tahan restart server.
+const MEMBER_SECRET = process.env.BOT_TOKEN || process.env.WEB_ADMIN_PASSWORD || 'rayzell-web-secret';
+const MEMBER_TTL_MS = 7 * 24 * 3600 * 1000; // 7 hari
 function genMemberToken(userId) {
-  const t = crypto.randomBytes(32).toString('hex');
-  memberTokens.set(t, Number(userId));
-  setTimeout(() => memberTokens.delete(t), 7 * 24 * 3600 * 1000); // 7 hari
-  return t;
+  const exp = Date.now() + MEMBER_TTL_MS;
+  const payload = `${Number(userId)}.${exp}`;
+  const sig = crypto.createHmac('sha256', MEMBER_SECRET).update(payload).digest('hex');
+  return Buffer.from(payload).toString('base64url') + '.' + sig;
+}
+function verifyMemberToken(token) {
+  try {
+    const [b64, sig] = String(token || '').split('.');
+    if (!b64 || !sig) return null;
+    const payload = Buffer.from(b64, 'base64url').toString('utf8');
+    const expected = crypto.createHmac('sha256', MEMBER_SECRET).update(payload).digest('hex');
+    if (sig.length !== expected.length || !crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) return null;
+    const [uid, exp] = payload.split('.');
+    if (!uid || !exp || Date.now() > Number(exp)) return null;
+    return Number(uid);
+  } catch (e) { return null; }
 }
 function requireUser(req, res, next) {
   const t = (req.headers.authorization || '').replace(/^Bearer\s+/i, '').trim();
-  const uid = memberTokens.get(t);
+  const uid = verifyMemberToken(t);
   if (!uid) return res.status(401).json({ ok: false, message: 'Silakan login dulu.' });
   req.userId = uid;
   next();
