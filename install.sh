@@ -53,7 +53,14 @@ apt-get install -y curl ca-certificates gnupg git unzip zip p7zip-full cron open
 # ===== 3. Docker =====
 step "Install Docker + Compose"
 if ! command -v docker >/dev/null 2>&1; then
-  curl -fsSL https://get.docker.com | sh
+  install -m 0755 -d /etc/apt/keyrings
+  curl -fsSL "https://download.docker.com/linux/${OS_ID}/gpg" -o /etc/apt/keyrings/docker.asc
+  chmod a+r /etc/apt/keyrings/docker.asc
+  CODENAME="$(. /etc/os-release && echo "${VERSION_CODENAME:-focal}")"
+  echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/${OS_ID} ${CODENAME} stable" > /etc/apt/sources.list.d/docker.list
+  apt-get update -y
+  # catatan: TIDAK memasang docker-model-plugin (tidak tersedia di Ubuntu focal/EOL)
+  apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin docker-buildx-plugin
 else
   log "Docker sudah ada, lewati."
 fi
