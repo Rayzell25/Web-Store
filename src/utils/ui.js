@@ -53,6 +53,28 @@ function isEmojiError(e) {
   );
 }
 
+/**
+ * Edit CAPTION pesan FOTO (mis. banner /start) supaya transisi tombol MULUS
+ * tanpa hapus+kirim ulang (yang bikin "kedip"). Foto tetap, caption + tombol
+ * yang berubah. Return true kalau berhasil.
+ */
+async function editCaption(bot, chatId, messageId, text, opts) {
+  try {
+    await bot.editMessageCaption(text, { chat_id: chatId, message_id: messageId, ...opts });
+    return true;
+  } catch (e) {
+    if (isNotModified(e)) return true; // tidak berubah = anggap sukses
+    // caption gagal karena premium emoji -> coba tanpa tag premium
+    if (hasPremium(text) && isEmojiError(e)) {
+      try {
+        await bot.editMessageCaption(stripPremium(text), { chat_id: chatId, message_id: messageId, ...opts });
+        return true;
+      } catch (_) { /* gagal juga */ }
+    }
+    return false; // mis. caption > 1024 char -> biar caller fallback hapus+kirim
+  }
+}
+
 async function editOrSend(bot, chatId, messageId, text, replyMarkup) {
   const opts = { parse_mode: 'HTML' };
   if (replyMarkup) opts.reply_markup = replyMarkup;
@@ -69,10 +91,17 @@ async function editOrSend(bot, chatId, messageId, text, replyMarkup) {
           return await bot.editMessageText(stripPremium(text), { chat_id: chatId, message_id: messageId, ...opts });
         } catch (e2) {
           if (isNotModified(e2)) return;
-          if (isUneditable(e2)) { try { await bot.deleteMessage(chatId, messageId); } catch (_) {} }
+          if (isUneditable(e2)) {
+            // Pesan FOTO -> edit caption (mulus); fallback hapus+kirim.
+            if (await editCaption(bot, chatId, messageId, stripPremium(text), opts)) return;
+            try { await bot.deleteMessage(chatId, messageId); } catch (_) {}
+          }
         }
       } else if (isUneditable(e)) {
-        // Pesan foto / tidak bisa diedit -> buang pesan lama supaya tidak menumpuk.
+        // Pesan FOTO (mis. banner /start): JANGAN hapus (bikin "kedip").
+        // Edit caption-nya saja supaya foto tetap & transisi MULUS.
+        if (await editCaption(bot, chatId, messageId, text, opts)) return;
+        // Caption gagal (mis. teks > 1024 char) -> baru hapus & kirim baru.
         try { await bot.deleteMessage(chatId, messageId); } catch (_) { /* ignore */ }
       }
       // selain itu: jatuh ke kirim baru
