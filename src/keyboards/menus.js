@@ -5,19 +5,19 @@ const { config } = require('../config');
 /** Keyboard inline menu utama. (Tombol Admin dihapus; owner pakai /admin) */
 function mainMenu() {
   const rows = [];
-  rows.push([{ text: '🛒 BELI PAKET', callback_data: 'menu:order' }]);
-  rows.push([{ text: '💎 TOP UP', callback_data: 'menu:deposit' }]);
+  rows.push([{ text: 'BELI PAKET', callback_data: 'menu:order' }]);
+  rows.push([{ text: 'TOP UP', callback_data: 'menu:deposit' }]);
   rows.push([
-    { text: '📜 RIWAYAT', callback_data: 'menu:riwayat' },
-    { text: '🔍 CEK HARGA', callback_data: 'menu:stok' },
+    { text: 'RIWAYAT', callback_data: 'menu:riwayat' },
+    { text: 'CEK HARGA', callback_data: 'menu:stok' },
   ]);
   rows.push([
-    { text: '🛠 TOOLS', callback_data: 'menu:tools' },
-    { text: '💬 BANTUAN', callback_data: 'menu:bantuan' },
+    { text: 'TOOLS', callback_data: 'menu:tools' },
+    { text: 'BANTUAN', callback_data: 'menu:bantuan' },
   ]);
   if (config.webUrl) {
     const base = config.webUrl.replace(/\/+$/, '');
-    rows.push([{ text: '🌐 BUKA WEB', web_app: { url: `${base}/app.html` } }]);
+    rows.push([{ text: 'BUKA WEB', web_app: { url: `${base}/app.html` } }]);
   }
   return { inline_keyboard: rows };
 }
