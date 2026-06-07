@@ -37,12 +37,18 @@
     <!-- NAV -->
     <header class="sticky top-0 z-30 border-b border-white/5 bg-slate-950/70 backdrop-blur-xl">
       <div class="mx-auto flex max-w-3xl items-center justify-between px-5 py-4">
-        <a href="/" class="flex items-center gap-2.5">
-          <span class="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 shadow-lg shadow-indigo-500/30">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z" fill="white"/></svg>
-          </span>
-          <span class="font-bold tracking-tight" id="brand">Rayzell Store PPOB</span>
-        </a>
+        <div class="flex items-center gap-2.5">
+          <button id="backBtn" class="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:bg-white/10">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M15 6l-6 6 6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Kembali
+          </button>
+          <a href="/" class="flex items-center gap-2.5">
+            <span class="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 shadow-lg shadow-indigo-500/30">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z" fill="white"/></svg>
+            </span>
+            <span class="font-bold tracking-tight" id="brand">Rayzell Store PPOB</span>
+          </a>
+        </div>
         <div id="userBox" class="hidden items-center gap-3 text-sm">
           <div class="text-right leading-tight">
             <div class="text-[11px] text-slate-500">Saldo</div>
@@ -522,6 +528,19 @@
     }
     $('#qrisClose').addEventListener('click', closeQris);
     $('#qrisModal').addEventListener('click', (e) => { if (e.target === $('#qrisModal')) closeQris(); });
+
+    // ===================== TOMBOL KEMBALI (smart back) =====================
+    function goBack() {
+      const appVisible = $('#app') && !$('#app').classList.contains('hidden');
+      if (appVisible && !$('#tab-beli').classList.contains('hidden')) {
+        if (nav.level === 'product') return loadItems(nav.category, nav.brand);
+        if (nav.level === 'items') return loadBrands(nav.category);
+        if (nav.level === 'brand') return loadCategories();
+      }
+      window.location = '/';
+    }
+    const _backBtn = document.getElementById('backBtn');
+    if (_backBtn) _backBtn.addEventListener('click', goBack);
   </script>
 </body>
 </html>
