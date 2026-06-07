@@ -37,7 +37,9 @@ SQL_TMP="$BACKUP_DIR/ppob-$STAMP.sql"
 OUT="$BACKUP_DIR/ppob-$STAMP.zip"
 
 echo "[backup] dump database '$PGDATABASE'..."
-docker exec -t "$CONTAINER" pg_dump -U "$PGUSER" "$PGDATABASE" > "$SQL_TMP"
+# JANGAN pakai -t (alokasi TTY): di cron tidak ada TTY, dan -t menyisipkan
+# karakter CR (\r) ke output -> file dump bisa korup & ERROR saat di-restore.
+docker exec "$CONTAINER" pg_dump -U "$PGUSER" "$PGDATABASE" > "$SQL_TMP"
 
 echo "[backup] kompres ke ZIP..."
 if [ -n "$BACKUP_ZIP_PASSWORD" ]; then

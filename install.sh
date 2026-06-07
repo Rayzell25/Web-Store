@@ -142,6 +142,8 @@ done
 
 # ===== 9. cron backup harian =====
 step "Memasang cron backup harian (03:00)"
+# Pastikan daemon cron aktif (kalau tidak, jadwal 03:00 tidak akan jalan).
+systemctl enable --now cron 2>/dev/null || systemctl enable --now crond 2>/dev/null || warn "Gagal enable cron, cek manual: systemctl status cron"
 chmod +x scripts/*.sh 2>/dev/null || true
 CRON_LINE="0 3 * * * cd ${SCRIPT_DIR} && bash scripts/backup.sh >> ${SCRIPT_DIR}/backup.log 2>&1"
 TMPCRON="$(mktemp)"
