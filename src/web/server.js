@@ -50,6 +50,31 @@ function verifyTelegramAuth(data) {
   return true;
 }
 
+// Verifikasi WebApp initData (Mini App) — ALGORITMA RESMI Telegram.
+// Catatan: secret_key di sini BEDA dari login widget (HMAC "WebAppData").
+function verifyWebAppInitData(initData) {
+  try {
+    const botToken = process.env.BOT_TOKEN || '';
+    if (!botToken || !initData) return null;
+    const params = new URLSearchParams(initData);
+    const hash = params.get('hash');
+    if (!hash) return null;
+    params.delete('hash');
+    const pairs = [];
+    for (const [k, v] of params) pairs.push(`${k}=${v}`);
+    pairs.sort();
+    const dataCheckString = pairs.join('\n');
+    const secretKey = crypto.createHmac('sha256', 'WebAppData').update(botToken).digest();
+    const computed = crypto.createHmac('sha256', secretKey).update(dataCheckString).digest('hex');
+    if (computed !== hash) return null;
+    const authDate = Number(params.get('auth_date') || 0);
+    if (authDate && Date.now() / 1000 - authDate > 86400) return null;
+    const userJson = params.get('user');
+    if (!userJson) return null;
+    return JSON.parse(userJson);
+  } catch (e) { return null; }
+}
+
 // Token member STATELESS (ditandatangani HMAC) — tahan restart server.
 const MEMBER_SECRET = process.env.BOT_TOKEN || process.env.WEB_ADMIN_PASSWORD || 'rayzell-web-secret';
 const MEMBER_TTL_MS = 7 * 24 * 3600 * 1000; // 7 hari
@@ -194,6 +219,22 @@ app.post('/api/auth/telegram', async (req, res) => {
     res.json({ ok: true, token, user: { name: u.name, balance: u.balance, role: u.role } });
   } catch (e) {
     logger.error('web /api/auth/telegram:', e.message);
+    res.status(500).json({ ok: false, message: 'Terjadi kesalahan saat login.' });
+  }
+});
+
+// login via Telegram Mini App (WebApp initData) — auto-login di dalam Telegram
+app.post('/api/auth/webapp', async (req, res) => {
+  try {
+    const initData = (req.body && req.body.initData) || '';
+    const u = verifyWebAppInitData(initData);
+    logger.info(`[webapp-login] valid=${!!u} id=${u && u.id}`);
+    if (!u || !u.id) return res.status(401).json({ ok: false, message: 'Verifikasi Mini App gagal.' });
+    const user = await userService.ensureUser({ id: u.id, first_name: u.first_name, last_name: u.last_name, username: u.username });
+    const token = genMemberToken(u.id);
+    res.json({ ok: true, token, user: { name: user.name, balance: user.balance, role: user.role } });
+  } catch (e) {
+    logger.error('web /api/auth/webapp:', e.message);
     res.status(500).json({ ok: false, message: 'Terjadi kesalahan saat login.' });
   }
 });

@@ -6,6 +6,7 @@
   <title>Belanja — Rayzell Store PPOB</title>
   <meta name="description" content="Belanja pulsa, paket data, token PLN, voucher game & e-money langsung dari web. Bayar pakai saldo atau QRIS, nyatu dengan akun Telegram." />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%236366f1'/><stop offset='1' stop-color='%23a855f7'/></linearGradient></defs><rect width='32' height='32' rx='8' fill='url(%23g)'/><path d='M17.5 6 9 18h6l-1.5 8 8.5-12h-6z' fill='white'/></svg>" />
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
@@ -178,6 +179,21 @@
           document.title = 'Belanja — ' + INFO.store;
         }
       } catch (e) {}
+
+      // Auto-login kalau dibuka sebagai Mini App di dalam Telegram
+      const tg = window.Telegram && window.Telegram.WebApp;
+      if (tg && tg.initData && tg.initData.length > 0 && !token()) {
+        try { tg.ready(); tg.expand(); } catch (e) {}
+        try {
+          const r = await fetch('/api/auth/webapp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ initData: tg.initData }),
+          });
+          const j = await r.json();
+          if (j.ok) localStorage.setItem('member_token', j.token);
+        } catch (e) {}
+      }
 
       if (token()) { showApp(); } else { showGate(); }
     })();
