@@ -29,6 +29,9 @@ const config = {
 
   redisUrl: process.env.REDIS_URL || '',
 
+  // URL publik web (untuk tombol Mini App / web_app). Kosong = tombol disembunyikan.
+  webUrl: process.env.PUBLIC_URL || '',
+
   // PostgreSQL. Pakai DATABASE_URL penuh, atau biarkan kosong & isi PG* satu-satu.
   databaseUrl: process.env.DATABASE_URL || '',
   pg: {

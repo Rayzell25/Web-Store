@@ -4,18 +4,21 @@ const { config } = require('../config');
 
 /** Keyboard inline menu utama. (Tombol Admin dihapus; owner pakai /admin) */
 function mainMenu() {
-  const rows = [
-    [{ text: 'Beli Paket', callback_data: 'menu:order' }],
-    [{ text: 'Top Up', callback_data: 'menu:deposit' }],
-    [
-      { text: 'Riwayat', callback_data: 'menu:riwayat' },
-      { text: 'Cek Harga', callback_data: 'menu:stok' },
-    ],
-    [
-      { text: 'Tools', callback_data: 'menu:tools' },
-      { text: 'Bantuan', callback_data: 'menu:bantuan' },
-    ],
-  ];
+  const rows = [];
+  if (config.webUrl) {
+    const base = config.webUrl.replace(/\/+$/, '');
+    rows.push([{ text: 'Belanja via Web', web_app: { url: `${base}/app.html` } }]);
+  }
+  rows.push([{ text: 'Beli Paket', callback_data: 'menu:order' }]);
+  rows.push([{ text: 'Top Up', callback_data: 'menu:deposit' }]);
+  rows.push([
+    { text: 'Riwayat', callback_data: 'menu:riwayat' },
+    { text: 'Cek Harga', callback_data: 'menu:stok' },
+  ]);
+  rows.push([
+    { text: 'Tools', callback_data: 'menu:tools' },
+    { text: 'Bantuan', callback_data: 'menu:bantuan' },
+  ]);
   return { inline_keyboard: rows };
 }
 
