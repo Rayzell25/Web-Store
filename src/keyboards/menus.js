@@ -1,28 +1,27 @@
 'use strict';
 
 const { config } = require('../config');
-const { iconId } = require('../utils/premoji');
 
 /** Keyboard inline menu utama. (Tombol Admin dihapus; owner pakai /admin)
- *  Emoji tombol pakai field icon_custom_emoji_id (Bot API 9.4+); teks dibuat
- *  polos tanpa emoji unicode. Bila custom emoji belum didukung/eligible,
- *  ui.js otomatis menurunkan ke unicode (lihat downgradeButtonIcons).
+ *  Emoji tombol pakai UNICODE biasa di teks. Telegram TIDAK mendukung custom/
+ *  premium emoji pada tombol inline (field icon_custom_emoji_id diabaikan),
+ *  jadi unicode adalah satu-satunya cara emoji tampil di tombol.
  */
 function mainMenu() {
   const rows = [];
-  rows.push([{ text: 'Beli Paket', callback_data: 'menu:order', icon_custom_emoji_id: iconId('beli') }]);
-  rows.push([{ text: 'Top Up Saldo', callback_data: 'menu:deposit', icon_custom_emoji_id: iconId('topup') }]);
+  rows.push([{ text: '🛒 Beli Paket', callback_data: 'menu:order' }]);
+  rows.push([{ text: '💰 Top Up Saldo', callback_data: 'menu:deposit' }]);
   rows.push([
-    { text: 'Riwayat', callback_data: 'menu:riwayat', icon_custom_emoji_id: iconId('riwayat') },
-    { text: 'Cek Harga', callback_data: 'menu:stok', icon_custom_emoji_id: iconId('harga') },
+    { text: '🧾 Riwayat', callback_data: 'menu:riwayat' },
+    { text: '🏷️ Cek Harga', callback_data: 'menu:stok' },
   ]);
   rows.push([
-    { text: 'Tools', callback_data: 'menu:tools', icon_custom_emoji_id: iconId('tools') },
-    { text: 'Bantuan', callback_data: 'menu:bantuan', icon_custom_emoji_id: iconId('bantuan') },
+    { text: '🛠️ Tools', callback_data: 'menu:tools' },
+    { text: '💬 Bantuan', callback_data: 'menu:bantuan' },
   ]);
   if (config.webUrl) {
     const base = config.webUrl.replace(/\/+$/, '');
-    rows.push([{ text: 'Buka Web', web_app: { url: `${base}/app.html` }, icon_custom_emoji_id: iconId('web') }]);
+    rows.push([{ text: '🌐 Buka Web', web_app: { url: `${base}/app.html` } }]);
   }
   return { inline_keyboard: rows };
 }
