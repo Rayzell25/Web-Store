@@ -5,111 +5,147 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Rayzell Store PPOB — Pulsa, Paket Data, PLN, Game, E-Money</title>
   <meta name="description" content="Rayzell Store PPOB: layanan pulsa, paket data, token PLN, voucher game, dan e-money. Cepat, otomatis, terpercaya." />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%236366f1'/><stop offset='1' stop-color='%23a855f7'/></linearGradient></defs><rect width='32' height='32' rx='8' fill='url(%23g)'/><path d='M17.5 6 9 18h6l-1.5 8 8.5-12h-6z' fill='white'/></svg>" />
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <style>
     body { font-family: 'Inter', sans-serif; }
-    .fade-up { opacity: 0; transform: translateY(12px); animation: fu .5s ease forwards; }
+    .fade-up { opacity: 0; transform: translateY(14px); animation: fu .6s ease forwards; }
+    .fade-up.d1 { animation-delay: .08s; } .fade-up.d2 { animation-delay: .16s; } .fade-up.d3 { animation-delay: .24s; }
     @keyframes fu { to { opacity: 1; transform: none; } }
+    .glow { background:
+      radial-gradient(40rem 22rem at 50% -8%, rgba(99,102,241,.28), transparent 60%),
+      radial-gradient(28rem 18rem at 85% 8%, rgba(168,85,247,.20), transparent 60%),
+      radial-gradient(26rem 18rem at 12% 14%, rgba(56,189,248,.14), transparent 60%); }
+    .grid-bg { background-image:
+      linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px);
+      background-size: 44px 44px;
+      mask-image: radial-gradient(60rem 30rem at 50% 0%, #000 30%, transparent 75%); }
+    .gradient-text { background: linear-gradient(100deg,#a5b4fc,#e9d5ff 45%,#7dd3fc); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    .btn-grad { background: linear-gradient(100deg,#6366f1,#a855f7); }
+    .btn-grad:hover { filter: brightness(1.08); }
   </style>
 </head>
-<body class="bg-slate-950 text-slate-100 antialiased">
+<body class="relative min-h-screen bg-slate-950 text-slate-100 antialiased">
 
-  <!-- NAV -->
-  <header class="sticky top-0 z-30 border-b border-white/5 bg-slate-950/80 backdrop-blur">
-    <div class="mx-auto flex max-w-5xl items-center justify-between px-5 py-4">
-      <div class="flex items-center gap-2">
-        <div class="grid h-8 w-8 place-items-center rounded-lg bg-white text-slate-900 font-extrabold">R</div>
-        <span class="font-semibold tracking-tight" id="brand">Rayzell Store PPOB</span>
+  <!-- background layers -->
+  <div class="pointer-events-none absolute inset-0 glow"></div>
+  <div class="pointer-events-none absolute inset-0 grid-bg"></div>
+
+  <div class="relative">
+    <!-- NAV -->
+    <header class="sticky top-0 z-30 border-b border-white/5 bg-slate-950/70 backdrop-blur-xl">
+      <div class="mx-auto flex max-w-5xl items-center justify-between px-5 py-4">
+        <a href="#" class="flex items-center gap-2.5">
+          <span class="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 shadow-lg shadow-indigo-500/30">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z" fill="white"/></svg>
+          </span>
+          <span class="font-bold tracking-tight" id="brand">Rayzell Store PPOB</span>
+        </a>
+        <nav class="hidden gap-7 text-sm text-slate-400 sm:flex">
+          <a href="#layanan" class="transition hover:text-white">Layanan</a>
+          <a href="#cek" class="transition hover:text-white">Cek Transaksi</a>
+          <a href="#kontak" class="transition hover:text-white">Kontak</a>
+        </nav>
       </div>
-      <nav class="hidden gap-6 text-sm text-slate-400 sm:flex">
-        <a href="#layanan" class="hover:text-white">Layanan</a>
-        <a href="#cek" class="hover:text-white">Cek Transaksi</a>
-        <a href="#kontak" class="hover:text-white">Kontak</a>
-      </nav>
-    </div>
-  </header>
+    </header>
 
-  <!-- HERO -->
-  <section class="mx-auto max-w-5xl px-5 pt-20 pb-16 text-center">
-    <p class="fade-up mb-4 inline-block rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-300">
-      Transaksi otomatis 24 jam
-    </p>
-    <h1 class="fade-up text-4xl font-extrabold leading-tight tracking-tight sm:text-5xl">
-      Pulsa, Data, PLN, Game &amp; E-Money<br class="hidden sm:block" />
-      <span class="text-slate-400">dalam satu tempat.</span>
-    </h1>
-    <p class="fade-up mx-auto mt-5 max-w-xl text-slate-400">
-      Rayzell Store PPOB — isi ulang cepat, harga bersaing, proses otomatis langsung dari Telegram.
-    </p>
-    <div class="fade-up mt-8 flex flex-wrap justify-center gap-3">
-      <a id="cta-buy" href="#" target="_blank" rel="noopener"
-         class="rounded-xl bg-white px-6 py-3 font-semibold text-slate-900 transition hover:bg-slate-200">
-        Mulai Beli di Telegram
-      </a>
-      <a href="#layanan" class="rounded-xl border border-white/15 px-6 py-3 font-semibold text-slate-100 transition hover:bg-white/5">
-        Lihat Layanan
-      </a>
-    </div>
-  </section>
-
-  <!-- LAYANAN -->
-  <section id="layanan" class="mx-auto max-w-5xl px-5 py-14">
-    <div class="mb-8 flex items-end justify-between">
-      <div>
-        <h2 class="text-2xl font-bold tracking-tight">Layanan</h2>
-        <p class="mt-1 text-sm text-slate-400">Harga termurah per kategori. Klik Beli untuk transaksi via Telegram.</p>
+    <!-- HERO -->
+    <section class="mx-auto max-w-5xl px-5 pt-24 pb-20 text-center">
+      <div class="fade-up mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs text-slate-300 backdrop-blur">
+        <span class="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400"></span>
+        Transaksi otomatis 24 jam
       </div>
-    </div>
-    <div id="grid" class="grid grid-cols-2 gap-3 sm:grid-cols-3">
-      <div class="col-span-full rounded-xl border border-white/10 bg-white/5 p-6 text-center text-slate-400">
-        Memuat layanan…
+      <h1 class="fade-up d1 text-4xl font-extrabold leading-[1.1] tracking-tight sm:text-6xl">
+        Isi Ulang Apa Saja,<br class="hidden sm:block" />
+        <span class="gradient-text">Dalam Hitungan Detik.</span>
+      </h1>
+      <p class="fade-up d2 mx-auto mt-6 max-w-xl text-base text-slate-400 sm:text-lg">
+        Pulsa, Paket Data, Token PLN, Voucher Game &amp; E-Money — harga bersaing, proses otomatis langsung dari Telegram.
+      </p>
+      <div class="fade-up d3 mt-9 flex flex-wrap justify-center gap-3">
+        <a id="cta-buy" href="#" target="_blank" rel="noopener"
+           class="btn-grad rounded-xl px-7 py-3.5 font-semibold text-white shadow-lg shadow-indigo-500/30 transition">
+          Mulai Beli di Telegram
+        </a>
+        <a href="#layanan" class="rounded-xl border border-white/15 bg-white/5 px-7 py-3.5 font-semibold text-slate-100 backdrop-blur transition hover:bg-white/10">
+          Lihat Layanan
+        </a>
       </div>
-    </div>
-  </section>
 
-  <!-- CEK TRANSAKSI -->
-  <section id="cek" class="mx-auto max-w-5xl px-5 py-14">
-    <div class="rounded-2xl border border-white/10 bg-white/5 p-6 sm:p-8">
-      <h2 class="text-2xl font-bold tracking-tight">Cek Status Transaksi</h2>
-      <p class="mt-1 text-sm text-slate-400">Masukkan Ref ID transaksi kamu (mis. CHO XXXX).</p>
-      <div class="mt-5 flex flex-col gap-3 sm:flex-row">
-        <input id="ref" type="text" placeholder="Ref ID…"
-               class="w-full rounded-xl border border-white/10 bg-slate-900 px-4 py-3 text-slate-100 outline-none placeholder:text-slate-500 focus:border-white/30" />
-        <button id="cekBtn"
-                class="rounded-xl bg-white px-6 py-3 font-semibold text-slate-900 transition hover:bg-slate-200">
-          Cek
-        </button>
+      <!-- trust badges -->
+      <div class="fade-up d3 mx-auto mt-14 grid max-w-2xl grid-cols-3 gap-4 text-center">
+        <div><div class="text-2xl font-extrabold sm:text-3xl">24/7</div><div class="mt-1 text-xs text-slate-500">Otomatis</div></div>
+        <div><div class="text-2xl font-extrabold sm:text-3xl">5+</div><div class="mt-1 text-xs text-slate-500">Kategori Produk</div></div>
+        <div><div class="text-2xl font-extrabold sm:text-3xl">QRIS</div><div class="mt-1 text-xs text-slate-500">& Saldo</div></div>
       </div>
-      <div id="cekResult" class="mt-5 hidden rounded-xl border border-white/10 bg-slate-900 p-5 text-sm"></div>
-    </div>
-  </section>
+    </section>
 
-  <!-- KONTAK -->
-  <section id="kontak" class="mx-auto max-w-5xl px-5 py-14">
-    <h2 class="text-2xl font-bold tracking-tight">Kontak</h2>
-    <p class="mt-1 text-sm text-slate-400">Butuh bantuan? Hubungi kami.</p>
-    <div class="mt-6 grid gap-3 sm:grid-cols-2">
-      <a id="wa" href="#" target="_blank" rel="noopener"
-         class="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 p-5 transition hover:bg-white/10">
-        <span class="font-semibold">WhatsApp</span>
-        <span class="text-slate-400">Chat sekarang →</span>
-      </a>
-      <a id="tg" href="#" target="_blank" rel="noopener"
-         class="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 p-5 transition hover:bg-white/10">
-        <span class="font-semibold">Telegram</span>
-        <span class="text-slate-400">Buka chat →</span>
-      </a>
-    </div>
-  </section>
+    <!-- LAYANAN -->
+    <section id="layanan" class="mx-auto max-w-5xl px-5 py-16">
+      <div class="mb-8">
+        <h2 class="text-2xl font-bold tracking-tight sm:text-3xl">Layanan</h2>
+        <p class="mt-2 text-sm text-slate-400">Harga termurah per kategori. Klik Beli untuk transaksi via Telegram.</p>
+      </div>
+      <div id="grid" class="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <div class="col-span-full rounded-2xl border border-white/10 bg-white/5 p-6 text-center text-slate-400">Memuat layanan…</div>
+      </div>
+    </section>
 
-  <!-- FOOTER -->
-  <footer class="border-t border-white/5">
-    <div class="mx-auto max-w-5xl px-5 py-8 text-center text-sm text-slate-500">
-      © <span id="year"></span> <span id="brandFoot">Rayzell Store PPOB</span>. Seluruh hak cipta dilindungi.
-    </div>
-  </footer>
+    <!-- CEK TRANSAKSI -->
+    <section id="cek" class="mx-auto max-w-5xl px-5 py-16">
+      <div class="overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-white/[0.07] to-white/[0.02] p-7 sm:p-10">
+        <h2 class="text-2xl font-bold tracking-tight sm:text-3xl">Cek Status Transaksi</h2>
+        <p class="mt-2 text-sm text-slate-400">Masukkan Ref ID transaksi kamu (mis. CHO-XXXX).</p>
+        <div class="mt-6 flex flex-col gap-3 sm:flex-row">
+          <input id="ref" type="text" placeholder="Ref ID…"
+                 class="w-full rounded-xl border border-white/10 bg-slate-900/70 px-4 py-3.5 text-slate-100 outline-none placeholder:text-slate-500 focus:border-indigo-400/60" />
+          <button id="cekBtn" class="btn-grad rounded-xl px-8 py-3.5 font-semibold text-white shadow-lg shadow-indigo-500/30 transition">Cek</button>
+        </div>
+        <div id="cekResult" class="mt-5 hidden rounded-xl border border-white/10 bg-slate-900/70 p-5 text-sm"></div>
+      </div>
+    </section>
+
+    <!-- KONTAK -->
+    <section id="kontak" class="mx-auto max-w-5xl px-5 py-16">
+      <h2 class="text-2xl font-bold tracking-tight sm:text-3xl">Kontak</h2>
+      <p class="mt-2 text-sm text-slate-400">Butuh bantuan? Hubungi kami.</p>
+      <div class="mt-6 grid gap-3 sm:grid-cols-2">
+        <a id="wa" href="#" target="_blank" rel="noopener"
+           class="group flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 p-6 transition hover:border-emerald-400/30 hover:bg-emerald-400/5">
+          <span class="flex items-center gap-3">
+            <span class="grid h-10 w-10 place-items-center rounded-xl bg-emerald-500/15 text-emerald-400">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15l-1.3 4.8 4.9-1.3A10 10 0 1 0 12 2Zm5.3 14.1c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .1-1.7-.1-.4-.1-.9-.3-1.6-.6-2.7-1.2-4.5-4-4.6-4.2-.1-.2-1.1-1.5-1.1-2.8 0-1.3.7-2 .9-2.2.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 1.9c.1.2.1.4 0 .5l-.4.6c-.2.2-.3.4-.1.7.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.4 2.4 1.5.2.1.4.1.6-.1l.7-.9c.2-.2.4-.2.6-.1l1.8.9c.2.1.4.2.4.3.1.2.1.7-.1 1.2Z"/></svg>
+            </span>
+            <span class="font-semibold">WhatsApp</span>
+          </span>
+          <span class="text-slate-400 transition group-hover:translate-x-0.5">Chat →</span>
+        </a>
+        <a id="tg" href="#" target="_blank" rel="noopener"
+           class="group flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 p-6 transition hover:border-sky-400/30 hover:bg-sky-400/5">
+          <span class="flex items-center gap-3">
+            <span class="grid h-10 w-10 place-items-center rounded-xl bg-sky-500/15 text-sky-400">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M21.9 4.3 18.7 19c-.2 1-.9 1.3-1.8.8l-4.9-3.6-2.4 2.3c-.3.3-.5.5-1 .5l.3-5 9-8.1c.4-.3-.1-.5-.6-.2L6.4 13 1.6 11.5c-1-.3-1-1 .2-1.5l18.7-7.2c.9-.3 1.6.2 1.4 1.5Z"/></svg>
+            </span>
+            <span class="font-semibold">Telegram</span>
+          </span>
+          <span class="text-slate-400 transition group-hover:translate-x-0.5">Buka →</span>
+        </a>
+      </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="border-t border-white/5">
+      <div class="mx-auto flex max-w-5xl flex-col items-center gap-2 px-5 py-10 text-center text-sm text-slate-500">
+        <span class="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-indigo-500 to-purple-500">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z" fill="white"/></svg>
+        </span>
+        © <span id="year"></span> <span id="brandFoot">Rayzell Store PPOB</span>. Seluruh hak cipta dilindungi.
+      </div>
+    </footer>
+  </div>
 
   <script>
     const $ = (s) => document.querySelector(s);
@@ -127,7 +163,6 @@
       return '📦';
     }
 
-    // info kontak & nama toko
     fetch('/api/info').then(r => r.json()).then(({ data }) => {
       if (!data) return;
       $('#brand').textContent = data.store;
@@ -138,28 +173,26 @@
       $('#tg').href = data.tgLink;
     }).catch(() => {});
 
-    // etalase
     fetch('/api/products').then(r => r.json()).then(({ data }) => {
       const grid = $('#grid');
       if (!data || !data.length) {
-        grid.innerHTML = '<div class="col-span-full rounded-xl border border-white/10 bg-white/5 p-6 text-center text-slate-400">Produk belum tersedia. Coba lagi nanti.</div>';
+        grid.innerHTML = '<div class="col-span-full rounded-2xl border border-white/10 bg-white/5 p-6 text-center text-slate-400">Produk belum tersedia. Coba lagi nanti.</div>';
         return;
       }
       const botLink = $('#cta-buy').href || '#';
       grid.innerHTML = data.map(d => `
-        <div class="rounded-xl border border-white/10 bg-white/5 p-5 transition hover:bg-white/10">
-          <div class="text-2xl">${iconFor(d.category)}</div>
-          <div class="mt-3 font-semibold">${d.category}</div>
+        <div class="group rounded-2xl border border-white/10 bg-white/5 p-5 transition hover:-translate-y-0.5 hover:border-indigo-400/30 hover:bg-white/[0.07]">
+          <div class="grid h-11 w-11 place-items-center rounded-xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 text-2xl">${iconFor(d.category)}</div>
+          <div class="mt-4 font-semibold">${d.category}</div>
           <div class="text-xs text-slate-400">${d.count} produk</div>
-          <div class="mt-2 text-sm text-slate-300">Mulai ${d.startFromText}</div>
+          <div class="mt-2 text-sm text-slate-300">Mulai <span class="font-semibold text-white">${d.startFromText}</span></div>
           <a href="${botLink}" target="_blank" rel="noopener"
-             class="mt-4 block rounded-lg bg-white px-3 py-2 text-center text-sm font-semibold text-slate-900 transition hover:bg-slate-200">
+             class="btn-grad mt-4 block rounded-lg px-3 py-2 text-center text-sm font-semibold text-white transition">
             Beli
           </a>
         </div>`).join('');
     }).catch(() => {});
 
-    // cek transaksi
     async function cek() {
       const ref = $('#ref').value.trim();
       const box = $('#cekResult');
@@ -173,8 +206,8 @@
         const d = j.data;
         const color = d.status === 'Sukses' ? 'text-emerald-400' : d.status === 'Gagal' ? 'text-rose-400' : 'text-amber-400';
         box.innerHTML = `
-          <div class="grid gap-1">
-            <div class="flex justify-between"><span class="text-slate-400">Ref ID</span><span>${d.ref_id}</span></div>
+          <div class="grid gap-1.5">
+            <div class="flex justify-between"><span class="text-slate-400">Ref ID</span><span class="font-mono text-xs">${d.ref_id}</span></div>
             <div class="flex justify-between"><span class="text-slate-400">Produk</span><span>${d.product || '-'}</span></div>
             <div class="flex justify-between"><span class="text-slate-400">Tujuan</span><span>${d.target || '-'}</span></div>
             <div class="flex justify-between"><span class="text-slate-400">Status</span><span class="font-semibold ${color}">${d.status}</span></div>
