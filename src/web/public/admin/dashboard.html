@@ -9,7 +9,11 @@
   <style>
     body { font-family: 'Inter', sans-serif; }
     [data-theme="dark"]  { --bg:#020817;--card:#0f172a;--border:rgba(255,255,255,.08);--text:#f1f5f9;--muted:#94a3b8;--btn:#fff;--btn-text:#0f172a;--row:rgba(255,255,255,.03); }
-    [data-theme="light"] { --bg:#f8fafc;--card:#ffffff;--border:rgba(0,0,0,.08);--text:#0f172a;--muted:#64748b;--btn:#0f172a;--btn-text:#fff;--row:rgba(0,0,0,.02); }
+    [data-theme="light"] { --bg:#f1f5f9;--card:#ffffff;--border:rgba(0,0,0,.12);--text:#0f172a;--muted:#475569;--btn:#0f172a;--btn-text:#fff;--row:rgba(0,0,0,.025); }
+    /* Badge status kontras di light mode */
+    [data-theme="light"] .badge-sukses  { color: #059669 !important; }
+    [data-theme="light"] .badge-gagal   { color: #dc2626 !important; }
+    [data-theme="light"] .badge-pending { color: #d97706 !important; }
   </style>
 </head>
 <body style="background:var(--bg);color:var(--text)" class="min-h-screen transition-colors duration-200">
@@ -102,8 +106,8 @@
     function rupiah(n) { return 'Rp ' + Number(n||0).toLocaleString('id-ID'); }
     function esc(s) { return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
     function badge(s) {
-      const m = { Sukses:'text-emerald-400', Gagal:'text-rose-400', Pending:'text-amber-400' };
-      return `<span class="font-semibold ${m[s]||'text-slate-400'}">${s}</span>`;
+      const cls = { Sukses:'text-emerald-600 badge-sukses', Gagal:'text-rose-600 badge-gagal', Pending:'text-amber-600 badge-pending' };
+      return `<span class="font-semibold ${cls[s]||'text-slate-500'}">${s}</span>`;
     }
     async function loadData() {
       if (!token()) { window.location = '/admin/'; return; }
