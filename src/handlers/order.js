@@ -167,7 +167,7 @@ async function pay(bot, chatId, messageId, userId, notifyAdmins, alert) {
   const claimed = await claimState(userId, 'order:confirm');
   if (!claimed) return; // tap kedua / sudah diproses -> diam, jangan potong lagi
 
-  const refId = trxCode('CHO');
+  const refId = trxCode('RAYZELL-');
 
   try {
     await addBalance(userId, -harga); // potong dulu, refund jika gagal
