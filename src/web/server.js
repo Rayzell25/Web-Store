@@ -343,7 +343,7 @@ app.post('/api/order', requireUser, async (req, res) => {
     if (method === 'saldo') {
       if (user.balance < harga) return res.json({ ok: false, message: 'Saldo tidak cukup.' });
 
-      const refId = trxCode('CHO');
+      const refId = trxCode('RAYZELL-');
       try {
         await userService.addBalance(req.userId, -harga); // potong dulu
       } catch (e) {
