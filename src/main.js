@@ -148,9 +148,9 @@ async function main() {
       } else if (state.action === 'deposit:input_amount') {
         await deposit.receiveAmount(bot, chatId, userId, msg.text, notifyAdmins);
       } else if (state.action === 'tools:pulsa') {
-        await tools.receivePulsa(bot, chatId, userId, msg.text);
+        await tools.receivePulsa(bot, chatId, userId, msg.text, msg.message_id);
       } else if (state.action === 'tools:area') {
-        await tools.receiveArea(bot, chatId, userId, msg.text);
+        await tools.receiveArea(bot, chatId, userId, msg.text, msg.message_id);
       }
     } catch (e) {
       logger.error('message handler error:', e.message);
