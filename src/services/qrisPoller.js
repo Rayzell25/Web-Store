@@ -125,7 +125,7 @@ async function fulfillTopup(row) {
 }
 
 async function fulfillOrder(row, payload) {
-  const refId = trxCode('CHO');
+  const refId = trxCode('RAYZELL-');
   await trxService.createTransaction({
     ref_id: refId,
     user_id: row.user_id,
