@@ -61,6 +61,19 @@ function getUserTransactions(userId, limit = 10) {
   );
 }
 
+/**
+ * Ambil transaksi yang masih 'Pending' dan sudah berumur minimal `minAgeMs`
+ * (default 90 detik) — supaya tidak menabrak transaksi yang baru saja dibuat
+ * dan masih diproses sinkron. Dipakai poller rekonsiliasi Digiflazz.
+ */
+function pendingTransactions(minAgeMs = 90 * 1000, limit = 30) {
+  const before = now() - minAgeMs;
+  return all(
+    "SELECT * FROM transactions WHERE status = 'Pending' AND created_at <= $1 ORDER BY created_at ASC LIMIT $2",
+    [before, limit]
+  );
+}
+
 async function countTransactions() {
   const r = await one('SELECT COUNT(*)::int AS c FROM transactions');
   return r.c;
@@ -90,6 +103,7 @@ module.exports = {
   getTransaction,
   updateTransaction,
   getUserTransactions,
+  pendingTransactions,
   countTransactions,
   todayRevenue,
 };

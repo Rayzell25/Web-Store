@@ -10,6 +10,7 @@ const { rupiah } = require('./utils/format');
 const userService = require('./services/userService');
 const markupService = require('./services/markupService');
 const qrisPoller = require('./services/qrisPoller');
+const digiflazzPoller = require('./services/digiflazzPoller');
 const { getState, clearState } = require('./utils/session');
 
 // ---- Handlers (router terpusat di file ini) ----
@@ -287,6 +288,9 @@ async function main() {
 
   // poller QRIS (AutoGoPay) untuk deteksi pembayaran otomatis
   qrisPoller.start(bot, notifyAdmins);
+
+  // poller rekonsiliasi status transaksi Digiflazz (Pending -> Sukses/Gagal + auto-refund)
+  digiflazzPoller.start(bot, notifyAdmins);
 
   logger.info(`${config.store.name} berjalan. Admin: ${config.adminIds.join(', ') || '-'}`);
 }
