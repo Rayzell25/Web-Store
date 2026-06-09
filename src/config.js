@@ -71,6 +71,14 @@ const config = {
     adminContact: process.env.ADMIN_CONTACT || '',
   },
 
+  // Grup notifikasi transaksi. Kosong = tidak kirim ke grup tsb.
+  //  - privateId: detail LENGKAP (monitoring admin)
+  //  - publicId : versi DISENSOR, hanya transaksi sukses (social proof)
+  groups: {
+    privateId: process.env.TRX_GROUP_PRIVATE_ID || '',
+    publicId: process.env.TRX_GROUP_PUBLIC_ID || '',
+  },
+
   // Gateway QRIS AutoGoPay. Kosongkan AUTOGOPAY_API_KEY untuk menonaktifkan QRIS.
   qris: {
     apiKey: process.env.AUTOGOPAY_API_KEY || '',

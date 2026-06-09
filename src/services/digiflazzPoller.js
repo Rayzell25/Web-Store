@@ -6,6 +6,7 @@ const { query } = require('../db/database');
 const trxService = require('./trxService');
 const digiflazz = require('./digiflazz');
 const userService = require('./userService');
+const groupNotify = require('./groupNotify');
 const { rupiah, escapeHtml, LINE } = require('../utils/format');
 
 let botRef = null;
@@ -120,6 +121,7 @@ async function markSukses(trx, sn, message) {
       (message ? `\n${escapeHtml(message)}` : ''));
   } catch (e) { /* user mungkin blokir bot */ }
   notifyRef(`✅ (rekonsiliasi) ${trx.product_name} → ${trx.target} SUKSES. Ref: ${trx.ref_id}`);
+  groupNotify.notifyTrx({ status: 'Sukses', productName: trx.product_name, target: trx.target, price: trx.sell_price, refId: trx.ref_id, sn, userId: trx.user_id });
 }
 
 async function markGagalRefund(trx, message) {
@@ -141,6 +143,7 @@ async function markGagalRefund(trx, message) {
       `\nRef: <code>${escapeHtml(trx.ref_id)}</code>`);
   } catch (e) { /* ignore */ }
   notifyRef(`❌ (rekonsiliasi) ${trx.product_name} → ${trx.target} GAGAL, refund ${rupiah(trx.sell_price)}. Ref: ${trx.ref_id}`);
+  groupNotify.notifyTrx({ status: 'Gagal', productName: trx.product_name, target: trx.target, price: trx.sell_price, refId: trx.ref_id, userId: trx.user_id });
 }
 
 /** Kalau transaksi Pending sudah lewat batas waktu, anggap gagal & refund. */
