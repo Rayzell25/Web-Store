@@ -11,6 +11,7 @@ const userService = require('./services/userService');
 const markupService = require('./services/markupService');
 const qrisPoller = require('./services/qrisPoller');
 const digiflazzPoller = require('./services/digiflazzPoller');
+const groupNotify = require('./services/groupNotify');
 const { getState, clearState } = require('./utils/session');
 
 // ---- Handlers (router terpusat di file ini) ----
@@ -37,6 +38,9 @@ async function main() {
   }
 
   const bot = new TelegramBot(config.botToken, botOptions);
+
+  // Notif transaksi ke grup (private lengkap / public disensor). No-op bila ID kosong.
+  groupNotify.init(bot);
 
   // ===== Bungkus SEMUA pesan teks HTML jadi expandable blockquote =====
   // (caption foto QR & popup alert tidak terpengaruh)

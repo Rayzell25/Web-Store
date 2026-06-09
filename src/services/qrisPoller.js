@@ -8,6 +8,7 @@ const userService = require('./userService');
 const trxService = require('./trxService');
 const depositService = require('./depositService');
 const digiflazz = require('./digiflazz');
+const groupNotify = require('./groupNotify');
 const { rupiah, escapeHtml, trxCode, LINE } = require('../utils/format');
 
 let botRef = null;
@@ -181,6 +182,7 @@ async function fulfillOrder(row, payload) {
   notifyRef(
     `QRIS Transaksi ${status}\nUser: ${row.user_id}\n${payload.product_name} -> ${payload.target}\nBayar: ${rupiah(row.amount)} | Ref: ${refId}`
   );
+  groupNotify.notifyTrx({ status, productName: payload.product_name, target: payload.target, price: row.amount, refId, sn, userId: row.user_id });
 }
 
 /** Produk gagal walau QRIS sudah lunas -> kreditkan harga produk ke SALDO member. */
@@ -192,6 +194,10 @@ async function refundOrder(row, refId, reason) {
   notifyRef(
     `QRIS lunas tapi produk GAGAL.\nUser: ${row.user_id} | Ref: ${refId}\nDikreditkan ke saldo: ${rupiah(row.base_amount)}`
   );
+  try {
+    const p = row.payload ? JSON.parse(row.payload) : {};
+    groupNotify.notifyTrx({ status: 'Gagal', productName: p.product_name || '-', target: p.target || '-', price: row.base_amount, refId, userId: row.user_id });
+  } catch (e) { /* ignore */ }
 }
 
 async function markExpired(row, label = 'Kedaluwarsa') {

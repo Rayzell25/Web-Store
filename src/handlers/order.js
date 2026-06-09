@@ -12,6 +12,7 @@ const { createTransaction, updateTransaction } = require('../services/trxService
 const digiflazz = require('../services/digiflazz');
 const autogopay = require('../services/autogopay');
 const qrisService = require('../services/qrisService');
+const groupNotify = require('../services/groupNotify');
 const { config } = require('../config');
 const { tokenFor, valueOf } = require('../utils/registry');
 const { setState, clearState, getState, claimState } = require('../utils/session');
@@ -198,6 +199,7 @@ async function pay(bot, chatId, messageId, userId, notifyAdmins, alert) {
     logger.error('Digiflazz topUp error:', e.message);
     await addBalance(userId, harga);
     await updateTransaction(refId, { status: 'Gagal', message: 'Gagal terhubung ke provider' });
+    groupNotify.notifyTrx({ status: 'Gagal', productName: product.product_name, target, price: harga, refId, userName: user.name, userId });
     return editOrSend(bot, chatId, messageId,
       `<b>TRANSAKSI GAGAL</b> ❌\n${LINE}\nGagal menghubungi provider. Saldo dikembalikan.\nRef: <code>${refId}</code>`,
       backButton('menu:home'));
@@ -210,6 +212,7 @@ async function pay(bot, chatId, messageId, userId, notifyAdmins, alert) {
   if (status === 'Gagal') {
     await addBalance(userId, harga);
     await updateTransaction(refId, { status: 'Gagal', message, sn });
+    groupNotify.notifyTrx({ status: 'Gagal', productName: product.product_name, target, price: harga, refId, sn, userName: user.name, userId });
     return editOrSend(bot, chatId, messageId,
       `<b>TRANSAKSI GAGAL</b> ❌\n${LINE}\n${escapeHtml(message)}\nSaldo dikembalikan.\nRef: <code>${refId}</code>`,
       backButton('menu:home'));
@@ -239,6 +242,8 @@ async function pay(bot, chatId, messageId, userId, notifyAdmins, alert) {
       `🔔 Transaksi ${status}\nUser: ${user.name} (${userId})\n${product.product_name} → ${target}\nHarga: ${rupiah(harga)} | Ref: ${refId}`
     );
   }
+
+  groupNotify.notifyTrx({ status, productName: product.product_name, target, price: harga, refId, sn, userName: user.name, userId });
 }
 
 /** Bayar order via QRIS: generate QR, kirim foto, catat untuk di-poll. */
