@@ -132,8 +132,12 @@ async function syncProducts(bot, chatId, messageId) {
       back('menu:admin'));
   } catch (e) {
     logger.error('Sync produk gagal:', e.message);
+    const low = String(e.message || '').toLowerCase();
+    const hint = low.includes('limit')
+      ? 'Kena batas pengecekan pricelist Digiflazz. Tunggu ~2-5 menit, lalu Sync SEKALI lagi (jangan sync berulang-ulang). Username & API Key kamu sudah benar.'
+      : 'Pastikan DIGIFLAZZ_USERNAME & DIGIFLAZZ_API_KEY benar.';
     await edit(bot, chatId, messageId,
-      `❌ Sync gagal: ${escapeHtml(e.message)}\n\nPastikan DIGIFLAZZ_USERNAME & DIGIFLAZZ_API_KEY benar.`,
+      `❌ Sync gagal: ${escapeHtml(e.message)}\n\n${hint}`,
       back('menu:admin'));
   }
 }

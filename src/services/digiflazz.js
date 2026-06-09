@@ -45,19 +45,22 @@ async function fetchPriceList(cmd) {
 }
 
 /**
- * Ambil daftar harga produk PRABAYAR + PASCABAYAR sekaligus.
- * Keduanya diambil paralel lalu digabung — jadi semua kategori produk
- * (pulsa, paket data, game, PLN pascabayar, BPJS, dll) tersync ke bot.
+ * Ambil daftar harga produk PRABAYAR + PASCABAYAR.
+ * Diambil BERURUTAN dengan jeda kecil (bukan paralel) supaya tidak menembak
+ * 2 request price-list dalam waktu bersamaan -> mengurangi peluang kena
+ * rate-limit Digiflazz ("limitasi pengecekan pricelist").
  */
 async function priceList() {
-  const [prepaid, pasca] = await Promise.all([
-    fetchPriceList('prepaid'),
-    fetchPriceList('pasca').catch((e) => {
-      // Kalau akun belum aktifkan pascabayar, jangan gagal seluruhnya
-      logger.warn('price-list pasca gagal (mungkin belum aktif di akun):', e.message);
-      return [];
-    }),
-  ]);
+  const prepaid = await fetchPriceList('prepaid');
+  // jeda biar tidak burst 2 request beruntun
+  await new Promise((r) => setTimeout(r, 1500));
+  let pasca = [];
+  try {
+    pasca = await fetchPriceList('pasca');
+  } catch (e) {
+    // Akun belum aktifkan pascabayar / rate-limit pada call kedua -> jangan gagal total
+    logger.warn('price-list pasca dilewati:', e.message);
+  }
   logger.info(`price-list: ${prepaid.length} prepaid + ${pasca.length} pasca`);
   return [...prepaid, ...pasca];
 }
