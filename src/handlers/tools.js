@@ -1,9 +1,22 @@
 'use strict';
 
-const { setState, clearState } = require('../utils/session');
+const { setState, clearState, getLastMenu } = require('../utils/session');
 const { backButton } = require('../keyboards/menus');
 const { escapeHtml, LINE } = require('../utils/format');
 const { editOrSend: edit } = require('../utils/ui');
+
+/**
+ * Tampilkan hasil cek (pulsa/area) di pesan menu yang SAMA (1 chat), bukan
+ * kirim pesan baru. Pesan nomor yang diketik user juga dihapus supaya rapi.
+ * Kalau messageId menu tidak ada (mis. Redis hilang), fallback kirim baru.
+ */
+async function showResult(bot, chatId, userMsgId, text) {
+  // hapus pesan nomor yang diketik user (best-effort, biar chat bersih)
+  if (userMsgId) { bot.deleteMessage(chatId, userMsgId).catch(() => {}); }
+  const menuId = await getLastMenu(chatId).catch(() => null);
+  // edit pesan menu yang ada (editOrSend otomatis tangani pesan foto -> edit caption)
+  return edit(bot, chatId, menuId || null, text, backButton('menu:tools'));
+}
 
 /** Deteksi operator dari prefix nomor HP Indonesia */
 function detectOperator(number) {
@@ -102,17 +115,17 @@ async function askArea(bot, chatId, messageId, userId) {
     backButton('menu:tools'));
 }
 
-async function receivePulsa(bot, chatId, userId, number) {
+async function receivePulsa(bot, chatId, userId, number, userMsgId) {
   await clearState(userId);
   const clean = String(number).replace(/[^\d]/g, '');
   const op = detectOperator(clean);
   const text = op
     ? `<b>CEK PULSA</b>\n${LINE}\nNomor   : <code>${escapeHtml(clean)}</code>\nOperator: <b>${op}</b>\n\nKamu bisa beli pulsa/paket untuk operator ini di menu Beli Paket.`
     : `<b>CEK PULSA</b>\n${LINE}\nNomor   : <code>${escapeHtml(clean)}</code>\nOperator tidak dikenali. Pastikan nomor benar.`;
-  await bot.sendMessage(chatId, text, { parse_mode: 'HTML', reply_markup: backButton('menu:tools') });
+  await showResult(bot, chatId, userMsgId, text);
 }
 
-async function receiveArea(bot, chatId, userId, number) {
+async function receiveArea(bot, chatId, userId, number, userMsgId) {
   await clearState(userId);
   const clean = String(number).replace(/[^\d]/g, '');
   const info = areaInfo(clean);
@@ -124,8 +137,7 @@ async function receiveArea(bot, chatId, userId, number) {
   } else {
     body = `Nomor   : <code>${escapeHtml(clean)}</code>\nJenis   : Telepon rumah\nKode    : <b>${info.code}</b>\nWilayah : <b>${escapeHtml(info.region)}</b>`;
   }
-  await bot.sendMessage(chatId, `<b>CEK AREA</b>\n${LINE}\n${body}`,
-    { parse_mode: 'HTML', reply_markup: backButton('menu:tools') });
+  await showResult(bot, chatId, userMsgId, `<b>CEK AREA</b>\n${LINE}\n${body}`);
 }
 
 module.exports = { showTools, askPulsa, askArea, receivePulsa, receiveArea, detectOperator, areaInfo };
