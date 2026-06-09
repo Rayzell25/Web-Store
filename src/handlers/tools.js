@@ -5,17 +5,20 @@ const { backButton } = require('../keyboards/menus');
 const { escapeHtml, LINE } = require('../utils/format');
 const { editOrSend: edit } = require('../utils/ui');
 
+// Database zona XL/Axis: { "nama kota": "Provinsi - Zona X" } (491 kota se-Indonesia).
+const ZONA = require('../assets/zona_data.json');
+
 /**
- * Tampilkan hasil cek (pulsa/area) di pesan menu yang SAMA (1 chat), bukan
- * kirim pesan baru. Pesan nomor yang diketik user juga dihapus supaya rapi.
+ * Tampilkan teks di pesan menu yang SAMA (1 chat), bukan kirim pesan baru.
+ * Pesan nomor/teks yang diketik user juga dihapus supaya chat rapi.
  * Kalau messageId menu tidak ada (mis. Redis hilang), fallback kirim baru.
  */
-async function showResult(bot, chatId, userMsgId, text) {
-  // hapus pesan nomor yang diketik user (best-effort, biar chat bersih)
+async function showResult(bot, chatId, userMsgId, text, keyboard) {
+  // hapus pesan yang diketik user (best-effort, biar chat bersih)
   if (userMsgId) { bot.deleteMessage(chatId, userMsgId).catch(() => {}); }
   const menuId = await getLastMenu(chatId).catch(() => null);
   // edit pesan menu yang ada (editOrSend otomatis tangani pesan foto -> edit caption)
-  return edit(bot, chatId, menuId || null, text, backButton('menu:tools'));
+  return edit(bot, chatId, menuId || null, text, keyboard || backButton('menu:tools'));
 }
 
 /** Deteksi operator dari prefix nomor HP Indonesia */
@@ -36,54 +39,41 @@ function detectOperator(number) {
   return null;
 }
 
-// Kode area telepon (landline) Indonesia — subset umum.
-const AREA_CODES = {
-  '021': 'Jakarta, Bekasi, Depok, Tangerang',
-  '022': 'Bandung, Cimahi',
-  '024': 'Semarang',
-  '031': 'Surabaya, Sidoarjo',
-  '061': 'Medan',
-  '0251': 'Bogor',
-  '0254': 'Serang',
-  '0260': 'Subang',
-  '0261': 'Sumedang',
-  '0264': 'Purwakarta',
-  '0265': 'Tasikmalaya',
-  '0267': 'Karawang',
-  '0271': 'Surakarta (Solo)',
-  '0274': 'Yogyakarta',
-  '0281': 'Purwokerto',
-  '0291': 'Demak, Jepara',
-  '0298': 'Salatiga',
-  '0341': 'Malang',
-  '0351': 'Madiun',
-  '0361': 'Denpasar (Bali)',
-  '0370': 'Mataram (NTB)',
-  '0380': 'Kupang (NTT)',
-  '0411': 'Makassar',
-  '0431': 'Manado',
-  '0511': 'Banjarmasin',
-  '0541': 'Samarinda',
-  '0561': 'Pontianak',
-  '0651': 'Banda Aceh',
-  '0711': 'Palembang',
-  '0721': 'Bandar Lampung',
-  '0741': 'Jambi',
-  '0751': 'Padang',
-  '0761': 'Pekanbaru',
-  '0778': 'Batam',
-  '0967': 'Jayapura (Papua)',
-};
+// Prefix resmi XL & Axis (fitur cek zona hanya untuk operator ini).
+const PREFIX_XL = ['0817', '0818', '0819', '0859', '0877', '0878'];
+const PREFIX_AXIS = ['0831', '0832', '0833', '0838'];
 
-function areaInfo(number) {
-  const n = String(number).replace(/[^\d]/g, '').replace(/^62/, '0');
-  if (/^08/.test(n)) {
-    return { type: 'mobile', operator: detectOperator(n) };
-  }
-  for (const len of [4, 3]) {
-    const pre = n.slice(0, len);
-    if (AREA_CODES[pre]) return { type: 'landline', code: pre, region: AREA_CODES[pre] };
-  }
+/**
+ * Normalisasi nomor HP: buang non-digit lalu ubah awalan 62 -> 0.
+ * Mengembalikan { ok, number, prefix, provider }.
+ */
+function checkXlAxis(raw) {
+  let n = String(raw).replace(/[^\d]/g, '');
+  if (n.startsWith('62')) n = '0' + n.slice(2);
+  // butuh format 08xxxx minimal 4 digit untuk ambil prefix
+  if (!/^08\d{2,}/.test(n)) return { ok: false, reason: 'format', number: n };
+  const prefix = n.slice(0, 4);
+  if (PREFIX_XL.includes(prefix)) return { ok: true, number: n, prefix, provider: 'XL' };
+  if (PREFIX_AXIS.includes(prefix)) return { ok: true, number: n, prefix, provider: 'Axis' };
+  return { ok: false, reason: 'bukan_xl_axis', number: n, prefix };
+}
+
+/**
+ * Cari zona dari nama kota. Pencarian akurat & anti-typo:
+ *  1. Cocokkan apa adanya (setelah lowercase + rapikan spasi). Ini membuat nama
+ *     yang memang mengandung kata "kota"/"kab" tetap valid (kotabaru, kotamobagu,
+ *     kotawaringin barat, lima puluh kota, sukabumi).
+ *  2. Kalau belum ketemu, buang kata administratif DI AWAL saja (kabupaten/kab./
+ *     kota/kotamadya) lalu cocokkan lagi -> "kabupaten pati" / "kota bandung" jadi
+ *     "pati" / "bandung".
+ * Mengembalikan { city, zona } atau null.
+ */
+function lookupZona(raw) {
+  const base = String(raw).toLowerCase().trim().replace(/\s+/g, ' ');
+  if (!base) return null;
+  if (ZONA[base]) return { city: base, zona: ZONA[base] };
+  const stripped = base.replace(/^(kabupaten|kab\.?|kotamadya|kotamadia|kota)\s+/, '').trim();
+  if (stripped && stripped !== base && ZONA[stripped]) return { city: stripped, zona: ZONA[stripped] };
   return null;
 }
 
@@ -108,13 +98,6 @@ async function askPulsa(bot, chatId, messageId, userId) {
     backButton('menu:tools'));
 }
 
-async function askArea(bot, chatId, messageId, userId) {
-  await setState(userId, 'tools:area', {});
-  await edit(bot, chatId, messageId,
-    `<b>CEK AREA</b>\n${LINE}\nKetik nomor telepon untuk cek wilayah / operator (contoh: 0215551234 atau 081234567890):`,
-    backButton('menu:tools'));
-}
-
 async function receivePulsa(bot, chatId, userId, number, userMsgId) {
   await clearState(userId);
   const clean = String(number).replace(/[^\d]/g, '');
@@ -125,19 +108,71 @@ async function receivePulsa(bot, chatId, userId, number, userMsgId) {
   await showResult(bot, chatId, userMsgId, text);
 }
 
-async function receiveArea(bot, chatId, userId, number, userMsgId) {
-  await clearState(userId);
-  const clean = String(number).replace(/[^\d]/g, '');
-  const info = areaInfo(clean);
-  let body;
-  if (!info) {
-    body = `Nomor : <code>${escapeHtml(clean)}</code>\nWilayah/operator tidak dikenali.`;
-  } else if (info.type === 'mobile') {
-    body = `Nomor   : <code>${escapeHtml(clean)}</code>\nJenis   : Seluler (HP)\nOperator: <b>${info.operator || 'tidak dikenali'}</b>`;
-  } else {
-    body = `Nomor   : <code>${escapeHtml(clean)}</code>\nJenis   : Telepon rumah\nKode    : <b>${info.code}</b>\nWilayah : <b>${escapeHtml(info.region)}</b>`;
-  }
-  await showResult(bot, chatId, userMsgId, `<b>CEK AREA</b>\n${LINE}\n${body}`);
+// ===== CEK AREA (zona XL/Axis) — wizard 2 langkah =====
+
+/** Langkah 1: minta nomor HP (XL/Axis). */
+async function askArea(bot, chatId, messageId, userId) {
+  await setState(userId, 'tools:area', {});
+  await edit(bot, chatId, messageId,
+    `<b>CEK AREA XL / AXIS</b>\n${LINE}\nMasukkan nomor HP <b>XL</b> atau <b>Axis</b> yang ingin dicek zonanya.\n\nContoh: <code>087812345678</code>`,
+    backButton('menu:tools'));
 }
 
-module.exports = { showTools, askPulsa, askArea, receivePulsa, receiveArea, detectOperator, areaInfo };
+/** Terima nomor di langkah 1 -> validasi XL/Axis -> lanjut minta nama kota. */
+async function receiveAreaNumber(bot, chatId, userId, raw, userMsgId) {
+  const res = checkXlAxis(raw);
+  if (!res.ok) {
+    // tetap di langkah 1, refresh state biar TTL panjang, minta ulang.
+    await setState(userId, 'tools:area', {});
+    const msg = res.reason === 'format'
+      ? 'Format nomor salah. Masukkan nomor HP yang valid (contoh: <code>087812345678</code>).'
+      : 'Nomor itu <b>bukan XL/Axis</b>. Fitur cek zona ini khusus nomor XL/Axis. Coba nomor lain:';
+    await showResult(bot, chatId, userMsgId,
+      `<b>CEK AREA XL / AXIS</b>\n${LINE}\n${msg}`,
+      backButton('menu:tools'));
+    return;
+  }
+  // nomor valid -> simpan, lanjut langkah 2 (nama kota)
+  await setState(userId, 'tools:area_city', { number: res.number, provider: res.provider });
+  await showResult(bot, chatId, userMsgId,
+    `<b>CEK AREA XL / AXIS</b>\n${LINE}\nNomor terverifikasi: <b>${res.provider}</b> (<code>${escapeHtml(res.number)}</code>).\n\nSekarang ketik <b>nama kota / kabupaten</b> asal kartu untuk melihat zonanya.\n\nContoh: <code>bandung</code>, <code>pati</code>, <code>jepara</code>`,
+    backButton('menu:tools'));
+}
+
+/** Terima nama kota di langkah 2 -> cari zona -> tampilkan hasil. */
+async function receiveAreaCity(bot, chatId, userId, raw, userMsgId, state) {
+  const found = lookupZona(raw);
+  if (!found) {
+    // tetap di langkah 2, minta ulang nama kota.
+    const data = (state && state.data) || {};
+    await setState(userId, 'tools:area_city', data);
+    await showResult(bot, chatId, userMsgId,
+      `<b>CEK AREA XL / AXIS</b>\n${LINE}\nKota "<b>${escapeHtml(String(raw).trim())}</b>" tidak ditemukan.\n\nKetik nama kota/kabupaten dengan ejaan resmi tanpa disingkat (contoh: <code>pati</code>, <code>sidoarjo</code>, <code>kotabaru</code>), atau tekan « KEMBALI.`,
+      backButton('menu:tools'));
+    return;
+  }
+  await clearState(userId);
+  const data = (state && state.data) || {};
+  const numLine = data.number
+    ? `Nomor   : <code>${escapeHtml(data.number)}</code> (<b>${escapeHtml(data.provider || 'XL/Axis')}</b>)\n`
+    : '';
+  const title = found.city.replace(/\b\w/g, (c) => c.toUpperCase());
+  const text =
+    `<b>HASIL CEK AREA</b>\n${LINE}\n` +
+    numLine +
+    `Kota    : <b>${escapeHtml(title)}</b>\n` +
+    `Zona    : <b>${escapeHtml(found.zona)}</b>`;
+  await showResult(bot, chatId, userMsgId, text);
+}
+
+module.exports = {
+  showTools,
+  askPulsa,
+  askArea,
+  receivePulsa,
+  receiveAreaNumber,
+  receiveAreaCity,
+  detectOperator,
+  checkXlAxis,
+  lookupZona,
+};
