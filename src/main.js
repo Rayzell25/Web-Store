@@ -267,6 +267,8 @@ async function main() {
         if (isAdmin(from.id)) await admin.askSetRole(bot, chatId, messageId, from.id);
       } else if (data === 'adm:markup') {
         if (isAdmin(from.id)) await admin.showMarkup(bot, chatId, messageId, from.id);
+      } else if (data.startsWith('adm:mk:')) {
+        if (isAdmin(from.id)) await admin.handleMarkupCallback(bot, chatId, messageId, from, data);
       } else if (data === 'adm:broadcast') {
         if (isAdmin(from.id)) await admin.askBroadcast(bot, chatId, messageId, from.id);
       } else if (data === 'adm:sync') {

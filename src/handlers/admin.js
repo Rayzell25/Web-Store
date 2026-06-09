@@ -8,8 +8,10 @@ const productService = require('../services/productService');
 const markupService = require('../services/markupService');
 const digiflazz = require('../services/digiflazz');
 const { setState, clearState, getState } = require('../utils/session');
-const { rupiah, escapeHtml, tanggal, LINE } = require('../utils/format');
+const { rupiah, escapeHtml, tanggal, truncate, LINE } = require('../utils/format');
 const { editOrSend: edit } = require('../utils/ui');
+const { tokenFor, valueOf } = require('../utils/registry');
+const { gridKeyboard } = require('../keyboards/menus');
 const logger = require('../utils/logger');
 
 function adminMenuKeyboard() {
@@ -104,21 +106,230 @@ async function askBroadcast(bot, chatId, messageId, userId) {
     back('menu:admin'));
 }
 
+// ===== MARKUP / KEUNTUNGAN (berbasis tombol) =====
+
+/** Format aturan markup jadi teks ramah. */
+function fmtRule(r) {
+  if (!r) return '-';
+  return r.type === 'percent' ? `${r.value}%` : rupiah(r.value);
+}
+
+/** Keyboard pilih tipe markup (flat/percent) + tombol opsional + kembali. */
+function typeKb(prefix, backData, extraRows) {
+  return {
+    inline_keyboard: [
+      [
+        { text: 'FLAT (Rp)', callback_data: `${prefix}:flat` },
+        { text: 'PERSEN (%)', callback_data: `${prefix}:percent` },
+      ],
+      ...(Array.isArray(extraRows) ? extraRows : []),
+      [{ text: '« KEMBALI', callback_data: backData }],
+    ],
+  };
+}
+
+/** Teks instruksi minta angka keuntungan. */
+function askValueText(label, type) {
+  const ex = type === 'percent' ? '3  →  3% dari modal' : '1000  →  Rp 1.000';
+  return (
+    `<b>SET KEUNTUNGAN</b>\n${LINE}\n` +
+    `Target : <b>${escapeHtml(label)}</b>\n` +
+    `Tipe   : <b>${type === 'percent' ? 'Persen (%)' : 'Flat (Rp)'}</b>\n\n` +
+    `Ketik <b>angka</b> keuntungannya.\nContoh: <code>${ex}</code>`
+  );
+}
+
+/** Menu utama MARKUP (tombol). */
 async function showMarkup(bot, chatId, messageId, userId) {
-  await setState(userId, 'adm:markup', {});
-  const help =
-    `\n\n<b>Atur markup, ketik salah satu (pakai pemisah | ):</b>\n` +
-    `<code>default|flat|500</code>\n` +
-    `<code>default|percent|3</code>\n` +
-    `<code>reseller|flat|250</code>\n` +
-    `<code>cat|Paket Data|flat|1000</code>\n` +
-    `<code>cat|PLN|flat|1500</code>\n` +
-    `<code>sku|xld10|flat|800</code>\n` +
-    `<code>round|100</code>\n` +
-    `<code>delcat|Paket Data</code>\n` +
-    `<code>delsku|xld10</code>\n\n` +
-    `<i>type: flat (rupiah) atau percent (% dari modal)</i>`;
-  await edit(bot, chatId, messageId, markupService.describe() + help, back('menu:admin'));
+  await clearState(userId);
+  const kb = {
+    inline_keyboard: [
+      [{ text: 'KEUNTUNGAN SEMUA (MEMBER)', callback_data: 'adm:mk:scope:default' }],
+      [{ text: 'KEUNTUNGAN RESELLER', callback_data: 'adm:mk:scope:reseller' }],
+      [
+        { text: 'PER KATEGORI', callback_data: 'adm:mk:cats' },
+        { text: 'PER PRODUK', callback_data: 'adm:mk:pcats' },
+      ],
+      [{ text: 'PEMBULATAN HARGA', callback_data: 'adm:mk:round' }],
+      [{ text: '« KEMBALI', callback_data: 'menu:admin' }],
+    ],
+  };
+  await edit(bot, chatId, messageId,
+    `${markupService.describe()}\n${LINE}\nPilih yang mau diatur:`, kb);
+}
+
+/** Daftar kategori untuk markup per-kategori. */
+async function showMarkupCats(bot, chatId, messageId) {
+  const cats = await productService.getCategories();
+  if (!cats.length) {
+    return edit(bot, chatId, messageId,
+      '⚠️ Belum ada produk. Jalankan Sync Produk dulu.', back('adm:markup'));
+  }
+  const items = cats.map((c) => ({
+    text: `${truncate(c.category, 20)} (${c.c})`,
+    data: `adm:mk:cat:${tokenFor(c.category)}`,
+  }));
+  await edit(bot, chatId, messageId,
+    `<b>MARKUP PER KATEGORI</b>\n${LINE}\nPilih kategori:`,
+    gridKeyboard(items, 2, 'adm:markup'));
+}
+
+/** Detail 1 kategori: pilih tipe / hapus. */
+async function showMarkupCat(bot, chatId, messageId, catToken) {
+  const category = valueOf(catToken);
+  if (!category) return showMarkupCats(bot, chatId, messageId);
+  const cur = markupService.getConfig().categories[category];
+  const extra = cur
+    ? [[{ text: 'HAPUS MARKUP KATEGORI', callback_data: `adm:mk:cdel:${catToken}` }]]
+    : [];
+  await edit(bot, chatId, messageId,
+    `<b>KATEGORI: ${escapeHtml(category)}</b>\n${LINE}\n` +
+    `Markup sekarang: <b>${cur ? fmtRule(cur) : '(ikut default)'}</b>\n\nPilih tipe markup:`,
+    typeKb(`adm:mk:ctype:${catToken}`, 'adm:mk:cats', extra));
+}
+
+/** Daftar kategori untuk markup per-produk. */
+async function showMarkupProdCats(bot, chatId, messageId) {
+  const cats = await productService.getCategories();
+  if (!cats.length) {
+    return edit(bot, chatId, messageId,
+      '⚠️ Belum ada produk. Jalankan Sync Produk dulu.', back('adm:markup'));
+  }
+  const items = cats.map((c) => ({
+    text: `${truncate(c.category, 20)} (${c.c})`,
+    data: `adm:mk:pcat:${tokenFor(c.category)}`,
+  }));
+  await edit(bot, chatId, messageId,
+    `<b>MARKUP PER PRODUK</b>\n${LINE}\nPilih kategori:`,
+    gridKeyboard(items, 2, 'adm:markup'));
+}
+
+/** Daftar brand pada kategori (untuk per-produk). */
+async function showMarkupProdBrands(bot, chatId, messageId, catToken) {
+  const category = valueOf(catToken);
+  if (!category) return showMarkupProdCats(bot, chatId, messageId);
+  const brands = await productService.getBrands(category);
+  const items = brands.map((b) => ({
+    text: `${truncate(b.brand, 22)} (${b.c})`,
+    data: `adm:mk:pbrand:${catToken}:${tokenFor(b.brand)}`,
+  }));
+  await edit(bot, chatId, messageId,
+    `<b>${escapeHtml(category.toUpperCase())}</b>\n${LINE}\nPilih brand:`,
+    gridKeyboard(items, 2, 'adm:mk:pcats'));
+}
+
+/** Daftar produk pada brand (untuk per-produk). */
+async function showMarkupProdList(bot, chatId, messageId, catToken, brandToken) {
+  const category = valueOf(catToken);
+  const brand = valueOf(brandToken);
+  if (!category || !brand) return showMarkupProdCats(bot, chatId, messageId);
+  const products = await productService.getProductsByBrand(category, brand);
+  const items = products.map((p) => {
+    const ov = markupService.getProductMarkup(p.buyer_sku_code);
+    const tag = ov ? ` [${fmtRule(ov)}]` : '';
+    return {
+      text: `${truncate(p.product_name, 26)}${tag}`,
+      data: `adm:mk:prod:${p.buyer_sku_code}`,
+    };
+  });
+  await edit(bot, chatId, messageId,
+    `<b>${escapeHtml(brand.toUpperCase())}</b> · ${escapeHtml(category)}\n${LINE}\n` +
+    `Pilih produk untuk set markup khusus:`,
+    gridKeyboard(items, 1, `adm:mk:pcat:${catToken}`));
+}
+
+/** Detail 1 produk: pilih tipe / hapus override. */
+async function showMarkupProd(bot, chatId, messageId, sku) {
+  const product = await productService.getProduct(sku);
+  if (!product) return showMarkupProdCats(bot, chatId, messageId);
+  const cur = markupService.getProductMarkup(sku);
+  const extra = cur
+    ? [[{ text: 'HAPUS MARKUP PRODUK', callback_data: `adm:mk:pdel:${sku}` }]]
+    : [];
+  const info =
+    `${product.product_name}\n` +
+    `Modal: ${rupiah(product.price)}`;
+  await edit(bot, chatId, messageId,
+    `<b>MARKUP PRODUK</b>\n${LINE}\n<code>${escapeHtml(info)}</code>\n` +
+    `Markup sekarang: <b>${cur ? fmtRule(cur) : '(ikut kategori/default)'}</b>\n\nPilih tipe markup:`,
+    typeKb(`adm:mk:ptype:${sku}`, 'adm:mk:pcats', extra));
+}
+
+/**
+ * Router callback markup (semua data berawalan 'adm:mk:').
+ * Dipanggil dari main.js (sudah dijaga isAdmin).
+ */
+async function handleMarkupCallback(bot, chatId, messageId, from, data) {
+  const userId = from.id;
+  const seg = data.split(':'); // ['adm','mk', action, ...]
+  const action = seg[2];
+
+  // --- global: default / reseller ---
+  if (action === 'scope') {
+    const scope = seg[3] === 'reseller' ? 'reseller' : 'default';
+    const label = scope === 'reseller' ? 'RESELLER' : 'Semua produk (MEMBER)';
+    return edit(bot, chatId, messageId,
+      `<b>SET KEUNTUNGAN — ${escapeHtml(label)}</b>\n${LINE}\n` +
+      `Sekarang: <b>${fmtRule(markupService.getConfig()[scope])}</b>\n\nPilih tipe markup:`,
+      typeKb(`adm:mk:t:${scope}`, 'adm:markup'));
+  }
+  if (action === 't') {
+    const scope = seg[3] === 'reseller' ? 'reseller' : 'default';
+    const type = seg[4] === 'percent' ? 'percent' : 'flat';
+    const label = scope === 'reseller' ? 'RESELLER' : 'Semua produk (MEMBER)';
+    await setState(userId, 'adm:mk:input', { scope, type, label });
+    return edit(bot, chatId, messageId, askValueText(label, type), back('adm:markup'));
+  }
+
+  // --- per kategori ---
+  if (action === 'cats') return showMarkupCats(bot, chatId, messageId);
+  if (action === 'cat') return showMarkupCat(bot, chatId, messageId, seg[3]);
+  if (action === 'ctype') {
+    const catToken = seg[3];
+    const type = seg[4] === 'percent' ? 'percent' : 'flat';
+    const category = valueOf(catToken);
+    if (!category) return showMarkupCats(bot, chatId, messageId);
+    await setState(userId, 'adm:mk:input', { scope: 'category', category, type, label: `Kategori ${category}` });
+    return edit(bot, chatId, messageId, askValueText(`Kategori "${category}"`, type), back(`adm:mk:cat:${catToken}`));
+  }
+  if (action === 'cdel') {
+    const category = valueOf(seg[3]);
+    if (category) await markupService.deleteCategoryRule(category);
+    return edit(bot, chatId, messageId,
+      `✅ Markup kategori "${escapeHtml(category || '-')}" dihapus.`, back('adm:mk:cats'));
+  }
+
+  // --- per produk (navigasi kategori -> brand -> produk) ---
+  if (action === 'pcats') return showMarkupProdCats(bot, chatId, messageId);
+  if (action === 'pcat') return showMarkupProdBrands(bot, chatId, messageId, seg[3]);
+  if (action === 'pbrand') return showMarkupProdList(bot, chatId, messageId, seg[3], seg[4]);
+  if (action === 'prod') return showMarkupProd(bot, chatId, messageId, seg.slice(3).join(':'));
+  if (action === 'ptype') {
+    const type = seg[seg.length - 1] === 'percent' ? 'percent' : 'flat';
+    const sku = seg.slice(3, seg.length - 1).join(':');
+    const product = await productService.getProduct(sku);
+    if (!product) return showMarkupProdCats(bot, chatId, messageId);
+    await setState(userId, 'adm:mk:input', { scope: 'product', sku, type, label: product.product_name });
+    return edit(bot, chatId, messageId, askValueText(product.product_name, type), back(`adm:mk:prod:${sku}`));
+  }
+  if (action === 'pdel') {
+    const sku = seg.slice(3).join(':');
+    await markupService.deleteProductMarkup(sku);
+    return edit(bot, chatId, messageId, '✅ Markup produk dihapus.', back('adm:mk:pcats'));
+  }
+
+  // --- pembulatan ---
+  if (action === 'round') {
+    await setState(userId, 'adm:mk:input', { scope: 'round', label: 'Pembulatan harga' });
+    return edit(bot, chatId, messageId,
+      `<b>PEMBULATAN HARGA</b>\n${LINE}\n` +
+      `Sekarang: <b>${markupService.getConfig().round ? 'kelipatan ' + rupiah(markupService.getConfig().round) : 'tidak ada'}</b>\n\n` +
+      `Ketik kelipatan pembulatan (0 = tidak dibulatkan).\nContoh: <code>100</code> → harga dibulatkan ke atas kelipatan 100.`,
+      back('adm:markup'));
+  }
+
+  // tidak dikenali -> kembali ke menu markup
+  return showMarkup(bot, chatId, messageId, userId);
 }
 
 async function syncProducts(bot, chatId, messageId) {
@@ -204,10 +415,43 @@ async function handleAdminText(bot, chatId, from, text, broadcastFn) {
     return true;
   }
 
-  if (state.action === 'adm:markup') {
+  if (state.action === 'adm:mk:input') {
     await clearState(from.id);
-    const out = await applyMarkupCommand(text);
-    await bot.sendMessage(chatId, out, { parse_mode: 'HTML' });
+    const { scope, type, category, sku, label } = state.data || {};
+    // ambil angka dari teks (toleran: "Rp 1.000" / "1000" / "3,5")
+    const raw = String(text).replace(/[^\d.,-]/g, '').replace(/\.(?=\d{3}\b)/g, '').replace(',', '.');
+    const num = Number(raw);
+    if (!/\d/.test(raw) || !Number.isFinite(num) || num < 0) {
+      await bot.sendMessage(chatId, '⚠️ Angka tidak valid. Buka menu MARKUP lagi lalu ulangi.', { parse_mode: 'HTML' });
+      return true;
+    }
+    try {
+      if (scope === 'round') {
+        await markupService.setRound(num);
+        await bot.sendMessage(chatId,
+          `✅ Pembulatan di-set ke <b>${num > 0 ? 'kelipatan ' + rupiah(num) : 'tidak ada'}</b>.`,
+          { parse_mode: 'HTML' });
+      } else if (scope === 'default' || scope === 'reseller') {
+        await markupService.setRule(scope, type, num);
+        await bot.sendMessage(chatId,
+          `✅ Keuntungan <b>${escapeHtml(label || scope)}</b> di-set ke <b>${type === 'percent' ? num + '%' : rupiah(num)}</b>.`,
+          { parse_mode: 'HTML' });
+      } else if (scope === 'category') {
+        await markupService.setRule('category', type, num, category);
+        await bot.sendMessage(chatId,
+          `✅ Keuntungan <b>${escapeHtml(label || category)}</b> di-set ke <b>${type === 'percent' ? num + '%' : rupiah(num)}</b>.`,
+          { parse_mode: 'HTML' });
+      } else if (scope === 'product') {
+        await markupService.setProductMarkup(sku, type, num);
+        await bot.sendMessage(chatId,
+          `✅ Keuntungan produk <b>${escapeHtml(label || sku)}</b> di-set ke <b>${type === 'percent' ? num + '%' : rupiah(num)}</b>.`,
+          { parse_mode: 'HTML' });
+      } else {
+        await bot.sendMessage(chatId, '⚠️ Sesi markup tidak dikenali. Buka menu MARKUP lagi.');
+      }
+    } catch (e) {
+      await bot.sendMessage(chatId, `⚠️ Gagal: ${escapeHtml(e.message)}`, { parse_mode: 'HTML' });
+    }
     return true;
   }
 
@@ -222,51 +466,6 @@ async function handleAdminText(bot, chatId, from, text, broadcastFn) {
   return false;
 }
 
-/** Parser perintah markup (pemisah |). */
-async function applyMarkupCommand(text) {
-  const parts = String(text).split('|').map((s) => s.trim());
-  const cmd = (parts[0] || '').toLowerCase();
-  const validType = (t) => ['flat', 'percent'].includes(String(t).toLowerCase());
-
-  try {
-    if (cmd === 'default' || cmd === 'reseller') {
-      if (!validType(parts[1]) || isNaN(Number(parts[2]))) return '⚠️ Format: default|flat|500';
-      await markupService.setRule(cmd, parts[1].toLowerCase(), Number(parts[2]));
-      return `✅ Markup ${cmd} di-set ke ${parts[1]} ${parts[2]}.`;
-    }
-    if (cmd === 'cat') {
-      const category = parts[1];
-      if (!category || !validType(parts[2]) || isNaN(Number(parts[3]))) return '⚠️ Format: cat|Paket Data|flat|1000';
-      await markupService.setRule('category', parts[2].toLowerCase(), Number(parts[3]), category);
-      return `✅ Markup kategori "${escapeHtml(category)}" di-set ke ${parts[2]} ${parts[3]}.`;
-    }
-    if (cmd === 'sku') {
-      const sku = parts[1];
-      if (!sku || !validType(parts[2]) || isNaN(Number(parts[3]))) return '⚠️ Format: sku|xld10|flat|800';
-      await markupService.setProductMarkup(sku, parts[2].toLowerCase(), Number(parts[3]));
-      return `✅ Markup produk "${escapeHtml(sku)}" di-set ke ${parts[2]} ${parts[3]}.`;
-    }
-    if (cmd === 'round') {
-      if (isNaN(Number(parts[1]))) return '⚠️ Format: round|100';
-      await markupService.setRound(Number(parts[1]));
-      return `✅ Pembulatan di-set ke kelipatan ${parts[1]}.`;
-    }
-    if (cmd === 'delcat') {
-      if (!parts[1]) return '⚠️ Format: delcat|Paket Data';
-      await markupService.deleteCategoryRule(parts[1]);
-      return `✅ Markup kategori "${escapeHtml(parts[1])}" dihapus.`;
-    }
-    if (cmd === 'delsku') {
-      if (!parts[1]) return '⚠️ Format: delsku|xld10';
-      await markupService.deleteProductMarkup(parts[1]);
-      return `✅ Markup produk "${escapeHtml(parts[1])}" dihapus.`;
-    }
-    return '⚠️ Perintah tidak dikenali. Buka menu Markup lagi untuk lihat format.';
-  } catch (e) {
-    return `⚠️ Gagal: ${escapeHtml(e.message)}`;
-  }
-}
-
 function back(target) {
   return { inline_keyboard: [[{ text: '« KEMBALI', callback_data: target }]] };
 }
@@ -279,6 +478,7 @@ module.exports = {
   askSetRole,
   askBroadcast,
   showMarkup,
+  handleMarkupCallback,
   syncProducts,
   showSetFoto,
   deleteFoto,
