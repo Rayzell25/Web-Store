@@ -27,22 +27,39 @@ const http = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
-/** Ambil daftar harga produk prepaid */
-async function priceList() {
+/** Ambil price-list untuk satu cmd ('prepaid' atau 'pasca'). */
+async function fetchPriceList(cmd) {
   const body = {
-    cmd: config.digiflazz.mode || 'prepaid',
+    cmd,
     username: config.digiflazz.username,
     sign: sign('pricelist'),
   };
   const { data } = await http.post('/price-list', body);
   if (!data || !data.data) {
-    throw new Error('Respon price-list tidak valid dari Digiflazz');
+    throw new Error(`Respon price-list ${cmd} tidak valid dari Digiflazz`);
   }
   if (!Array.isArray(data.data)) {
-    // biasanya error: { data: { message: ... } }
-    throw new Error(data.data.message || 'Gagal mengambil price-list');
+    throw new Error(data.data.message || `Gagal mengambil price-list ${cmd}`);
   }
   return data.data;
+}
+
+/**
+ * Ambil daftar harga produk PRABAYAR + PASCABAYAR sekaligus.
+ * Keduanya diambil paralel lalu digabung — jadi semua kategori produk
+ * (pulsa, paket data, game, PLN pascabayar, BPJS, dll) tersync ke bot.
+ */
+async function priceList() {
+  const [prepaid, pasca] = await Promise.all([
+    fetchPriceList('prepaid'),
+    fetchPriceList('pasca').catch((e) => {
+      // Kalau akun belum aktifkan pascabayar, jangan gagal seluruhnya
+      logger.warn('price-list pasca gagal (mungkin belum aktif di akun):', e.message);
+      return [];
+    }),
+  ]);
+  logger.info(`price-list: ${prepaid.length} prepaid + ${pasca.length} pasca`);
+  return [...prepaid, ...pasca];
 }
 
 /** Cek saldo deposit di Digiflazz */
