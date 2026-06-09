@@ -51,6 +51,11 @@ const config = {
     username: process.env.DIGIFLAZZ_USERNAME || '',
     apiKey: process.env.DIGIFLAZZ_API_KEY || '',
     mode: process.env.DIGIFLAZZ_MODE || 'prepaid',
+    // Interval (detik) poller rekonsiliasi status transaksi Pending. 0 = nonaktif.
+    reconcileSec: Number(process.env.DIGIFLAZZ_RECONCILE_SEC || 60),
+    // Transaksi Pending lebih tua dari ini (menit) dianggap GAGAL & di-refund
+    // bila Digiflazz tetap tidak memberi kepastian. 0 = jangan auto-gagalkan.
+    reconcileTimeoutMin: Number(process.env.DIGIFLAZZ_RECONCILE_TIMEOUT_MIN || 30),
   },
 
   // --- non-sensitif: default tampilan & aturan ---

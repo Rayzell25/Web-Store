@@ -97,6 +97,26 @@ async function topUp({ buyerSkuCode, customerNo, refId, testing = false }) {
   return data.data;
 }
 
+/**
+ * Cek status transaksi yang sudah dibuat (rekonsiliasi).
+ * Digiflazz: kirim ulang ke /transaction dengan ref_id yang SAMA -> server
+ * mengembalikan status terkini transaksi itu (tidak membuat transaksi baru).
+ */
+async function checkTransaction({ buyerSkuCode, customerNo, refId }) {
+  const body = {
+    username: config.digiflazz.username,
+    buyer_sku_code: buyerSkuCode,
+    customer_no: customerNo,
+    ref_id: refId,
+    sign: sign(refId),
+  };
+  const { data } = await http.post('/transaction', body);
+  if (!data || !data.data) {
+    throw new Error('Respon cek transaksi tidak valid dari Digiflazz');
+  }
+  return data.data;
+}
+
 /** Petakan status Digiflazz ke status internal */
 function mapStatus(digiStatus) {
   const s = String(digiStatus || '').toLowerCase();
@@ -105,4 +125,4 @@ function mapStatus(digiStatus) {
   return 'Pending';
 }
 
-module.exports = { priceList, checkDeposit, topUp, mapStatus, sign };
+module.exports = { priceList, checkDeposit, topUp, checkTransaction, mapStatus, sign };
