@@ -150,9 +150,7 @@ async function main() {
       } else if (state.action === 'tools:pulsa') {
         await tools.receivePulsa(bot, chatId, userId, msg.text, msg.message_id);
       } else if (state.action === 'tools:area') {
-        await tools.receiveAreaNumber(bot, chatId, userId, msg.text, msg.message_id);
-      } else if (state.action === 'tools:area_city') {
-        await tools.receiveAreaCity(bot, chatId, userId, msg.text, msg.message_id, state);
+        await tools.receiveArea(bot, chatId, userId, msg.text, msg.message_id);
       }
     } catch (e) {
       logger.error('message handler error:', e.message);

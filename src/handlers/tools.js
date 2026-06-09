@@ -39,25 +39,6 @@ function detectOperator(number) {
   return null;
 }
 
-// Prefix resmi XL & Axis (fitur cek zona hanya untuk operator ini).
-const PREFIX_XL = ['0817', '0818', '0819', '0859', '0877', '0878'];
-const PREFIX_AXIS = ['0831', '0832', '0833', '0838'];
-
-/**
- * Normalisasi nomor HP: buang non-digit lalu ubah awalan 62 -> 0.
- * Mengembalikan { ok, number, prefix, provider }.
- */
-function checkXlAxis(raw) {
-  let n = String(raw).replace(/[^\d]/g, '');
-  if (n.startsWith('62')) n = '0' + n.slice(2);
-  // butuh format 08xxxx minimal 4 digit untuk ambil prefix
-  if (!/^08\d{2,}/.test(n)) return { ok: false, reason: 'format', number: n };
-  const prefix = n.slice(0, 4);
-  if (PREFIX_XL.includes(prefix)) return { ok: true, number: n, prefix, provider: 'XL' };
-  if (PREFIX_AXIS.includes(prefix)) return { ok: true, number: n, prefix, provider: 'Axis' };
-  return { ok: false, reason: 'bukan_xl_axis', number: n, prefix };
-}
-
 /**
  * Cari zona dari nama kota. Pencarian akurat & anti-typo:
  *  1. Cocokkan apa adanya (setelah lowercase + rapikan spasi). Ini membuat nama
@@ -108,58 +89,31 @@ async function receivePulsa(bot, chatId, userId, number, userMsgId) {
   await showResult(bot, chatId, userMsgId, text);
 }
 
-// ===== CEK AREA (zona XL/Axis) — wizard 2 langkah =====
+// ===== CEK AREA (zona XL/Axis) — langsung ketik nama kota/kabupaten =====
 
-/** Langkah 1: minta nomor HP (XL/Axis). */
+/** Minta nama kota/kabupaten (tanpa input nomor). */
 async function askArea(bot, chatId, messageId, userId) {
   await setState(userId, 'tools:area', {});
   await edit(bot, chatId, messageId,
-    `<b>CEK AREA XL / AXIS</b>\n${LINE}\nMasukkan nomor HP <b>XL</b> atau <b>Axis</b> yang ingin dicek zonanya.\n\nContoh: <code>087812345678</code>`,
+    `<b>CEK AREA XL / AXIS</b>\n${LINE}\nKetik <b>nama kota / kabupaten</b> untuk melihat zonanya.\n\nContoh: <code>pati</code>, <code>bandung</code>, <code>jepara</code>`,
     backButton('menu:tools'));
 }
 
-/** Terima nomor di langkah 1 -> validasi XL/Axis -> lanjut minta nama kota. */
-async function receiveAreaNumber(bot, chatId, userId, raw, userMsgId) {
-  const res = checkXlAxis(raw);
-  if (!res.ok) {
-    // tetap di langkah 1, refresh state biar TTL panjang, minta ulang.
-    await setState(userId, 'tools:area', {});
-    const msg = res.reason === 'format'
-      ? 'Format nomor salah. Masukkan nomor HP yang valid (contoh: <code>087812345678</code>).'
-      : 'Nomor itu <b>bukan XL/Axis</b>. Fitur cek zona ini khusus nomor XL/Axis. Coba nomor lain:';
-    await showResult(bot, chatId, userMsgId,
-      `<b>CEK AREA XL / AXIS</b>\n${LINE}\n${msg}`,
-      backButton('menu:tools'));
-    return;
-  }
-  // nomor valid -> simpan, lanjut langkah 2 (nama kota)
-  await setState(userId, 'tools:area_city', { number: res.number, provider: res.provider });
-  await showResult(bot, chatId, userMsgId,
-    `<b>CEK AREA XL / AXIS</b>\n${LINE}\nNomor terverifikasi: <b>${res.provider}</b> (<code>${escapeHtml(res.number)}</code>).\n\nSekarang ketik <b>nama kota / kabupaten</b> asal kartu untuk melihat zonanya.\n\nContoh: <code>bandung</code>, <code>pati</code>, <code>jepara</code>`,
-    backButton('menu:tools'));
-}
-
-/** Terima nama kota di langkah 2 -> cari zona -> tampilkan hasil. */
-async function receiveAreaCity(bot, chatId, userId, raw, userMsgId, state) {
+/** Terima nama kota -> cari zona -> tampilkan hasil. */
+async function receiveArea(bot, chatId, userId, raw, userMsgId) {
   const found = lookupZona(raw);
   if (!found) {
-    // tetap di langkah 2, minta ulang nama kota.
-    const data = (state && state.data) || {};
-    await setState(userId, 'tools:area_city', data);
+    // belum ketemu -> tetap di state ini, minta ulang nama kota.
+    await setState(userId, 'tools:area', {});
     await showResult(bot, chatId, userMsgId,
       `<b>CEK AREA XL / AXIS</b>\n${LINE}\nKota "<b>${escapeHtml(String(raw).trim())}</b>" tidak ditemukan.\n\nKetik nama kota/kabupaten dengan ejaan resmi tanpa disingkat (contoh: <code>pati</code>, <code>sidoarjo</code>, <code>kotabaru</code>), atau tekan « KEMBALI.`,
       backButton('menu:tools'));
     return;
   }
   await clearState(userId);
-  const data = (state && state.data) || {};
-  const numLine = data.number
-    ? `Nomor   : <code>${escapeHtml(data.number)}</code> (<b>${escapeHtml(data.provider || 'XL/Axis')}</b>)\n`
-    : '';
   const title = found.city.replace(/\b\w/g, (c) => c.toUpperCase());
   const text =
     `<b>HASIL CEK AREA</b>\n${LINE}\n` +
-    numLine +
     `Kota    : <b>${escapeHtml(title)}</b>\n` +
     `Zona    : <b>${escapeHtml(found.zona)}</b>`;
   await showResult(bot, chatId, userMsgId, text);
@@ -170,9 +124,7 @@ module.exports = {
   askPulsa,
   askArea,
   receivePulsa,
-  receiveAreaNumber,
-  receiveAreaCity,
+  receiveArea,
   detectOperator,
-  checkXlAxis,
   lookupZona,
 };
