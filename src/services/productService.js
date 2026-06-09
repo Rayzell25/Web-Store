@@ -6,8 +6,20 @@ function now() {
   return Date.now();
 }
 
-/** Simpan/replace daftar produk hasil sinkron dari Digiflazz. */
+/**
+ * Simpan/replace daftar produk hasil sinkron dari Digiflazz.
+ *
+ * Selain upsert, produk yang TIDAK ada lagi di price-list terbaru (mis. sudah
+ * dihapus/dinonaktifkan di panel Digiflazz) akan DIHAPUS dari DB supaya tidak
+ * "nyangkut" / terlihat dobel di bot & web. Aman: tabel transactions menyimpan
+ * product_name sendiri (tidak ada foreign key ke products), jadi riwayat tetap utuh.
+ *
+ * Penghapusan hanya dilakukan bila list TIDAK kosong, untuk mencegah seluruh
+ * katalog terhapus saat Digiflazz balas list kosong (mis. error/rate-limit).
+ */
 async function upsertProducts(list) {
+  if (!Array.isArray(list) || list.length === 0) return 0;
+  const syncStamp = now();
   await withTx(async (client) => {
     for (const p of list) {
       await client.query(
@@ -31,10 +43,13 @@ async function upsertProducts(list) {
           Math.round(Number(p.price) || 0),
           p.desc || null,
           p.buyer_product_status && p.seller_product_status ? 'active' : 'gangguan',
-          now(),
+          syncStamp,
         ]
       );
     }
+    // Produk yang tidak ikut di sync ini (updated_at < syncStamp) = sudah tidak
+    // ada di Digiflazz -> hapus supaya bot & web bersih (tidak ada sisa/dobel).
+    await client.query('DELETE FROM products WHERE updated_at < $1', [syncStamp]);
   });
   return list.length;
 }
