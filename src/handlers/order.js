@@ -10,6 +10,7 @@ const {
 const { getUser, addBalance } = require('../services/userService');
 const { createTransaction, updateTransaction } = require('../services/trxService');
 const digiflazz = require('../services/digiflazz');
+const digiflazzPoller = require('../services/digiflazzPoller');
 const autogopay = require('../services/autogopay');
 const qrisService = require('../services/qrisService');
 const groupNotify = require('../services/groupNotify');
@@ -244,6 +245,10 @@ async function pay(bot, chatId, messageId, userId, notifyAdmins, alert) {
   }
 
   groupNotify.notifyTrx({ status, productName: product.product_name, target, price: harga, refId, sn, userName: user.name, userId });
+
+  // Prabayar sering balas "Pending" lalu Sukses beberapa detik kemudian.
+  // Fast-poll: percepat finalisasi (Sukses/Gagal+refund) dalam hitungan detik.
+  if (status === 'Pending') digiflazzPoller.fastPoll(refId);
 }
 
 /** Bayar order via QRIS: generate QR, kirim foto, catat untuk di-poll. */

@@ -8,6 +8,7 @@ const userService = require('./userService');
 const trxService = require('./trxService');
 const depositService = require('./depositService');
 const digiflazz = require('./digiflazz');
+const digiflazzPoller = require('./digiflazzPoller');
 const groupNotify = require('./groupNotify');
 const { rupiah, escapeHtml, trxCode, LINE } = require('../utils/format');
 
@@ -183,6 +184,9 @@ async function fulfillOrder(row, payload) {
     `QRIS Transaksi ${status}\nUser: ${row.user_id}\n${payload.product_name} -> ${payload.target}\nBayar: ${rupiah(row.amount)} | Ref: ${refId}`
   );
   groupNotify.notifyTrx({ status, productName: payload.product_name, target: payload.target, price: row.amount, refId, sn, userId: row.user_id });
+
+  // Percepat finalisasi bila Digiflazz masih "Pending" (sama seperti order saldo).
+  if (status === 'Pending') digiflazzPoller.fastPoll(refId);
 }
 
 /** Produk gagal walau QRIS sudah lunas -> kreditkan harga produk ke SALDO member. */
