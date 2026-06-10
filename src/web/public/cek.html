@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cek Status Transaksi — Rayzell Store PPOB</title>
+  <meta name="description" content="Lacak status transaksi Rayzell Store PPOB dengan Ref ID kamu." />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%237c5cff'/><stop offset='1' stop-color='%2322d3ee'/></linearGradient></defs><rect width='32' height='32' rx='8' fill='url(%23g)'/><path d='M17.5 6 9 18h6l-1.5 8 8.5-12h-6z' fill='white'/></svg>" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root { --bg:#070711; --ink:#e8e9f3; --muted:#9aa0b4; --a1:#7c5cff; --a2:#22d3ee; --a1soft:rgba(124,92,255,.45); }
+    [data-skin="aurora"]  { --a1:#7c5cff; --a2:#22d3ee; --a1soft:rgba(124,92,255,.45); --dbg:#070711; }
+    [data-skin="royal"]   { --a1:#6366f1; --a2:#a78bfa; --a1soft:rgba(99,102,241,.45);  --dbg:#070a18; }
+    [data-skin="sunset"]  { --a1:#fb7185; --a2:#fbbf24; --a1soft:rgba(251,113,133,.45); --dbg:#120710; }
+    [data-skin="emerald"] { --a1:#10b981; --a2:#34d399; --a1soft:rgba(16,185,129,.4);   --dbg:#03100c; }
+    [data-skin="ocean"]   { --a1:#38bdf8; --a2:#6366f1; --a1soft:rgba(56,189,248,.42);  --dbg:#040a14; }
+    [data-skin="candy"]   { --a1:#e879f9; --a2:#fb7185; --a1soft:rgba(232,121,249,.42); --dbg:#0e0613; }
+    [data-skin="gold"]    { --a1:#f59e0b; --a2:#f97316; --a1soft:rgba(245,158,11,.4);   --dbg:#100a02; }
+    [data-skin="grape"]   { --a1:#8b5cf6; --a2:#ec4899; --a1soft:rgba(139,92,246,.45);  --dbg:#0c0714; }
+    :root, [data-mode="dark"] { --bg:var(--dbg,#070711); --ink:#e8e9f3; --muted:#9aa0b4; }
+    [data-mode="light"] { --bg:#eef0f7; --ink:#0f172a; --muted:#475569; }
+    * { -webkit-tap-highlight-color: transparent; }
+    body { font-family:'Inter',system-ui,sans-serif; background:var(--bg); color:var(--ink); transition:background .4s ease; }
+    h1,h2,h3,.font-display { font-family:'Sora','Inter',sans-serif; letter-spacing:-.02em; }
+    .aurora::before, .aurora::after { content:""; position:absolute; border-radius:9999px; filter:blur(90px); opacity:.5; z-index:0; animation: drift 18s ease-in-out infinite; }
+    .aurora::before { width:42rem; height:28rem; left:-9rem; top:-12rem; background:radial-gradient(circle at 30% 30%, var(--a1), transparent 60%); }
+    .aurora::after { width:38rem; height:24rem; right:-10rem; top:-6rem; background:radial-gradient(circle at 70% 30%, var(--a2), transparent 60%); animation-delay:-9s; }
+    @keyframes drift { 0%,100%{ transform:translate(0,0) scale(1);} 50%{ transform:translate(1.6rem,1.2rem) scale(1.07);} }
+    .grid-bg { background-image:linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px),linear-gradient(90deg, rgba(255,255,255,.04) 1px, transparent 1px); background-size:52px 52px; mask-image: radial-gradient(58rem 30rem at 50% 0%, #000 32%, transparent 78%); }
+    .grain { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.4'/%3E%3C/svg%3E"); opacity:.025; }
+    .gradient-text { background:linear-gradient(100deg,var(--a1),var(--a2)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+    .btn-grad { background:linear-gradient(100deg,var(--a1),var(--a2)); background-size:160% 100%; transition:background-position .5s, transform .2s, box-shadow .3s; }
+    .btn-grad:hover { background-position:100% 0; transform:translateY(-1px); }
+    .logo-grad { background:linear-gradient(135deg,var(--a1),var(--a2)); }
+    .card { position:relative; border-radius:1.25rem; background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02)); border:1px solid rgba(255,255,255,.08); }
+    .ring-soft { box-shadow:0 0 0 1px rgba(255,255,255,.06), 0 30px 80px -40px var(--a1soft); }
+    [data-mode="light"] .text-white { color:#0f172a !important; }
+    [data-mode="light"] .text-slate-100,[data-mode="light"] .text-slate-200,[data-mode="light"] .text-slate-300 { color:#1e293b !important; }
+    [data-mode="light"] .text-slate-400,[data-mode="light"] .text-slate-500 { color:#64748b !important; }
+    [data-mode="light"] .bg-white\/5 { background-color:rgba(15,23,42,.04) !important; }
+    [data-mode="light"] .bg-white\/10 { background-color:rgba(15,23,42,.07) !important; }
+    [data-mode="light"] .border-white\/5 { border-color:rgba(15,23,42,.08) !important; }
+    [data-mode="light"] .border-white\/10 { border-color:rgba(15,23,42,.12) !important; }
+    [data-mode="light"] .border-white\/15 { border-color:rgba(15,23,42,.16) !important; }
+    [data-mode="light"] .card { background:#ffffff; border-color:rgba(15,23,42,.10); }
+    [data-mode="light"] header.bg-\[\#070711\]\/70 { background-color:rgba(238,240,247,.8) !important; }
+    [data-mode="light"] .bg-\[\#0b0b18\]\/80 { background-color:#ffffff !important; }
+    [data-mode="light"] .grid-bg { background-image:linear-gradient(rgba(15,23,42,.05) 1px, transparent 1px),linear-gradient(90deg, rgba(15,23,42,.05) 1px, transparent 1px); }
+    [data-mode="light"] .aurora::before, [data-mode="light"] .aurora::after { opacity:.30; }
+    [data-mode="light"] .grain { opacity:.015; }
+    ::-webkit-scrollbar{width:9px;height:9px}::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:9px}
+  </style>
+</head>
+<body class="relative min-h-screen antialiased">
+  <div class="aurora pointer-events-none fixed inset-0"></div>
+  <div class="grid-bg pointer-events-none fixed inset-0"></div>
+  <div class="grain pointer-events-none fixed inset-0"></div>
+
+  <div class="relative z-10">
+    <!-- NAV -->
+    <header class="sticky top-0 z-30 border-b border-white/5 bg-[#070711]/70 backdrop-blur-xl">
+      <div class="mx-auto flex max-w-3xl items-center justify-between px-4 py-3.5 sm:px-5 sm:py-4">
+        <a href="/" class="flex min-w-0 items-center gap-2.5">
+          <span class="logo-grad grid h-9 w-9 shrink-0 place-items-center rounded-2xl shadow-lg shadow-indigo-500/40 sm:h-10 sm:w-10">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z" fill="white"/></svg>
+          </span>
+          <span class="truncate font-display text-sm font-bold tracking-tight gradient-text sm:text-base" id="brand">RAYZELL STORE PPOB</span>
+        </a>
+        <div class="flex items-center gap-2">
+          <a href="/" class="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-xs font-semibold text-slate-100 backdrop-blur transition hover:bg-white/10 sm:text-sm">‹ Beranda</a>
+          <button id="modeToggle" aria-label="Mode terang/gelap" class="grid h-9 w-9 place-items-center rounded-xl border border-white/15 bg-white/5 text-base backdrop-blur transition hover:bg-white/10">🌙</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="mx-auto max-w-3xl px-5 py-12 sm:py-20">
+      <div class="mb-2 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-cyan-300/80">Lacak</div>
+      <h1 class="text-2xl font-bold sm:text-4xl">Cek Status Transaksi</h1>
+      <p class="mt-2 text-sm text-slate-400">Masukkan Ref ID transaksi kamu (mis. <span class="font-mono">RAYZELL-XXXXX</span>).</p>
+
+      <div class="card ring-soft mt-6 overflow-hidden p-5 sm:p-8">
+        <div class="flex flex-col gap-3 sm:flex-row">
+          <input id="ref" type="text" placeholder="Ref ID…" autocomplete="off"
+                 class="w-full rounded-xl border border-white/10 bg-[#0b0b18]/80 px-4 py-3.5 text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-indigo-400/60 focus:ring-2 focus:ring-indigo-500/20" />
+          <button id="cekBtn" class="btn-grad shrink-0 rounded-xl px-8 py-3.5 font-semibold text-white shadow-lg shadow-indigo-500/30">Cek</button>
+        </div>
+        <div id="cekResult" class="mt-5 hidden rounded-xl border border-white/10 bg-[#0b0b18]/80 p-5 text-sm"></div>
+      </div>
+
+      <p class="mt-6 text-center text-xs text-slate-500">
+        Belum punya transaksi? <a href="/app.html" class="font-semibold gradient-text">Belanja sekarang →</a>
+      </p>
+    </main>
+
+    <footer class="border-t border-white/5">
+      <div class="mx-auto flex max-w-3xl flex-col items-center gap-2 px-5 py-10 text-center text-sm text-slate-500">
+        <span class="logo-grad grid h-8 w-8 place-items-center rounded-lg">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z" fill="white"/></svg>
+        </span>
+        <p>&copy;<span id="year"></span> <span id="brandFoot">Rayzell Store PPOB</span>. Seluruh hak cipta dilindungi.</p>
+      </div>
+    </footer>
+  </div>
+
+  <!-- FAB WhatsApp (kiri-bawah, konsisten dengan halaman lain) -->
+  <a id="waFab" href="#" target="_blank" rel="noopener" aria-label="Chat WhatsApp"
+     class="fixed bottom-5 left-5 z-40 grid h-14 w-14 place-items-center rounded-full bg-[#25D366] shadow-xl shadow-emerald-500/30 transition hover:scale-105">
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="white"><path d="M12 2a10 10 0 0 0-8.6 15l-1.3 4.8 4.9-1.3A10 10 0 1 0 12 2Zm5.3 14.1c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .1-1.7-.1-.4-.1-.9-.3-1.6-.6-2.7-1.2-4.5-4-4.6-4.2-.1-.2-1.1-1.5-1.1-2.8 0-1.3.7-2 .9-2.2.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 1.9c.1.2.1.4 0 .5l-.4.6c-.2.2-.3.4-.1.7.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.4 2.4 1.5.2.1.4.1.6-.1l.7-.9c.2-.2.4-.2.6-.1l1.8.9c.2.1.4.2.4.3.1.2.1.7-.1 1.2Z"/></svg>
+  </a>
+
+  <script>
+    const $ = (s) => document.querySelector(s);
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    // tema + mode (sinkron dgn halaman lain via localStorage)
+    (function () {
+      const root = document.documentElement;
+      const VALID = ['aurora','royal','ocean','emerald','sunset','candy','grape','gold'];
+      const skin = localStorage.getItem('skin'); root.setAttribute('data-skin', VALID.includes(skin) ? skin : 'aurora');
+      root.setAttribute('data-mode', localStorage.getItem('mode') === 'light' ? 'light' : 'dark');
+      const mb = document.getElementById('modeToggle');
+      const sync = () => { if (mb) mb.textContent = root.getAttribute('data-mode') === 'light' ? '☀️' : '🌙'; };
+      sync();
+      if (mb) mb.addEventListener('click', () => {
+        const next = root.getAttribute('data-mode') === 'light' ? 'dark' : 'light';
+        root.setAttribute('data-mode', next); localStorage.setItem('mode', next); sync();
+      });
+    })();
+
+    fetch('/api/info').then(r => r.json()).then(({ data }) => {
+      if (!data) return;
+      $('#brand').textContent = data.store;
+      $('#brandFoot').textContent = data.store;
+      const waFab = $('#waFab'); if (waFab && data.waLink) waFab.href = data.waLink;
+    }).catch(() => {});
+
+    async function cek() {
+      const ref = $('#ref').value.trim();
+      const box = $('#cekResult');
+      if (!ref) { box.classList.remove('hidden'); box.innerHTML = 'Masukkan Ref ID dulu.'; return; }
+      box.classList.remove('hidden');
+      box.innerHTML = 'Mengecek…';
+      try {
+        const r = await fetch('/api/trx/' + encodeURIComponent(ref));
+        const j = await r.json();
+        if (!j.ok) { box.innerHTML = '❌ ' + (j.message || 'Tidak ditemukan'); return; }
+        const d = j.data;
+        const color = d.status === 'Sukses' ? 'text-emerald-400' : d.status === 'Gagal' ? 'text-rose-400' : 'text-amber-400';
+        box.innerHTML = `
+          <div class="grid gap-1.5">
+            <div class="flex justify-between gap-3"><span class="text-slate-400">Ref ID</span><span class="font-mono text-xs">${d.ref_id}</span></div>
+            <div class="flex justify-between gap-3"><span class="text-slate-400">Produk</span><span class="text-right">${d.product || '-'}</span></div>
+            <div class="flex justify-between gap-3"><span class="text-slate-400">Tujuan</span><span>${d.target || '-'}</span></div>
+            <div class="flex justify-between gap-3"><span class="text-slate-400">Status</span><span class="font-semibold ${color}">${d.status}</span></div>
+            <div class="flex justify-between gap-3"><span class="text-slate-400">Waktu</span><span class="text-right">${d.waktu}</span></div>
+          </div>`;
+      } catch (e) {
+        box.innerHTML = '⚠️ Gagal terhubung. Coba lagi.';
+      }
+    }
+    $('#cekBtn').addEventListener('click', cek);
+    $('#ref').addEventListener('keydown', (e) => { if (e.key === 'Enter') cek(); });
+    // auto-isi dari ?ref=
+    const qref = new URLSearchParams(location.search).get('ref');
+    if (qref) { $('#ref').value = qref; cek(); }
+  </script>
+</body>
+</html>
