@@ -106,7 +106,7 @@
       <!-- trust badges -->
       <div class="fade-up d4 mx-auto mt-16 grid max-w-3xl grid-cols-3 gap-3">
         <div class="card ring-soft px-4 py-5 text-center"><div class="font-display text-2xl font-bold sm:text-4xl">24/7</div><div class="mt-1 text-xs text-slate-500">Otomatis</div></div>
-        <div class="card ring-soft px-4 py-5 text-center"><div class="font-display text-2xl font-bold sm:text-4xl">5+</div><div class="mt-1 text-xs text-slate-500">Kategori Produk</div></div>
+        <div class="card ring-soft px-4 py-5 text-center"><div class="font-display text-2xl font-bold sm:text-4xl" id="statCat">—</div><div class="mt-1 text-xs text-slate-500">Kategori Produk</div></div>
         <div class="card ring-soft px-4 py-5 text-center"><div class="font-display text-2xl font-bold sm:text-4xl">QRIS</div><div class="mt-1 text-xs text-slate-500">&amp; Saldo</div></div>
       </div>
     </section>
@@ -212,14 +212,16 @@
         grid.innerHTML = '<div class="col-span-full card p-6 text-center text-slate-400">Produk belum tersedia. Coba lagi nanti.</div>';
         return;
       }
-      const botLink = $('#cta-tg').href || '#';
+      // jumlah kategori asli (bukan angka statis)
+      const statCat = $('#statCat');
+      if (statCat) statCat.textContent = data.length;
       grid.innerHTML = data.map(d => `
         <div class="group card p-5">
           <div class="grid h-12 w-12 place-items-center rounded-xl bg-gradient-to-br from-indigo-500/25 to-cyan-400/20 text-2xl ring-1 ring-white/10">${iconFor(d.category)}</div>
           <div class="mt-4 font-semibold">${d.category}</div>
           <div class="text-xs text-slate-400">${d.count} produk</div>
           <div class="mt-2 text-sm text-slate-300">Mulai <span class="font-semibold text-white">${d.startFromText}</span></div>
-          <a href="${botLink}" target="_blank" rel="noopener"
+          <a href="/app.html"
              class="btn-grad mt-4 block rounded-lg px-3 py-2 text-center text-sm font-semibold text-white">
             Beli
           </a>
