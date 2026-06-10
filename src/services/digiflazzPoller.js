@@ -161,4 +161,53 @@ function sendMessage(chatId, text) {
   return botRef.sendMessage(chatId, text, { parse_mode: 'HTML' }).catch(() => {});
 }
 
-module.exports = { start, processOne };
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * FAST-POLL: percepat finalisasi SATU transaksi yang baru dibuat.
+ * Dipanggil fire-and-forget tepat setelah order dibuat & Digiflazz balas "Pending"
+ * (prabayar diproses async). Cek status tiap `intervalMs` (default 3s) sampai
+ * `attempts` kali; begitu Digiflazz kasih status final -> langsung difinalkan
+ * (Sukses / Gagal+refund) lewat processOne() yang sama dengan poller berkala.
+ *
+ * Aman:
+ *  - Pakai ulang processOne -> claimFinalize (UPDATE atomik WHERE status='Pending'),
+ *    jadi TIDAK mungkin dobel-proses/dobel-refund walau tabrakan dgn tick 60s.
+ *  - Berhenti begitu status bukan Pending lagi. Error apa pun ditelan (log warn).
+ *  - Poller berkala (90s/60s) tetap jadi jaring pengaman bila fast-poll habis attempt.
+ */
+async function fastPoll(refId, opts = {}) {
+  const { attempts = 15, intervalMs = 3000, initialDelayMs = 4000 } = opts;
+  if (!botRef || !refId) return;
+  if (!config.digiflazz.username || !config.digiflazz.apiKey) return;
+  try {
+    await sleep(initialDelayMs); // beri Digiflazz waktu memproses dulu
+    for (let i = 0; i < attempts; i++) {
+      let trx;
+      try {
+        trx = await trxService.getTransaction(refId);
+      } catch (e) {
+        logger.warn(`fastPoll get ${refId} error:`, e.message);
+        return;
+      }
+      if (!trx || trx.status !== 'Pending') return; // sudah final -> selesai
+      try {
+        await processOne(trx);
+      } catch (e) {
+        logger.warn(`fastPoll processOne ${refId} error:`, e.message);
+      }
+      let after;
+      try {
+        after = await trxService.getTransaction(refId);
+      } catch (e) {
+        return;
+      }
+      if (!after || after.status !== 'Pending') return; // berhasil difinalkan
+      await sleep(intervalMs);
+    }
+  } catch (e) {
+    logger.warn(`fastPoll ${refId} error:`, e.message);
+  }
+}
+
+module.exports = { start, processOne, fastPoll };
