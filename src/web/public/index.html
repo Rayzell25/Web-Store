@@ -91,6 +91,7 @@
     [data-mode="light"] header.bg-\[\#070711\]\/70 { background-color:rgba(238,240,247,.8) !important; }
     [data-mode="light"] .bg-\[\#0b0b18\]\/80 { background-color:#ffffff !important; }
     [data-mode="light"] .bg-\[\#0b0b18\]\/95 { background-color:#ffffff !important; }
+    [data-mode="light"] .bg-\[\#0b0b18\] { background-color:#ffffff !important; }
     [data-mode="light"] .grid-bg { background-image:
       linear-gradient(rgba(15,23,42,.05) 1px, transparent 1px),
       linear-gradient(90deg, rgba(15,23,42,.05) 1px, transparent 1px); }
@@ -128,24 +129,59 @@
   <div class="relative z-10">
     <!-- NAV -->
     <header class="sticky top-0 z-30 border-b border-white/5 bg-[#070711]/70 backdrop-blur-xl">
-      <div class="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
-        <a href="#" class="flex items-center gap-2.5">
-          <span class="logo-grad grid h-10 w-10 place-items-center rounded-2xl shadow-lg shadow-indigo-500/40">
+      <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-3.5 sm:px-5 sm:py-4">
+        <a href="#" class="flex min-w-0 items-center gap-2.5">
+          <span class="logo-grad grid h-9 w-9 shrink-0 place-items-center rounded-2xl shadow-lg shadow-indigo-500/40 sm:h-10 sm:w-10">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z" fill="white"/></svg>
           </span>
-          <span class="font-display text-base font-bold tracking-tight gradient-text" id="brand">RAYZELL STORE PPOB</span>
+          <span class="truncate font-display text-sm font-bold tracking-tight gradient-text sm:text-base" id="brand">RAYZELL STORE PPOB</span>
         </a>
-        <div class="flex items-center gap-6">
+        <div class="flex items-center gap-2 sm:gap-6">
           <nav class="hidden gap-7 text-sm text-slate-400 sm:flex">
             <a href="#layanan" class="transition hover:text-white">Layanan</a>
             <a href="#cek" class="transition hover:text-white">Cek Transaksi</a>
             <a href="#kontak" class="transition hover:text-white">Kontak</a>
           </nav>
-          <a href="/app.html" class="rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-100 backdrop-blur transition hover:bg-white/10">Masuk</a>
+          <a href="/app.html" class="hidden rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-100 backdrop-blur transition hover:bg-white/10 sm:block">Masuk</a>
           <button id="modeToggle" aria-label="Mode terang/gelap" class="grid h-9 w-9 place-items-center rounded-xl border border-white/15 bg-white/5 text-base backdrop-blur transition hover:bg-white/10">🌙</button>
+          <!-- Hamburger (mobile saja) -->
+          <button id="navToggle" aria-label="Menu" class="grid h-9 w-9 place-items-center rounded-xl border border-white/15 bg-white/5 backdrop-blur transition hover:bg-white/10 sm:hidden">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          </button>
         </div>
       </div>
     </header>
+
+    <!-- DRAWER MENU (mobile) -->
+    <div id="drawerOverlay" class="fixed inset-0 z-40 hidden bg-black/50 backdrop-blur-sm sm:hidden"></div>
+    <aside id="drawer" class="fixed right-0 top-0 z-50 hidden h-full w-[80%] max-w-xs translate-x-full flex-col bg-[#0b0b18] shadow-2xl transition-transform duration-300 sm:hidden" style="will-change:transform">
+      <div class="flex items-center justify-between border-b border-white/10 px-5 py-4">
+        <span class="font-display text-base font-bold">Menu</span>
+        <button id="drawerClose" aria-label="Tutup" class="grid h-9 w-9 place-items-center rounded-full text-slate-400 transition hover:bg-white/10">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+      <nav class="flex flex-1 flex-col gap-1 overflow-y-auto p-3 text-[15px]">
+        <a href="#layanan" class="drawer-link flex items-center gap-3 rounded-xl px-3 py-3 font-medium text-slate-200 transition hover:bg-white/10">
+          <span class="grid h-9 w-9 place-items-center rounded-lg bg-white/5">🛍️</span> Layanan
+        </a>
+        <a href="#cek" class="drawer-link flex items-center gap-3 rounded-xl px-3 py-3 font-medium text-slate-200 transition hover:bg-white/10">
+          <span class="grid h-9 w-9 place-items-center rounded-lg bg-white/5">🚚</span> Cek Transaksi
+        </a>
+        <a href="#kontak" class="drawer-link flex items-center gap-3 rounded-xl px-3 py-3 font-medium text-slate-200 transition hover:bg-white/10">
+          <span class="grid h-9 w-9 place-items-center rounded-lg bg-white/5">🎧</span> Hubungi Kami
+        </a>
+        <div class="mt-2 border-t border-white/10 pt-3">
+          <button id="drawerMode" class="flex w-full items-center gap-3 rounded-xl px-3 py-3 font-medium text-slate-200 transition hover:bg-white/10">
+            <span class="grid h-9 w-9 place-items-center rounded-lg bg-white/5" id="drawerModeIcon">🌙</span> <span id="drawerModeLabel">Mode Gelap</span>
+          </button>
+        </div>
+        <a href="/app.html" class="btn-grad mt-2 flex items-center justify-center gap-2 rounded-xl px-4 py-3.5 font-semibold text-white shadow-lg">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Masuk / Daftar
+        </a>
+      </nav>
+    </aside>
 
     <!-- HERO -->
     <section class="mx-auto max-w-6xl px-5 pt-20 pb-16 sm:pt-28 sm:pb-20">
@@ -249,6 +285,32 @@
     </footer>
   </div>
 
+  <!-- FAB WhatsApp (melayang) -->
+  <a id="waFab" href="#" target="_blank" rel="noopener" aria-label="Chat WhatsApp"
+     class="fixed bottom-5 left-5 z-40 grid h-14 w-14 place-items-center rounded-full bg-[#25D366] shadow-xl shadow-emerald-500/30 transition hover:scale-105">
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="white"><path d="M12 2a10 10 0 0 0-8.6 15l-1.3 4.8 4.9-1.3A10 10 0 1 0 12 2Zm5.3 14.1c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .1-1.7-.1-.4-.1-.9-.3-1.6-.6-2.7-1.2-4.5-4-4.6-4.2-.1-.2-1.1-1.5-1.1-2.8 0-1.3.7-2 .9-2.2.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 1.9c.1.2.1.4 0 .5l-.4.6c-.2.2-.3.4-.1.7.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.4 2.4 1.5.2.1.4.1.6-.1l.7-.9c.2-.2.4-.2.6-.1l1.8.9c.2.1.4.2.4.3.1.2.1.7-.1 1.2Z"/></svg>
+  </a>
+
+  <!-- TOAST social-proof "Produk Terjual" -->
+  <div id="saleToast" class="fixed bottom-5 left-1/2 z-40 w-[min(92vw,22rem)] -translate-x-1/2 translate-y-[160%] rounded-2xl border border-white/10 bg-[#0b0b18]/95 p-3.5 shadow-2xl backdrop-blur transition-transform duration-500 sm:left-5 sm:translate-x-0">
+    <div class="flex items-start gap-3">
+      <div id="saleIcon" class="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-indigo-500/25 to-cyan-400/20 text-2xl ring-1 ring-white/10">🛍️</div>
+      <div class="min-w-0 flex-1">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold text-amber-400">Produk Terjual</span>
+          <button id="saleClose" class="text-slate-500 transition hover:text-white" aria-label="Tutup">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          </button>
+        </div>
+        <p class="mt-0.5 text-sm leading-snug text-slate-200"><span id="saleMsg"></span></p>
+        <p class="mt-1 flex items-center gap-1 text-[11px] text-slate-500">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="#3b82f6"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3Zm-1.2 13.2-3-3 1.4-1.4 1.6 1.6 3.6-3.6 1.4 1.4-5 5Z"/></svg>
+          Diverifikasi oleh <span id="saleStore">Rayzell Store PPOB</span>
+        </p>
+      </div>
+    </div>
+  </div>
+
   <script>
     const $ = (s) => document.querySelector(s);
     document.getElementById('year').textContent = new Date().getFullYear();
@@ -287,6 +349,7 @@
         root.setAttribute('data-mode', next);
         localStorage.setItem('mode', next);
         syncModeIcon();
+        if (window.syncDrawerMode) window.syncDrawerMode();
       });
     })();
 
@@ -318,7 +381,75 @@
       $('#cta-tg').href = data.botLink;
       $('#wa').href = data.waLink;
       $('#tg').href = data.tgLink;
+      var waFab = $('#waFab'); if (waFab) waFab.href = data.waLink;
+      var saleStore = $('#saleStore'); if (saleStore) saleStore.textContent = data.store;
     }).catch(() => {});
+
+    // ===== DRAWER MENU (mobile) =====
+    (function drawerInit() {
+      const overlay = document.getElementById('drawerOverlay');
+      const drawer = document.getElementById('drawer');
+      const openBtn = document.getElementById('navToggle');
+      const closeBtn = document.getElementById('drawerClose');
+      if (!overlay || !drawer || !openBtn) return;
+      function open() {
+        overlay.classList.remove('hidden');
+        drawer.classList.remove('hidden');
+        drawer.classList.add('flex');
+        requestAnimationFrame(() => drawer.classList.remove('translate-x-full'));
+      }
+      function close() {
+        drawer.classList.add('translate-x-full');
+        overlay.classList.add('hidden');
+        setTimeout(() => { drawer.classList.add('hidden'); drawer.classList.remove('flex'); }, 300);
+      }
+      openBtn.addEventListener('click', open);
+      if (closeBtn) closeBtn.addEventListener('click', close);
+      overlay.addEventListener('click', close);
+      document.querySelectorAll('.drawer-link').forEach((a) => a.addEventListener('click', close));
+      // tombol mode di dalam drawer -> samakan dengan modeToggle
+      const dMode = document.getElementById('drawerMode');
+      if (dMode) dMode.addEventListener('click', () => {
+        const mb = document.getElementById('modeToggle'); if (mb) mb.click();
+        syncDrawerMode();
+      });
+      window.syncDrawerMode = function () {
+        const isLight = document.documentElement.getAttribute('data-mode') === 'light';
+        const ic = document.getElementById('drawerModeIcon'); const lb = document.getElementById('drawerModeLabel');
+        if (ic) ic.textContent = isLight ? '☀️' : '🌙';
+        if (lb) lb.textContent = isLight ? 'Mode Terang' : 'Mode Gelap';
+      };
+      syncDrawerMode();
+    })();
+
+    // ===== TOAST social-proof "Produk Terjual" =====
+    (function saleToastInit() {
+      const toast = document.getElementById('saleToast');
+      const closeBtn = document.getElementById('saleClose');
+      if (!toast) return;
+      let timer = null, hideTimer = null, stopped = false;
+      const NAMES = ['budi','rian','siti','agus','dewi','andi','putri','eko','rina','fajar','yusuf','intan','wawan','nadia','dimas','lia'];
+      const PRODUK = [
+        { i:'📱', t:'Pulsa' }, { i:'🌐', t:'Paket Data' }, { i:'⚡', t:'Token PLN' },
+        { i:'🎮', t:'Voucher Game' }, { i:'💳', t:'Saldo E-Wallet' }, { i:'📶', t:'Kartu Perdana' },
+      ];
+      function rand(a){ return a[Math.floor(Math.random()*a.length)]; }
+      function maskName(n){ return n[0] + '***' + n.slice(-1); }
+      function show() {
+        const p = rand(PRODUK); const name = rand(NAMES);
+        document.getElementById('saleIcon').textContent = p.i;
+        document.getElementById('saleMsg').innerHTML = '<b>' + maskName(name) + '@gmail.com</b> baru saja top up <b>' + p.t + '</b>';
+        toast.style.transform = 'translateY(0)';
+        toast.classList.add('sm:translate-x-0');
+        hideTimer = setTimeout(hide, 5000);
+      }
+      function hide() {
+        toast.style.transform = '';
+        if (!stopped) timer = setTimeout(show, 9000 + Math.random() * 6000);
+      }
+      if (closeBtn) closeBtn.addEventListener('click', () => { stopped = true; clearTimeout(timer); clearTimeout(hideTimer); toast.style.transform=''; });
+      timer = setTimeout(show, 4000);
+    })();
 
     fetch('/api/products').then(r => r.json()).then(({ data }) => {
       const grid = $('#grid');
