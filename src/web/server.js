@@ -378,8 +378,28 @@ app.get('/api/auth/google/callback', async (req, res) => {
       return htmlRedirect(res, 'Akun Google berhasil dihubungkan!', token);
     }
 
-    // Belum terhubung & tidak ada sesi Telegram -> minta hubungkan via Telegram dulu.
-    return htmlRedirect(res, 'Akun Google ini belum terhubung. Masuk dengan Telegram dulu, lalu tekan "Hubungkan Google".');
+    // Belum terhubung & tidak ada sesi Telegram ->
+    // Buat/cari akun berbasis Google sub (ID = hash negatif besar, tidak tabrakan dgn Telegram).
+    // Dengan begitu siapa saja bisa login Google tanpa perlu Telegram dulu.
+    const googleUserId = -(Math.abs(parseInt(
+      require('crypto').createHash('sha256').update(profile.sub).digest('hex').slice(0, 12), 16
+    )) % 900000000000 + 100000000000); // rentang -100000000000 s/d -999999999999
+    let gUser = await userService.getUser(googleUserId);
+    if (!gUser) {
+      gUser = await userService.ensureUser({
+        id: googleUserId,
+        first_name: (profile.name || profile.email || 'Google').split(' ')[0],
+        last_name: (profile.name || '').split(' ').slice(1).join(' ') || undefined,
+        username: null,
+      });
+    }
+    await query(
+      `INSERT INTO google_links (google_sub, user_id, email, name, created_at)
+       VALUES ($1,$2,$3,$4,$5) ON CONFLICT (google_sub) DO UPDATE SET user_id = $2, email = $3`,
+      [profile.sub, googleUserId, profile.email, profile.name, Date.now()]
+    );
+    const token = genMemberToken(googleUserId);
+    return htmlRedirect(res, 'Login Google berhasil. Mengalihkan…', token);
   } catch (e) {
     logger.error('web google callback:', e.message);
     return htmlRedirect(res, 'Login Google gagal. Coba lagi.');
