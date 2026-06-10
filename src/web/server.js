@@ -3,7 +3,7 @@
 const path = require('path');
 const crypto = require('crypto');
 const express = require('express');
-const { all, one, init } = require('../db/database');
+const { all, one, query, init } = require('../db/database');
 const { config } = require('../config');
 const markupService = require('../services/markupService');
 const productService = require('../services/productService');
