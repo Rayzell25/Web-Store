@@ -142,6 +142,9 @@ async function init() {
       expiry_at      BIGINT
     );
 
+    -- banner per-produk (migrasi aman: tidak error jika kolom sudah ada)
+    ALTER TABLE products ADD COLUMN IF NOT EXISTS banner_url TEXT;
+
     CREATE INDEX IF NOT EXISTS idx_trx_user ON transactions(user_id);
     CREATE INDEX IF NOT EXISTS idx_trx_created ON transactions(created_at);
     CREATE INDEX IF NOT EXISTS idx_products_cat ON products(category);
