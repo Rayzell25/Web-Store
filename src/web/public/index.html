@@ -5,566 +5,504 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Rayzell Store PPOB — Pulsa, Paket Data, PLN, Game, E-Money</title>
   <meta name="description" content="Rayzell Store PPOB: layanan pulsa, paket data, token PLN, voucher game, dan e-money. Cepat, otomatis, terpercaya." />
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%236366f1'/><stop offset='1' stop-color='%23a855f7'/></linearGradient></defs><rect width='32' height='32' rx='8' fill='url(%23g)'/><path d='M17.5 6 9 18h6l-1.5 8 8.5-12h-6z' fill='white'/></svg>" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%237c5cff'/><stop offset='1' stop-color='%2322d3ee'/></linearGradient></defs><rect width='32' height='32' rx='10' fill='url(%23g)'/><path d='M13 3.5 5.5 14c-.4.5 0 1.2.6 1.2H11l-1.5 8c-.2.8 1 1.3 1.5.6L18.5 13c.4-.5 0-1.2-.6-1.2H13l1.5-7.7c.2-.8-1-1.3-1.5-.6z' fill='white'/></svg>" />
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <style>
+    /* ===== TOKENS ===== */
     :root {
-      --bg:#070711; --ink:#e8e9f3; --muted:#9aa0b4;
-      --a1:#7c5cff; --a2:#22d3ee;        /* accent gradient */
-      --a1soft:rgba(124,92,255,.45);
+      --bg:#08090f; --card:#0e101a; --border:rgba(255,255,255,.08);
+      --ink:#eef0f8; --muted:#7a82a0;
+      --a1:#6d5aff; --a2:#26d0ce; --a1soft:rgba(109,90,255,.38);
+      --dbg:#08090f;
     }
-    /* ===== 8 tema aksen (gradient cantik) ===== */
-    [data-skin="aurora"]  { --a1:#7c5cff; --a2:#22d3ee; --a1soft:rgba(124,92,255,.45); --dbg:#070711; }
-    [data-skin="royal"]   { --a1:#6366f1; --a2:#a78bfa; --a1soft:rgba(99,102,241,.45);  --dbg:#070a18; }
-    [data-skin="sunset"]  { --a1:#fb7185; --a2:#fbbf24; --a1soft:rgba(251,113,133,.45); --dbg:#120710; }
-    [data-skin="emerald"] { --a1:#10b981; --a2:#34d399; --a1soft:rgba(16,185,129,.4);   --dbg:#03100c; }
-    [data-skin="ocean"]   { --a1:#38bdf8; --a2:#6366f1; --a1soft:rgba(56,189,248,.42);  --dbg:#040a14; }
-    [data-skin="candy"]   { --a1:#e879f9; --a2:#fb7185; --a1soft:rgba(232,121,249,.42); --dbg:#0e0613; }
-    [data-skin="gold"]    { --a1:#f59e0b; --a2:#f97316; --a1soft:rgba(245,158,11,.4);   --dbg:#100a02; }
-    [data-skin="grape"]   { --a1:#8b5cf6; --a2:#ec4899; --a1soft:rgba(139,92,246,.45);  --dbg:#0c0714; }
+    [data-skin="aurora"]  { --a1:#6d5aff; --a2:#26d0ce; --a1soft:rgba(109,90,255,.38); --dbg:#08090f; }
+    [data-skin="royal"]   { --a1:#5a75ff; --a2:#a78bfa; --a1soft:rgba(90,117,255,.38);  --dbg:#08090f; }
+    [data-skin="ocean"]   { --a1:#38bdf8; --a2:#5a75ff; --a1soft:rgba(56,189,248,.35);  --dbg:#070c14; }
+    [data-skin="emerald"] { --a1:#10b981; --a2:#34d399; --a1soft:rgba(16,185,129,.35);  --dbg:#06110d; }
+    [data-skin="sunset"]  { --a1:#fb7185; --a2:#fbbf24; --a1soft:rgba(251,113,133,.38); --dbg:#110608; }
+    [data-skin="candy"]   { --a1:#e879f9; --a2:#fb7185; --a1soft:rgba(232,121,249,.35); --dbg:#0d0611; }
+    [data-skin="grape"]   { --a1:#8b5cf6; --a2:#ec4899; --a1soft:rgba(139,92,246,.38);  --dbg:#0a0711; }
+    [data-skin="gold"]    { --a1:#f59e0b; --a2:#f97316; --a1soft:rgba(245,158,11,.35);  --dbg:#110a02; }
 
-    /* mode gelap (default) & terang -> --bg & teks ikut */
-    :root, [data-mode="dark"] { --bg:var(--dbg,#070711); --ink:#e8e9f3; --muted:#9aa0b4; }
-    [data-mode="light"] { --bg:#eef0f7; --ink:#0f172a; --muted:#475569; }
+    :root,[data-mode="dark"] { --bg:var(--dbg); --ink:#eef0f8; --muted:#7a82a0; --card:#0e101a; --border:rgba(255,255,255,.08); }
+    [data-mode="light"]      { --bg:#f4f5fb; --ink:#111827;  --muted:#6b7280; --card:#ffffff;  --border:rgba(0,0,0,.09); }
 
-    * { -webkit-tap-highlight-color: transparent; }
-    body { font-family:'Inter',system-ui,sans-serif; background:var(--bg); color:var(--ink); transition:background .4s ease; }
-    h1,h2,h3,.font-display { font-family:'Sora','Inter',sans-serif; letter-spacing:-.02em; }
+    *,::before,::after { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+    body { font-family:'Plus Jakarta Sans',system-ui,sans-serif; background:var(--bg); color:var(--ink); transition:background .35s ease,color .35s ease; margin:0; }
+    ::selection { background:var(--a1); color:#fff; }
 
-    /* ambient aurora */
-    .aurora::before, .aurora::after {
-      content:""; position:absolute; border-radius:9999px; filter:blur(90px); opacity:.55; z-index:0;
-      animation: drift 18s ease-in-out infinite;
-    }
-    .aurora::before { width:46rem; height:30rem; left:-8rem; top:-12rem;
-      background:radial-gradient(circle at 30% 30%, var(--a1), transparent 60%); }
-    .aurora::after { width:40rem; height:26rem; right:-10rem; top:-6rem;
-      background:radial-gradient(circle at 70% 30%, var(--a2), transparent 60%); animation-delay:-9s; }
-    @keyframes drift { 0%,100%{ transform:translate(0,0) scale(1);} 50%{ transform:translate(2rem,1.5rem) scale(1.08);} }
+    /* accent helpers */
+    .g-text  { background:linear-gradient(130deg,var(--a1),var(--a2)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+    .g-bg    { background:linear-gradient(130deg,var(--a1),var(--a2)); }
+    .g-border{ border:1.5px solid transparent; background-clip:padding-box;
+               background-image:linear-gradient(var(--card),var(--card)),linear-gradient(130deg,var(--a1),var(--a2));
+               background-origin:border-box; }
 
-    /* fine grid + grain for texture (kills the flat 'AI' look) */
-    .grid-bg { background-image:
-      linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,255,255,.04) 1px, transparent 1px);
-      background-size: 52px 52px;
-      mask-image: radial-gradient(58rem 32rem at 50% -2%, #000 35%, transparent 78%); }
-    .grain { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.4'/%3E%3C/svg%3E"); opacity:.025; }
+    /* card */
+    .card { background:var(--card); border:1px solid var(--border); border-radius:1.1rem; }
+    .card-glow { box-shadow:0 0 0 1px var(--border), 0 24px 56px -24px var(--a1soft); }
+    .card-lift:hover { transform:translateY(-3px); border-color:var(--a1soft); box-shadow:0 20px 48px -20px var(--a1soft); transition:transform .2s,border-color .2s,box-shadow .2s; }
 
-    .fade-up { opacity:0; transform:translateY(16px); animation:fu .7s cubic-bezier(.2,.7,.2,1) forwards; }
-    .fade-up.d1{animation-delay:.08s}.fade-up.d2{animation-delay:.16s}.fade-up.d3{animation-delay:.24s}.fade-up.d4{animation-delay:.32s}
-    @keyframes fu { to { opacity:1; transform:none; } }
-    @keyframes floaty { 0%,100%{ transform:translateY(0) } 50%{ transform:translateY(-10px) } }
+    /* buttons */
+    .btn-main { display:inline-flex; align-items:center; gap:.5rem; background:linear-gradient(130deg,var(--a1),var(--a2)); color:#fff; font-weight:700; border-radius:.85rem; padding:.75rem 1.6rem; font-size:.9rem; transition:opacity .2s,transform .2s; cursor:pointer; border:none; }
+    .btn-main:hover { opacity:.9; transform:translateY(-1px); }
+    .btn-ghost { display:inline-flex; align-items:center; gap:.5rem; background:transparent; color:var(--ink); font-weight:600; border-radius:.85rem; padding:.75rem 1.6rem; font-size:.9rem; border:1.5px solid var(--border); transition:background .2s,border-color .2s; cursor:pointer; }
+    .btn-ghost:hover { background:rgba(255,255,255,.06); border-color:rgba(255,255,255,.18); }
+
+    /* nav */
+    nav.main-nav { position:sticky; top:0; z-index:50; border-bottom:1px solid var(--border); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); background:rgba(8,9,15,.78); transition:background .3s; }
+    [data-mode="light"] nav.main-nav { background:rgba(244,245,251,.85); }
+    .nav-inner { max-width:1200px; margin:0 auto; padding:0 1.25rem; height:62px; display:flex; align-items:center; justify-content:space-between; gap:1rem; }
+
+    /* badge */
+    .badge { display:inline-flex; align-items:center; gap:.45rem; border:1px solid var(--border); background:rgba(255,255,255,.04); border-radius:999px; padding:.3rem .9rem; font-size:.72rem; font-weight:600; color:var(--muted); }
+    [data-mode="light"] .badge { background:rgba(0,0,0,.04); }
 
     /* promo slider */
-    .slides { display:flex; transition:transform .6s cubic-bezier(.6,.05,.2,1); }
+    .slides-track { display:flex; transition:transform .55s cubic-bezier(.6,.05,.2,1); }
     .slide { min-width:100%; }
-    .dot { width:.5rem; height:.5rem; border-radius:9999px; background:rgba(255,255,255,.35); transition:width .3s, background .3s; }
-    .dot[data-active="1"] { width:1.5rem; background:linear-gradient(90deg,var(--a1),var(--a2)); }
-    /* marquee brand chips */
-    .marquee { display:flex; gap:.75rem; width:max-content; animation:scrollx 26s linear infinite; }
-    @keyframes scrollx { to { transform:translateX(-50%); } }
-    .chip { white-space:nowrap; }
+    .slide-inner { position:relative; border-radius:1.1rem; overflow:hidden; padding:1.75rem; min-height:13rem; display:flex; flex-direction:column; justify-content:space-between; }
+    .s-dot { width:.45rem; height:.45rem; border-radius:999px; background:rgba(255,255,255,.4); transition:width .3s,background .3s; }
+    .s-dot[data-active="1"] { width:1.2rem; background:#fff; }
 
-    .gradient-text { background:linear-gradient(100deg,var(--a1),var(--a2)); -webkit-background-clip:text; background-clip:text; color:transparent; }
-    .btn-grad { background:linear-gradient(100deg,var(--a1),var(--a2)); background-size:160% 100%; transition:background-position .5s, transform .2s, box-shadow .3s; }
-    .btn-grad:hover { background-position:100% 0; transform:translateY(-1px); }
-    .logo-grad { background:linear-gradient(135deg,var(--a1),var(--a2)); }
+    /* marquee */
+    .marquee-wrap { overflow:hidden; -webkit-mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent); mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent); }
+    .marquee-inner { display:flex; gap:.75rem; width:max-content; animation:mq 28s linear infinite; }
+    @keyframes mq { to { transform:translateX(-50%); } }
+    .m-chip { white-space:nowrap; background:var(--card); border:1px solid var(--border); border-radius:999px; padding:.35rem 1rem; font-size:.78rem; color:var(--muted); }
 
-    /* gradient hairline border cards */
-    .card { position:relative; border-radius:1.25rem; background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02)); border:1px solid rgba(255,255,255,.08); transition:transform .25s, border-color .25s, box-shadow .25s; }
-    .card:hover { transform:translateY(-3px); border-color:var(--a1soft); box-shadow:0 18px 50px -20px var(--a1soft); }
-    .ring-soft { box-shadow:0 0 0 1px rgba(255,255,255,.06), 0 30px 80px -40px var(--a1soft); }
-    /* theme switcher */
-    .skin-dot { width:1.5rem; height:1.5rem; border-radius:9999px; border:2px solid rgba(255,255,255,.25); cursor:pointer; transition:transform .15s; }
-    .skin-dot:hover { transform:scale(1.12); }
+    /* grid system */
+    .section { max-width:1200px; margin:0 auto; padding:4rem 1.25rem; }
+    .section-sm { max-width:1200px; margin:0 auto; padding:2rem 1.25rem; }
+    .label-sm { font-size:.72rem; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--a1); margin-bottom:.5rem; }
+
+    /* skin dots */
+    .skin-dot { width:1.4rem; height:1.4rem; border-radius:999px; border:2px solid rgba(255,255,255,.22); cursor:pointer; transition:transform .15s; }
+    .skin-dot:hover { transform:scale(1.15); }
     .skin-dot[data-active="1"] { border-color:#fff; box-shadow:0 0 0 2px rgba(255,255,255,.25); }
 
-    /* ===== LIGHT MODE: remap util classes biar tetap terbaca ===== */
-    [data-mode="light"] .text-white { color:#0f172a !important; }
-    [data-mode="light"] .text-slate-100,
-    [data-mode="light"] .text-slate-200,
-    [data-mode="light"] .text-slate-300 { color:#1e293b !important; }
-    [data-mode="light"] .text-slate-400,
-    [data-mode="light"] .text-slate-500,
-    [data-mode="light"] .text-slate-600 { color:#64748b !important; }
-    [data-mode="light"] .bg-white\/5  { background-color:rgba(15,23,42,.04) !important; }
-    [data-mode="light"] .bg-white\/10 { background-color:rgba(15,23,42,.07) !important; }
-    [data-mode="light"] .border-white\/5  { border-color:rgba(15,23,42,.08) !important; }
-    [data-mode="light"] .border-white\/10 { border-color:rgba(15,23,42,.12) !important; }
-    [data-mode="light"] .border-white\/15 { border-color:rgba(15,23,42,.16) !important; }
-    [data-mode="light"] .ring-white\/10 { --tw-ring-color:rgba(15,23,42,.1) !important; }
-    [data-mode="light"] .card { background:#ffffff; border-color:rgba(15,23,42,.10); box-shadow:0 1px 2px rgba(15,23,42,.04); }
-    [data-mode="light"] .card:hover { border-color:var(--a1soft); box-shadow:0 18px 50px -22px var(--a1soft); }
-    [data-mode="light"] .ring-soft { box-shadow:0 0 0 1px rgba(15,23,42,.06), 0 24px 60px -40px var(--a1soft); }
-    [data-mode="light"] header.bg-\[\#070711\]\/70 { background-color:rgba(238,240,247,.8) !important; }
-    [data-mode="light"] .bg-\[\#0b0b18\]\/80 { background-color:#ffffff !important; }
-    [data-mode="light"] .bg-\[\#0b0b18\]\/95 { background-color:#ffffff !important; }
-    [data-mode="light"] .bg-\[\#0b0b18\] { background-color:#ffffff !important; }
-    [data-mode="light"] .grid-bg { background-image:
-      linear-gradient(rgba(15,23,42,.05) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(15,23,42,.05) 1px, transparent 1px); }
-    [data-mode="light"] .aurora::before, [data-mode="light"] .aurora::after { opacity:.30; }
-    [data-mode="light"] .grain { opacity:.015; }
+    /* light-mode remaps for utility classes */
+    [data-mode="light"] .text-slate-400 { color:#6b7280 !important; }
+    [data-mode="light"] .text-slate-500 { color:#9ca3af !important; }
+    [data-mode="light"] .text-white      { color:#111827 !important; }
 
-    ::-webkit-scrollbar{width:9px;height:9px}::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:9px}
+    /* misc */
+    .fa { opacity:0; transform:translateY(14px); animation:fa .65s cubic-bezier(.2,.7,.2,1) forwards; }
+    .d1{animation-delay:.07s}.d2{animation-delay:.14s}.d3{animation-delay:.21s}.d4{animation-delay:.28s}
+    @keyframes fa { to { opacity:1; transform:none; } }
+
+    ::-webkit-scrollbar{width:8px}::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:8px}
+    [data-mode="light"]::-webkit-scrollbar-thumb{background:rgba(0,0,0,.12)}
   </style>
 </head>
-<body class="relative min-h-screen antialiased">
+<body>
 
-  <!-- background layers -->
-  <div class="aurora pointer-events-none fixed inset-0"></div>
-  <div class="grid-bg pointer-events-none fixed inset-0"></div>
-  <div class="grain pointer-events-none fixed inset-0"></div>
+  <!-- ========== NAV ========== -->
+  <nav class="main-nav">
+    <div class="nav-inner">
+      <!-- LOGO -->
+      <a href="/" style="display:flex;align-items:center;gap:.75rem;text-decoration:none;min-width:0;flex:none">
+        <span class="g-bg" style="display:grid;place-items:center;width:38px;height:38px;border-radius:.75rem;flex-shrink:0">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <path d="M13 3.5 5.5 14c-.4.5 0 1.2.6 1.2H11l-1.5 8c-.2.8 1 1.3 1.5.6L18.5 13c.4-.5 0-1.2-.6-1.2H13l1.5-7.7c.2-.8-1-1.3-1.5-.6z" fill="white"/>
+          </svg>
+        </span>
+        <span style="display:flex;flex-direction:column;line-height:1.1;min-width:0">
+          <span class="g-text" style="font-weight:800;font-size:.88rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px" id="brand">RAYZELL STORE</span>
+          <span style="font-size:.65rem;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)">PPOB · DIGITAL</span>
+        </span>
+      </a>
 
-  <!-- THEME SWITCHER -->
-  <div class="fixed bottom-5 right-5 z-40">
-    <button id="skinToggle" aria-label="Ganti tema" class="grid h-12 w-12 place-items-center rounded-full border border-white/15 bg-white/5 text-lg shadow-lg backdrop-blur transition hover:bg-white/10">🎨</button>
-    <div id="skinPanel" class="absolute bottom-14 right-0 hidden w-48 rounded-2xl border border-white/10 bg-[#0b0b18]/95 p-3 shadow-2xl backdrop-blur">
-      <div class="mb-2 px-1 text-xs font-semibold text-slate-400">Pilih Tema</div>
-      <div class="grid grid-cols-1 gap-1">
-        <button class="skinOpt flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-sm text-slate-200 transition hover:bg-white/10" data-skin="aurora"><span class="skin-dot" style="background:linear-gradient(135deg,#7c5cff,#22d3ee)"></span>Aurora</button>
-        <button class="skinOpt flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-sm text-slate-200 transition hover:bg-white/10" data-skin="royal"><span class="skin-dot" style="background:linear-gradient(135deg,#6366f1,#a78bfa)"></span>Royal</button>
-        <button class="skinOpt flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-sm text-slate-200 transition hover:bg-white/10" data-skin="ocean"><span class="skin-dot" style="background:linear-gradient(135deg,#38bdf8,#6366f1)"></span>Ocean</button>
-        <button class="skinOpt flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-sm text-slate-200 transition hover:bg-white/10" data-skin="emerald"><span class="skin-dot" style="background:linear-gradient(135deg,#10b981,#34d399)"></span>Emerald</button>
-        <button class="skinOpt flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-sm text-slate-200 transition hover:bg-white/10" data-skin="sunset"><span class="skin-dot" style="background:linear-gradient(135deg,#fb7185,#fbbf24)"></span>Sunset</button>
-        <button class="skinOpt flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-sm text-slate-200 transition hover:bg-white/10" data-skin="candy"><span class="skin-dot" style="background:linear-gradient(135deg,#e879f9,#fb7185)"></span>Candy</button>
-        <button class="skinOpt flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-sm text-slate-200 transition hover:bg-white/10" data-skin="grape"><span class="skin-dot" style="background:linear-gradient(135deg,#8b5cf6,#ec4899)"></span>Grape</button>
-        <button class="skinOpt flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-sm text-slate-200 transition hover:bg-white/10" data-skin="gold"><span class="skin-dot" style="background:linear-gradient(135deg,#f59e0b,#f97316)"></span>Gold</button>
+      <!-- NAV LINKS (desktop) -->
+      <div style="display:none;gap:2rem;align-items:center" class="sm-flex" id="navLinks">
+        <a href="#layanan" style="font-size:.88rem;font-weight:600;color:var(--muted);text-decoration:none;transition:color .2s" onmouseover="this.style.color='var(--ink)'" onmouseout="this.style.color='var(--muted)'">Layanan</a>
+        <a href="/cek.html" style="font-size:.88rem;font-weight:600;color:var(--muted);text-decoration:none;transition:color .2s" onmouseover="this.style.color='var(--ink)'" onmouseout="this.style.color='var(--muted)'">Cek Transaksi</a>
+        <a href="#kontak" style="font-size:.88rem;font-weight:600;color:var(--muted);text-decoration:none;transition:color .2s" onmouseover="this.style.color='var(--ink)'" onmouseout="this.style.color='var(--muted)'">Kontak</a>
+      </div>
+
+      <!-- RIGHT ACTIONS -->
+      <div style="display:flex;align-items:center;gap:.5rem;flex-shrink:0">
+        <a href="/app.html" class="btn-main" style="display:none;padding:.55rem 1.2rem;font-size:.83rem" id="navMasuk">Masuk</a>
+        <button id="modeToggle" aria-label="Toggle mode" style="display:grid;place-items:center;width:38px;height:38px;border-radius:.75rem;border:1px solid var(--border);background:rgba(255,255,255,.04);cursor:pointer;font-size:1rem;flex-shrink:0">🌙</button>
+        <!-- hamburger -->
+        <button id="navToggle" aria-label="Menu" style="display:grid;place-items:center;width:38px;height:38px;border-radius:.75rem;border:1px solid var(--border);background:rgba(255,255,255,.04);cursor:pointer;flex-shrink:0" class="sm-hide">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- DRAWER (mobile) -->
+  <div id="drawerOverlay" style="display:none;position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.55);backdrop-filter:blur(4px)"></div>
+  <aside id="drawer" style="position:fixed;right:0;top:0;z-index:70;height:100%;width:80%;max-width:300px;background:var(--card);border-left:1px solid var(--border);display:none;flex-direction:column;transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1)">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1.25rem;border-bottom:1px solid var(--border)">
+      <span style="font-weight:800;font-size:.95rem">Menu</span>
+      <button id="drawerClose" style="display:grid;place-items:center;width:34px;height:34px;border-radius:.65rem;border:1px solid var(--border);background:transparent;cursor:pointer;color:var(--muted)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <nav style="padding:.75rem;display:flex;flex-direction:column;gap:.25rem;flex:1;overflow-y:auto">
+      <a href="#layanan" class="drawer-link" style="display:flex;align-items:center;gap:.85rem;padding:.8rem 1rem;border-radius:.85rem;font-weight:600;font-size:.9rem;text-decoration:none;color:var(--ink);transition:background .2s" onmouseover="this.style.background='rgba(255,255,255,.06)'" onmouseout="this.style.background='transparent'">
+        <span style="display:grid;place-items:center;width:36px;height:36px;border-radius:.7rem;background:rgba(255,255,255,.05);font-size:1.1rem">🛍️</span>Layanan
+      </a>
+      <a href="/cek.html" class="drawer-link" style="display:flex;align-items:center;gap:.85rem;padding:.8rem 1rem;border-radius:.85rem;font-weight:600;font-size:.9rem;text-decoration:none;color:var(--ink);transition:background .2s" onmouseover="this.style.background='rgba(255,255,255,.06)'" onmouseout="this.style.background='transparent'">
+        <span style="display:grid;place-items:center;width:36px;height:36px;border-radius:.7rem;background:rgba(255,255,255,.05);font-size:1.1rem">🔍</span>Cek Transaksi
+      </a>
+      <a href="#kontak" class="drawer-link" style="display:flex;align-items:center;gap:.85rem;padding:.8rem 1rem;border-radius:.85rem;font-weight:600;font-size:.9rem;text-decoration:none;color:var(--ink);transition:background .2s" onmouseover="this.style.background='rgba(255,255,255,.06)'" onmouseout="this.style.background='transparent'">
+        <span style="display:grid;place-items:center;width:36px;height:36px;border-radius:.7rem;background:rgba(255,255,255,.05);font-size:1.1rem">🎧</span>Hubungi Kami
+      </a>
+      <div style="margin:.5rem 0;border-top:1px solid var(--border)"></div>
+      <button id="drawerMode" style="display:flex;align-items:center;gap:.85rem;padding:.8rem 1rem;border-radius:.85rem;font-weight:600;font-size:.9rem;color:var(--ink);background:transparent;border:none;cursor:pointer;width:100%;text-align:left;transition:background .2s" onmouseover="this.style.background='rgba(255,255,255,.06)'" onmouseout="this.style.background='transparent'">
+        <span id="drawerModeIcon" style="display:grid;place-items:center;width:36px;height:36px;border-radius:.7rem;background:rgba(255,255,255,.05);font-size:1.1rem">🌙</span>
+        <span id="drawerModeLabel">Mode Gelap</span>
+      </button>
+      <a href="/app.html" class="btn-main" style="margin-top:.5rem;justify-content:center;text-decoration:none">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Masuk / Daftar
+      </a>
+    </nav>
+  </aside>
+
+  <!-- ========== HERO ========== -->
+  <div class="section" style="padding-top:3rem;padding-bottom:2rem">
+    <div style="display:grid;align-items:center;gap:2.5rem" id="heroGrid">
+      <!-- kiri -->
+      <div class="fa">
+        <div class="badge fa d1" style="margin-bottom:1.25rem">
+          <span style="width:.55rem;height:.55rem;border-radius:999px;background:#22c55e;animation:pulse 1.8s infinite"></span>
+          Otomatis 24 jam · proses instan
+        </div>
+        <h1 style="font-size:clamp(2rem,5vw,3.6rem);font-weight:800;line-height:1.08;letter-spacing:-.03em;margin:0 0 1rem" class="fa d2">
+          Top Up &amp; Tagihan,<br>
+          <span class="g-text">murah &amp; instan.</span>
+        </h1>
+        <p class="fa d3" style="font-size:1rem;line-height:1.65;color:var(--muted);max-width:480px;margin:0 0 1.75rem">
+          Pulsa, Paket Data, Token PLN, Voucher Game &amp; E-Money — harga bersaing, proses otomatis, langsung dari web maupun Telegram.
+        </p>
+        <div class="fa d3" style="display:flex;flex-wrap:wrap;gap:.75rem;margin-bottom:2rem">
+          <a id="cta-buy" href="/app.html" class="btn-main">Masuk &amp; Belanja</a>
+          <a id="cta-tg" href="#" target="_blank" rel="noopener" class="btn-ghost">Lewat Telegram</a>
+        </div>
+        <!-- stats -->
+        <div class="fa d4" style="display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;max-width:380px">
+          <div class="card card-glow" style="padding:1rem;text-align:center">
+            <div style="font-size:1.5rem;font-weight:800">24/7</div>
+            <div style="font-size:.7rem;color:var(--muted);margin-top:.2rem">Otomatis</div>
+          </div>
+          <div class="card card-glow" style="padding:1rem;text-align:center">
+            <div id="statCat" style="font-size:1.5rem;font-weight:800">—</div>
+            <div style="font-size:.7rem;color:var(--muted);margin-top:.2rem">Kategori</div>
+          </div>
+          <div class="card card-glow" style="padding:1rem;text-align:center">
+            <div style="font-size:1.5rem;font-weight:800">QRIS</div>
+            <div style="font-size:.7rem;color:var(--muted);margin-top:.2rem">&amp; Saldo</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- kanan: PROMO SLIDER -->
+      <div class="fa d3" style="overflow:hidden;border-radius:1.2rem;border:1px solid var(--border)">
+        <div id="promoSlides" class="slides-track">
+          <div class="slide"><div class="slide-inner" style="background:linear-gradient(135deg,var(--a1),var(--a2))">
+            <div>
+              <div style="font-size:.7rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.7)">Promo Spesial</div>
+              <div style="font-size:1.75rem;font-weight:800;color:#fff;margin-top:.3rem;line-height:1.15">Paket Data Murah</div>
+              <div style="font-size:.85rem;color:rgba(255,255,255,.8);margin-top:.5rem">Kuota besar harga hemat untuk semua operator.</div>
+            </div>
+            <a href="/app.html" style="display:inline-block;background:#fff;color:#111;font-weight:700;font-size:.82rem;border-radius:.65rem;padding:.6rem 1.2rem;text-decoration:none;margin-top:1.25rem">Beli Sekarang →</a>
+            <div style="position:absolute;right:-1rem;top:-1rem;font-size:7rem;opacity:.15;pointer-events:none">🌐</div>
+          </div></div>
+          <div class="slide"><div class="slide-inner" style="background:linear-gradient(135deg,#f59e0b,#f97316)">
+            <div>
+              <div style="font-size:.7rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.7)">Bayar Mudah</div>
+              <div style="font-size:1.75rem;font-weight:800;color:#fff;margin-top:.3rem;line-height:1.15">Token PLN Instan</div>
+              <div style="font-size:.85rem;color:rgba(255,255,255,.8);margin-top:.5rem">Struk &amp; token langsung masuk dalam detik.</div>
+            </div>
+            <a href="/app.html" style="display:inline-block;background:#fff;color:#111;font-weight:700;font-size:.82rem;border-radius:.65rem;padding:.6rem 1.2rem;text-decoration:none;margin-top:1.25rem">Beli Sekarang →</a>
+            <div style="position:absolute;right:-1rem;top:-1rem;font-size:7rem;opacity:.15;pointer-events:none">⚡</div>
+          </div></div>
+          <div class="slide"><div class="slide-inner" style="background:linear-gradient(135deg,#8b5cf6,#ec4899)">
+            <div>
+              <div style="font-size:.7rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.7)">Top Up Game</div>
+              <div style="font-size:1.75rem;font-weight:800;color:#fff;margin-top:.3rem;line-height:1.15">Voucher &amp; Diamond</div>
+              <div style="font-size:.85rem;color:rgba(255,255,255,.8);margin-top:.5rem">Semua game favorit, harga reseller tersedia.</div>
+            </div>
+            <a href="/app.html" style="display:inline-block;background:#fff;color:#111;font-weight:700;font-size:.82rem;border-radius:.65rem;padding:.6rem 1.2rem;text-decoration:none;margin-top:1.25rem">Beli Sekarang →</a>
+            <div style="position:absolute;right:-1rem;top:-1rem;font-size:7rem;opacity:.15;pointer-events:none">🎮</div>
+          </div></div>
+        </div>
+        <div style="display:flex;justify-content:center;gap:.5rem;padding:.75rem">
+          <span class="s-dot" data-i="0" data-active="1" style="cursor:pointer"></span>
+          <span class="s-dot" data-i="1" style="cursor:pointer"></span>
+          <span class="s-dot" data-i="2" style="cursor:pointer"></span>
+        </div>
       </div>
     </div>
   </div>
 
-  <div class="relative z-10">
-    <!-- NAV -->
-    <header class="sticky top-0 z-30 border-b border-white/5 bg-[#070711]/70 backdrop-blur-xl">
-      <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-3.5 sm:px-5 sm:py-4">
-        <a href="#" class="flex min-w-0 items-center gap-2.5">
-          <span class="logo-grad relative grid h-10 w-10 shrink-0 place-items-center rounded-[0.9rem] shadow-lg shadow-indigo-500/40 sm:h-11 sm:w-11">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M13 2.5 5 13.2c-.3.4 0 1 .5 1H10l-1.2 6.6c-.1.7.8 1.1 1.3.5L19 10.3c.3-.4 0-1-.5-1H14l1.2-6.3c.1-.7-.8-1.1-1.2-.5Z" fill="white"/></svg>
-            <span class="absolute inset-0 rounded-[0.9rem] ring-1 ring-white/25"></span>
-          </span>
-          <span class="flex min-w-0 flex-col leading-none">
-            <span class="truncate font-display text-sm font-extrabold tracking-tight gradient-text sm:text-[15px]" id="brand">RAYZELL STORE</span>
-            <span class="text-[9px] font-semibold uppercase tracking-[0.25em] text-slate-500">PPOB · DIGITAL</span>
-          </span>
-        </a>
-        <div class="flex items-center gap-2 sm:gap-6">
-          <nav class="hidden gap-7 text-sm text-slate-400 sm:flex">
-            <a href="#layanan" class="transition hover:text-white">Layanan</a>
-            <a href="/cek.html" class="transition hover:text-white">Cek Transaksi</a>
-            <a href="#kontak" class="transition hover:text-white">Kontak</a>
-          </nav>
-          <a href="/app.html" class="hidden rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-100 backdrop-blur transition hover:bg-white/10 sm:block">Masuk</a>
-          <button id="modeToggle" aria-label="Mode terang/gelap" class="grid h-9 w-9 place-items-center rounded-xl border border-white/15 bg-white/5 text-base backdrop-blur transition hover:bg-white/10">🌙</button>
-          <!-- Hamburger (mobile saja) -->
-          <button id="navToggle" aria-label="Menu" class="grid h-9 w-9 place-items-center rounded-xl border border-white/15 bg-white/5 backdrop-blur transition hover:bg-white/10 sm:hidden">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-          </button>
-        </div>
+  <!-- MARQUEE -->
+  <div class="section-sm" style="padding-top:.5rem;padding-bottom:2rem">
+    <div class="marquee-wrap">
+      <div class="marquee-inner">
+        <span class="m-chip">📱 Telkomsel</span><span class="m-chip">🌐 XL · Axis</span><span class="m-chip">📶 Indosat</span><span class="m-chip">⚡ PLN</span><span class="m-chip">🎮 Mobile Legends</span><span class="m-chip">💳 DANA · OVO · GoPay</span><span class="m-chip">📺 Netflix · Viu</span><span class="m-chip">🏥 BPJS</span><span class="m-chip">📱 Smartfren</span>
+        <span class="m-chip">📱 Telkomsel</span><span class="m-chip">🌐 XL · Axis</span><span class="m-chip">📶 Indosat</span><span class="m-chip">⚡ PLN</span><span class="m-chip">🎮 Mobile Legends</span><span class="m-chip">💳 DANA · OVO · GoPay</span><span class="m-chip">📺 Netflix · Viu</span><span class="m-chip">🏥 BPJS</span><span class="m-chip">📱 Smartfren</span>
       </div>
-    </header>
-
-    <!-- DRAWER MENU (mobile) -->
-    <div id="drawerOverlay" class="fixed inset-0 z-40 hidden bg-black/50 backdrop-blur-sm sm:hidden"></div>
-    <aside id="drawer" class="fixed right-0 top-0 z-50 hidden h-full w-[80%] max-w-xs translate-x-full flex-col bg-[#0b0b18] shadow-2xl transition-transform duration-300 sm:hidden" style="will-change:transform">
-      <div class="flex items-center justify-between border-b border-white/10 px-5 py-4">
-        <span class="font-display text-base font-bold">Menu</span>
-        <button id="drawerClose" aria-label="Tutup" class="grid h-9 w-9 place-items-center rounded-full text-slate-400 transition hover:bg-white/10">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-        </button>
-      </div>
-      <nav class="flex flex-1 flex-col gap-1 overflow-y-auto p-3 text-[15px]">
-        <a href="#layanan" class="drawer-link flex items-center gap-3 rounded-xl px-3 py-3 font-medium text-slate-200 transition hover:bg-white/10">
-          <span class="grid h-9 w-9 place-items-center rounded-lg bg-white/5">🛍️</span> Layanan
-        </a>
-        <a href="/cek.html" class="drawer-link flex items-center gap-3 rounded-xl px-3 py-3 font-medium text-slate-200 transition hover:bg-white/10">
-          <span class="grid h-9 w-9 place-items-center rounded-lg bg-white/5">🚚</span> Cek Transaksi
-        </a>
-        <a href="#kontak" class="drawer-link flex items-center gap-3 rounded-xl px-3 py-3 font-medium text-slate-200 transition hover:bg-white/10">
-          <span class="grid h-9 w-9 place-items-center rounded-lg bg-white/5">🎧</span> Hubungi Kami
-        </a>
-        <div class="mt-2 border-t border-white/10 pt-3">
-          <button id="drawerMode" class="flex w-full items-center gap-3 rounded-xl px-3 py-3 font-medium text-slate-200 transition hover:bg-white/10">
-            <span class="grid h-9 w-9 place-items-center rounded-lg bg-white/5" id="drawerModeIcon">🌙</span> <span id="drawerModeLabel">Mode Gelap</span>
-          </button>
-        </div>
-        <a href="/app.html" class="btn-grad mt-2 flex items-center justify-center gap-2 rounded-xl px-4 py-3.5 font-semibold text-white shadow-lg">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          Masuk / Daftar
-        </a>
-      </nav>
-    </aside>
-
-    <!-- HERO -->
-    <section class="relative mx-auto max-w-6xl px-5 pt-12 pb-10 sm:pt-16 sm:pb-14">
-      <div class="grid items-center gap-8 lg:grid-cols-[1.05fr_.95fr]">
-        <!-- kiri -->
-        <div class="text-center lg:text-left">
-          <div class="fade-up mb-5 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs text-slate-300 backdrop-blur">
-            <span class="relative flex h-2 w-2"><span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60"></span><span class="relative inline-flex h-2 w-2 rounded-full bg-emerald-400"></span></span>
-            Otomatis 24 jam · proses instan
-          </div>
-          <h1 class="fade-up d1 text-[2.3rem] font-extrabold leading-[1.05] sm:text-6xl">
-            Top Up &amp; Tagihan,<br />
-            <span class="gradient-text">murah &amp; instan.</span>
-          </h1>
-          <p class="fade-up d2 mx-auto mt-5 max-w-lg text-base leading-relaxed text-slate-400 sm:text-lg lg:mx-0">
-            Pulsa, Paket Data, Token PLN, Voucher Game &amp; E-Money. Harga bersaing, proses otomatis, langsung dari web maupun Telegram.
-          </p>
-          <div class="fade-up d3 mt-7 flex flex-wrap justify-center gap-3 lg:justify-start">
-            <a id="cta-buy" href="/app.html" class="btn-grad rounded-xl px-7 py-3.5 font-semibold text-white shadow-lg shadow-indigo-500/30">Masuk &amp; Belanja</a>
-            <a id="cta-tg" href="#" target="_blank" rel="noopener" class="rounded-xl border border-white/15 bg-white/5 px-7 py-3.5 font-semibold text-slate-100 backdrop-blur transition hover:bg-white/10">Lewat Telegram</a>
-          </div>
-          <div class="fade-up d4 mt-8 grid max-w-md grid-cols-3 gap-3 lg:mx-0">
-            <div class="card ring-soft px-3 py-4 text-center"><div class="font-display text-xl font-bold sm:text-3xl">24/7</div><div class="mt-1 text-[11px] text-slate-500">Otomatis</div></div>
-            <div class="card ring-soft px-3 py-4 text-center"><div class="font-display text-xl font-bold sm:text-3xl" id="statCat">—</div><div class="mt-1 text-[11px] text-slate-500">Kategori</div></div>
-            <div class="card ring-soft px-3 py-4 text-center"><div class="font-display text-xl font-bold sm:text-3xl">QRIS</div><div class="mt-1 text-[11px] text-slate-500">&amp; Saldo</div></div>
-          </div>
-        </div>
-
-        <!-- kanan: PROMO SLIDER -->
-        <div class="fade-up d3">
-          <div class="card ring-soft overflow-hidden p-0">
-            <div class="relative">
-              <div id="promoSlides" class="slides">
-                <div class="slide">
-                  <div class="relative flex min-h-[13rem] flex-col justify-between p-6 sm:min-h-[15rem]" style="background:linear-gradient(135deg,var(--a1),var(--a2))">
-                    <div class="text-white">
-                      <div class="text-[11px] font-semibold uppercase tracking-widest opacity-80">Promo Spesial</div>
-                      <div class="mt-1 font-display text-2xl font-extrabold sm:text-3xl">Paket Data Murah</div>
-                      <p class="mt-1 max-w-[16rem] text-sm text-white/85">Kuota besar harga hemat untuk semua operator.</p>
-                    </div>
-                    <a href="/app.html" class="w-fit rounded-lg bg-white/95 px-4 py-2 text-sm font-bold text-slate-900 transition hover:bg-white">Beli Sekarang →</a>
-                    <div class="pointer-events-none absolute -right-4 -top-4 text-[7rem] opacity-20">🌐</div>
-                  </div>
-                </div>
-                <div class="slide">
-                  <div class="relative flex min-h-[13rem] flex-col justify-between p-6 sm:min-h-[15rem]" style="background:linear-gradient(135deg,#f59e0b,#f97316)">
-                    <div class="text-white">
-                      <div class="text-[11px] font-semibold uppercase tracking-widest opacity-80">Bayar Mudah</div>
-                      <div class="mt-1 font-display text-2xl font-extrabold sm:text-3xl">Token PLN Instan</div>
-                      <p class="mt-1 max-w-[16rem] text-sm text-white/85">Struk &amp; token langsung masuk dalam hitungan detik.</p>
-                    </div>
-                    <a href="/app.html" class="w-fit rounded-lg bg-white/95 px-4 py-2 text-sm font-bold text-slate-900 transition hover:bg-white">Beli Sekarang →</a>
-                    <div class="pointer-events-none absolute -right-4 -top-4 text-[7rem] opacity-20">⚡</div>
-                  </div>
-                </div>
-                <div class="slide">
-                  <div class="relative flex min-h-[13rem] flex-col justify-between p-6 sm:min-h-[15rem]" style="background:linear-gradient(135deg,#8b5cf6,#ec4899)">
-                    <div class="text-white">
-                      <div class="text-[11px] font-semibold uppercase tracking-widest opacity-80">Top Up Game</div>
-                      <div class="mt-1 font-display text-2xl font-extrabold sm:text-3xl">Voucher &amp; Diamond</div>
-                      <p class="mt-1 max-w-[16rem] text-sm text-white/85">Semua game favorit, harga reseller tersedia.</p>
-                    </div>
-                    <a href="/app.html" class="w-fit rounded-lg bg-white/95 px-4 py-2 text-sm font-bold text-slate-900 transition hover:bg-white">Beli Sekarang →</a>
-                    <div class="pointer-events-none absolute -right-4 -top-4 text-[7rem] opacity-20">🎮</div>
-                  </div>
-                </div>
-              </div>
-              <div class="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-2">
-                <span class="dot" data-i="0" data-active="1"></span>
-                <span class="dot" data-i="1"></span>
-                <span class="dot" data-i="2"></span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- brand marquee -->
-      <div class="fade-up d4 relative mt-10 overflow-hidden [mask-image:linear-gradient(90deg,transparent,#000_12%,#000_88%,transparent)]">
-        <div class="marquee text-sm text-slate-400">
-          <span class="chip rounded-full border border-white/10 bg-white/5 px-4 py-2">📱 Telkomsel</span>
-          <span class="chip rounded-full border border-white/10 bg-white/5 px-4 py-2">🌐 XL · Axis</span>
-          <span class="chip rounded-full border border-white/10 bg-white/5 px-4 py-2">📶 Indosat</span>
-          <span class="chip rounded-full border border-white/10 bg-white/5 px-4 py-2">⚡ PLN</span>
-          <span class="chip rounded-full border border-white/10 bg-white/5 px-4 py-2">🎮 Mobile Legends</span>
-          <span class="chip rounded-full border border-white/10 bg-white/5 px-4 py-2">💳 DANA · OVO · GoPay</span>
-          <span class="chip rounded-full border border-white/10 bg-white/5 px-4 py-2">📺 Netflix · Viu</span>
-          <!-- duplikat utk loop mulus -->
-          <span class="chip rounded-full border border-white/10 bg-white/5 px-4 py-2">📱 Telkomsel</span>
-          <span class="chip rounded-full border border-white/10 bg-white/5 px-4 py-2">🌐 XL · Axis</span>
-          <span class="chip rounded-full border border-white/10 bg-white/5 px-4 py-2">📶 Indosat</span>
-          <span class="chip rounded-full border border-white/10 bg-white/5 px-4 py-2">⚡ PLN</span>
-          <span class="chip rounded-full border border-white/10 bg-white/5 px-4 py-2">🎮 Mobile Legends</span>
-          <span class="chip rounded-full border border-white/10 bg-white/5 px-4 py-2">💳 DANA · OVO · GoPay</span>
-          <span class="chip rounded-full border border-white/10 bg-white/5 px-4 py-2">📺 Netflix · Viu</span>
-        </div>
-      </div>
-    </section>
-
-    <!-- KEUNGGULAN -->
-    <section class="mx-auto max-w-6xl px-5 py-8">
-      <div class="grid grid-cols-2 gap-3.5 sm:grid-cols-4">
-        <div class="card p-5"><div class="grid h-11 w-11 place-items-center rounded-xl bg-white/5 text-2xl">⚡</div><div class="mt-3 font-semibold">Proses Instan</div><div class="mt-1 text-xs text-slate-400">Otomatis 24 jam, masuk dalam hitungan detik.</div></div>
-        <div class="card p-5"><div class="grid h-11 w-11 place-items-center rounded-xl bg-white/5 text-2xl">💰</div><div class="mt-3 font-semibold">Harga Bersaing</div><div class="mt-1 text-xs text-slate-400">Murah untuk member, lebih hemat untuk reseller.</div></div>
-        <div class="card p-5"><div class="grid h-11 w-11 place-items-center rounded-xl bg-white/5 text-2xl">🔒</div><div class="mt-3 font-semibold">Aman &amp; Terpercaya</div><div class="mt-1 text-xs text-slate-400">Login terverifikasi, transaksi tercatat rapi.</div></div>
-        <div class="card p-5"><div class="grid h-11 w-11 place-items-center rounded-xl bg-white/5 text-2xl">🎧</div><div class="mt-3 font-semibold">CS Responsif</div><div class="mt-1 text-xs text-slate-400">Bantuan cepat via WhatsApp &amp; Telegram.</div></div>
-      </div>
-    </section>
-
-    <!-- LAYANAN -->
-    <section id="layanan" class="mx-auto max-w-6xl px-5 py-16">
-      <div class="mb-8 flex items-end justify-between gap-4">
-        <div>
-          <div class="mb-2 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-indigo-300/80">Katalog</div>
-          <h2 class="text-2xl font-bold sm:text-3xl">Layanan kami</h2>
-          <p class="mt-2 text-sm text-slate-400">Harga termurah per kategori. Klik Beli untuk transaksi.</p>
-        </div>
-      </div>
-      <div id="grid" class="grid grid-cols-2 gap-3.5 sm:grid-cols-3">
-        <div class="col-span-full card p-6 text-center text-slate-400">Memuat layanan…</div>
-      </div>
-    </section>
-
-    <!-- KONTAK -->
-    <section id="kontak" class="mx-auto max-w-6xl px-5 py-16">
-      <div class="mb-2 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-indigo-300/80">Bantuan</div>
-      <h2 class="text-2xl font-bold sm:text-3xl">Kontak</h2>
-      <p class="mt-2 text-sm text-slate-400">Butuh bantuan? Hubungi kami.</p>
-      <div class="mt-6 grid gap-3.5 sm:grid-cols-2">
-        <a id="wa" href="#" target="_blank" rel="noopener"
-           class="card group flex items-center justify-between p-6 hover:!border-emerald-400/40">
-          <span class="flex items-center gap-3">
-            <span class="grid h-11 w-11 place-items-center rounded-xl bg-emerald-500/15 text-emerald-400">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15l-1.3 4.8 4.9-1.3A10 10 0 1 0 12 2Zm5.3 14.1c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .1-1.7-.1-.4-.1-.9-.3-1.6-.6-2.7-1.2-4.5-4-4.6-4.2-.1-.2-1.1-1.5-1.1-2.8 0-1.3.7-2 .9-2.2.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 1.9c.1.2.1.4 0 .5l-.4.6c-.2.2-.3.4-.1.7.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.4 2.4 1.5.2.1.4.1.6-.1l.7-.9c.2-.2.4-.2.6-.1l1.8.9c.2.1.4.2.4.3.1.2.1.7-.1 1.2Z"/></svg>
-            </span>
-            <span class="font-semibold">WhatsApp</span>
-          </span>
-          <span class="text-slate-400 transition group-hover:translate-x-0.5">Chat →</span>
-        </a>
-        <a id="tg" href="#" target="_blank" rel="noopener"
-           class="card group flex items-center justify-between p-6 hover:!border-sky-400/40">
-          <span class="flex items-center gap-3">
-            <span class="grid h-11 w-11 place-items-center rounded-xl bg-sky-500/15 text-sky-400">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M21.9 4.3 18.7 19c-.2 1-.9 1.3-1.8.8l-4.9-3.6-2.4 2.3c-.3.3-.5.5-1 .5l.3-5 9-8.1c.4-.3-.1-.5-.6-.2L6.4 13 1.6 11.5c-1-.3-1-1 .2-1.5l18.7-7.2c.9-.3 1.6.2 1.4 1.5Z"/></svg>
-            </span>
-            <span class="font-semibold">Telegram</span>
-          </span>
-          <span class="text-slate-400 transition group-hover:translate-x-0.5">Buka →</span>
-        </a>
-      </div>
-    </section>
-
-    <!-- FOOTER -->
-    <footer class="border-t border-white/5">
-      <div class="mx-auto flex max-w-6xl flex-col items-center gap-2 px-5 py-10 text-center text-sm text-slate-500">
-        <span class="logo-grad grid h-9 w-9 place-items-center rounded-xl">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M13 2.5 5 13.2c-.3.4 0 1 .5 1H10l-1.2 6.6c-.1.7.8 1.1 1.3.5L19 10.3c.3-.4 0-1-.5-1H14l1.2-6.3c.1-.7-.8-1.1-1.2-.5Z" fill="white"/></svg>
-        </span>
-        <p>&copy;<span id="year"></span> <span id="brandFoot">Rayzell Store PPOB</span>. Seluruh hak cipta dilindungi.</p>
-      </div>
-    </footer>
+    </div>
   </div>
 
-  <!-- FAB WhatsApp (melayang) -->
+  <!-- KEUNGGULAN -->
+  <div class="section-sm">
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:.85rem" id="featGrid">
+      <div class="card card-lift" style="padding:1.25rem">
+        <div style="font-size:1.6rem;margin-bottom:.75rem">⚡</div>
+        <div style="font-weight:700;font-size:.9rem;margin-bottom:.35rem">Proses Instan</div>
+        <div style="font-size:.8rem;color:var(--muted)">Otomatis 24 jam, masuk dalam hitungan detik.</div>
+      </div>
+      <div class="card card-lift" style="padding:1.25rem">
+        <div style="font-size:1.6rem;margin-bottom:.75rem">💰</div>
+        <div style="font-weight:700;font-size:.9rem;margin-bottom:.35rem">Harga Bersaing</div>
+        <div style="font-size:.8rem;color:var(--muted)">Murah untuk member, lebih hemat untuk reseller.</div>
+      </div>
+      <div class="card card-lift" style="padding:1.25rem">
+        <div style="font-size:1.6rem;margin-bottom:.75rem">🔒</div>
+        <div style="font-weight:700;font-size:.9rem;margin-bottom:.35rem">Aman &amp; Terpercaya</div>
+        <div style="font-size:.8rem;color:var(--muted)">Login terverifikasi, transaksi tercatat rapi.</div>
+      </div>
+      <div class="card card-lift" style="padding:1.25rem">
+        <div style="font-size:1.6rem;margin-bottom:.75rem">🎧</div>
+        <div style="font-weight:700;font-size:.9rem;margin-bottom:.35rem">CS Responsif</div>
+        <div style="font-size:.8rem;color:var(--muted)">Bantuan cepat via WhatsApp &amp; Telegram.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LAYANAN -->
+  <div class="section" id="layanan" style="padding-top:2.5rem">
+    <div class="label-sm">Katalog</div>
+    <h2 style="font-size:1.6rem;font-weight:800;margin:0 0 .5rem">Layanan kami</h2>
+    <p style="color:var(--muted);font-size:.88rem;margin:0 0 1.75rem">Harga termurah per kategori. Klik Beli untuk transaksi.</p>
+    <div id="grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:.85rem">
+      <div class="card" style="padding:1.5rem;text-align:center;color:var(--muted);grid-column:1/-1">Memuat layanan…</div>
+    </div>
+  </div>
+
+  <!-- KONTAK -->
+  <div class="section" id="kontak" style="padding-top:2rem;padding-bottom:3rem">
+    <div class="label-sm">Bantuan</div>
+    <h2 style="font-size:1.6rem;font-weight:800;margin:0 0 .5rem">Kontak</h2>
+    <p style="color:var(--muted);font-size:.88rem;margin:0 0 1.5rem">Butuh bantuan? Hubungi kami.</p>
+    <div style="display:grid;gap:.85rem" id="kontakGrid">
+      <a id="wa" href="#" target="_blank" rel="noopener" class="card card-lift" style="display:flex;align-items:center;justify-content:space-between;padding:1.25rem;text-decoration:none;color:var(--ink)">
+        <span style="display:flex;align-items:center;gap:.85rem">
+          <span style="display:grid;place-items:center;width:42px;height:42px;border-radius:.75rem;background:rgba(34,197,94,.12);color:#22c55e">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15l-1.3 4.8 4.9-1.3A10 10 0 1 0 12 2Zm5.3 14.1c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .1-1.7-.1-.4-.1-.9-.3-1.6-.6-2.7-1.2-4.5-4-4.6-4.2-.1-.2-1.1-1.5-1.1-2.8 0-1.3.7-2 .9-2.2.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 1.9c.1.2.1.4 0 .5l-.4.6c-.2.2-.3.4-.1.7.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.4 2.4 1.5.2.1.4.1.6-.1l.7-.9c.2-.2.4-.2.6-.1l1.8.9c.2.1.4.2.4.3.1.2.1.7-.1 1.2Z"/></svg>
+          </span>
+          <span style="font-weight:700;font-size:.9rem">WhatsApp</span>
+        </span>
+        <span style="color:var(--muted);font-size:.85rem">Chat →</span>
+      </a>
+      <a id="tg" href="#" target="_blank" rel="noopener" class="card card-lift" style="display:flex;align-items:center;justify-content:space-between;padding:1.25rem;text-decoration:none;color:var(--ink)">
+        <span style="display:flex;align-items:center;gap:.85rem">
+          <span style="display:grid;place-items:center;width:42px;height:42px;border-radius:.75rem;background:rgba(56,189,248,.12);color:#38bdf8">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M21.9 4.3 18.7 19c-.2 1-.9 1.3-1.8.8l-4.9-3.6-2.4 2.3c-.3.3-.5.5-1 .5l.3-5 9-8.1c.4-.3-.1-.5-.6-.2L6.4 13 1.6 11.5c-1-.3-1-1 .2-1.5l18.7-7.2c.9-.3 1.6.2 1.4 1.5Z"/></svg>
+          </span>
+          <span style="font-weight:700;font-size:.9rem">Telegram</span>
+        </span>
+        <span style="color:var(--muted);font-size:.85rem">Buka →</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer style="border-top:1px solid var(--border)">
+    <div class="section-sm" style="padding-top:1.75rem;padding-bottom:1.75rem;display:flex;flex-direction:column;align-items:center;gap:.6rem;text-align:center">
+      <span class="g-bg" style="display:grid;place-items:center;width:32px;height:32px;border-radius:.7rem">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M13 3.5 5.5 14c-.4.5 0 1.2.6 1.2H11l-1.5 8c-.2.8 1 1.3 1.5.6L18.5 13c.4-.5 0-1.2-.6-1.2H13l1.5-7.7c.2-.8-1-1.3-1.5-.6z" fill="white"/></svg>
+      </span>
+      <p style="font-size:.82rem;color:var(--muted);margin:0">&copy;<span id="year"></span> <span id="brandFoot">Rayzell Store PPOB</span>. Seluruh hak cipta dilindungi.</p>
+    </div>
+  </footer>
+
+  <!-- FAB WhatsApp -->
   <a id="waFab" href="#" target="_blank" rel="noopener" aria-label="Chat WhatsApp"
-     class="fixed bottom-5 left-5 z-40 grid h-14 w-14 place-items-center rounded-full bg-[#25D366] shadow-xl shadow-emerald-500/30 transition hover:scale-105">
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="white"><path d="M12 2a10 10 0 0 0-8.6 15l-1.3 4.8 4.9-1.3A10 10 0 1 0 12 2Zm5.3 14.1c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .1-1.7-.1-.4-.1-.9-.3-1.6-.6-2.7-1.2-4.5-4-4.6-4.2-.1-.2-1.1-1.5-1.1-2.8 0-1.3.7-2 .9-2.2.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 1.9c.1.2.1.4 0 .5l-.4.6c-.2.2-.3.4-.1.7.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.4 2.4 1.5.2.1.4.1.6-.1l.7-.9c.2-.2.4-.2.6-.1l1.8.9c.2.1.4.2.4.3.1.2.1.7-.1 1.2Z"/></svg>
+     style="position:fixed;bottom:1.25rem;left:1.25rem;z-index:40;display:grid;place-items:center;width:52px;height:52px;border-radius:999px;background:#25d366;box-shadow:0 8px 24px rgba(37,211,102,.35);transition:transform .2s;text-decoration:none"
+     onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="white"><path d="M12 2a10 10 0 0 0-8.6 15l-1.3 4.8 4.9-1.3A10 10 0 1 0 12 2Zm5.3 14.1c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .1-1.7-.1-.4-.1-.9-.3-1.6-.6-2.7-1.2-4.5-4-4.6-4.2-.1-.2-1.1-1.5-1.1-2.8 0-1.3.7-2 .9-2.2.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 1.9c.1.2.1.4 0 .5l-.4.6c-.2.2-.3.4-.1.7.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.4 2.4 1.5.2.1.4.1.6-.1l.7-.9c.2-.2.4-.2.6-.1l1.8.9c.2.1.4.2.4.3.1.2.1.7-.1 1.2Z"/></svg>
   </a>
 
-  <!-- TOAST social-proof "Produk Terjual" (di ATAS tombol WA, kiri — tidak menabrak) -->
-  <div id="saleToast" class="fixed bottom-24 left-4 z-30 w-[min(88vw,20rem)] rounded-2xl border border-white/10 bg-[#0b0b18]/95 p-3.5 shadow-2xl backdrop-blur transition-transform duration-500" style="transform:translateY(220%)">
-    <div class="flex items-start gap-3">
-      <div id="saleIcon" class="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-indigo-500/25 to-cyan-400/20 text-2xl ring-1 ring-white/10">🛍️</div>
-      <div class="min-w-0 flex-1">
-        <div class="flex items-center justify-between">
-          <span class="text-xs font-bold text-amber-400">Produk Terjual</span>
-          <button id="saleClose" class="text-slate-500 transition hover:text-white" aria-label="Tutup">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  <!-- THEME SWITCHER (bottom-right) -->
+  <div style="position:fixed;bottom:1.25rem;right:1.25rem;z-index:40">
+    <button id="skinToggle" aria-label="Ganti tema" style="display:grid;place-items:center;width:52px;height:52px;border-radius:999px;border:1px solid var(--border);background:var(--card);box-shadow:0 4px 16px rgba(0,0,0,.3);cursor:pointer;font-size:1.2rem;transition:transform .2s" onmouseover="this.style.transform='scale(1.06)'" onmouseout="this.style.transform='scale(1)'">🎨</button>
+    <div id="skinPanel" style="display:none;position:absolute;bottom:60px;right:0;width:170px;background:var(--card);border:1px solid var(--border);border-radius:1rem;padding:.75rem;box-shadow:0 16px 40px rgba(0,0,0,.35)">
+      <div style="font-size:.72rem;font-weight:700;color:var(--muted);margin-bottom:.5rem;padding:0 .25rem">Pilih Tema</div>
+      <div style="display:flex;flex-direction:column;gap:.2rem">
+        <button class="skinOpt" data-skin="aurora" style="display:flex;align-items:center;gap:.7rem;padding:.6rem .75rem;border-radius:.7rem;border:none;background:transparent;cursor:pointer;color:var(--ink);font-size:.83rem;font-weight:600;width:100%;text-align:left;transition:background .15s" onmouseover="this.style.background='rgba(255,255,255,.06)'" onmouseout="this.style.background='transparent'"><span class="skin-dot" style="background:linear-gradient(135deg,#6d5aff,#26d0ce)"></span>Aurora</button>
+        <button class="skinOpt" data-skin="royal" style="display:flex;align-items:center;gap:.7rem;padding:.6rem .75rem;border-radius:.7rem;border:none;background:transparent;cursor:pointer;color:var(--ink);font-size:.83rem;font-weight:600;width:100%;text-align:left;transition:background .15s" onmouseover="this.style.background='rgba(255,255,255,.06)'" onmouseout="this.style.background='transparent'"><span class="skin-dot" style="background:linear-gradient(135deg,#5a75ff,#a78bfa)"></span>Royal</button>
+        <button class="skinOpt" data-skin="ocean" style="display:flex;align-items:center;gap:.7rem;padding:.6rem .75rem;border-radius:.7rem;border:none;background:transparent;cursor:pointer;color:var(--ink);font-size:.83rem;font-weight:600;width:100%;text-align:left;transition:background .15s" onmouseover="this.style.background='rgba(255,255,255,.06)'" onmouseout="this.style.background='transparent'"><span class="skin-dot" style="background:linear-gradient(135deg,#38bdf8,#5a75ff)"></span>Ocean</button>
+        <button class="skinOpt" data-skin="emerald" style="display:flex;align-items:center;gap:.7rem;padding:.6rem .75rem;border-radius:.7rem;border:none;background:transparent;cursor:pointer;color:var(--ink);font-size:.83rem;font-weight:600;width:100%;text-align:left;transition:background .15s" onmouseover="this.style.background='rgba(255,255,255,.06)'" onmouseout="this.style.background='transparent'"><span class="skin-dot" style="background:linear-gradient(135deg,#10b981,#34d399)"></span>Emerald</button>
+        <button class="skinOpt" data-skin="sunset" style="display:flex;align-items:center;gap:.7rem;padding:.6rem .75rem;border-radius:.7rem;border:none;background:transparent;cursor:pointer;color:var(--ink);font-size:.83rem;font-weight:600;width:100%;text-align:left;transition:background .15s" onmouseover="this.style.background='rgba(255,255,255,.06)'" onmouseout="this.style.background='transparent'"><span class="skin-dot" style="background:linear-gradient(135deg,#fb7185,#fbbf24)"></span>Sunset</button>
+        <button class="skinOpt" data-skin="candy" style="display:flex;align-items:center;gap:.7rem;padding:.6rem .75rem;border-radius:.7rem;border:none;background:transparent;cursor:pointer;color:var(--ink);font-size:.83rem;font-weight:600;width:100%;text-align:left;transition:background .15s" onmouseover="this.style.background='rgba(255,255,255,.06)'" onmouseout="this.style.background='transparent'"><span class="skin-dot" style="background:linear-gradient(135deg,#e879f9,#fb7185)"></span>Candy</button>
+        <button class="skinOpt" data-skin="grape" style="display:flex;align-items:center;gap:.7rem;padding:.6rem .75rem;border-radius:.7rem;border:none;background:transparent;cursor:pointer;color:var(--ink);font-size:.83rem;font-weight:600;width:100%;text-align:left;transition:background .15s" onmouseover="this.style.background='rgba(255,255,255,.06)'" onmouseout="this.style.background='transparent'"><span class="skin-dot" style="background:linear-gradient(135deg,#8b5cf6,#ec4899)"></span>Grape</button>
+        <button class="skinOpt" data-skin="gold" style="display:flex;align-items:center;gap:.7rem;padding:.6rem .75rem;border-radius:.7rem;border:none;background:transparent;cursor:pointer;color:var(--ink);font-size:.83rem;font-weight:600;width:100%;text-align:left;transition:background .15s" onmouseover="this.style.background='rgba(255,255,255,.06)'" onmouseout="this.style.background='transparent'"><span class="skin-dot" style="background:linear-gradient(135deg,#f59e0b,#f97316)"></span>Gold</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST "Produk Terjual" -->
+  <div id="saleToast" style="position:fixed;bottom:5.5rem;left:1rem;z-index:30;width:min(88vw,19rem);background:var(--card);border:1px solid var(--border);border-radius:1rem;padding:1rem;box-shadow:0 12px 32px rgba(0,0,0,.35);transition:transform .5s cubic-bezier(.4,0,.2,1);transform:translateY(220%)">
+    <div style="display:flex;align-items:flex-start;gap:.75rem">
+      <div id="saleIcon" style="display:grid;place-items:center;width:40px;height:40px;border-radius:.75rem;background:rgba(255,255,255,.05);font-size:1.3rem;flex-shrink:0">🛍️</div>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.25rem">
+          <span style="font-size:.72rem;font-weight:700;color:#f59e0b">Produk Terjual</span>
+          <button id="saleClose" style="border:none;background:transparent;cursor:pointer;color:var(--muted);padding:0;display:grid;place-items:center">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
           </button>
         </div>
-        <p class="mt-0.5 text-sm leading-snug text-slate-200"><span id="saleMsg"></span></p>
-        <p class="mt-1 flex items-center gap-1 text-[11px] text-slate-500">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="#3b82f6"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3Zm-1.2 13.2-3-3 1.4-1.4 1.6 1.6 3.6-3.6 1.4 1.4-5 5Z"/></svg>
-          Diverifikasi oleh <span id="saleStore">Rayzell Store PPOB</span>
+        <p id="saleMsg" style="font-size:.82rem;color:var(--ink);margin:0 0 .3rem;line-height:1.4"></p>
+        <p style="font-size:.72rem;color:var(--muted);margin:0;display:flex;align-items:center;gap:.3rem">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="#3b82f6"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3Zm-1.2 13.2-3-3 1.4-1.4 1.6 1.6 3.6-3.6 1.4 1.4-5 5Z"/></svg>
+          Diverifikasi <span id="saleStore">Rayzell Store PPOB</span>
         </p>
       </div>
     </div>
   </div>
 
+  <style>
+    /* responsive helpers */
+    @media(min-width:640px){ .sm-flex{display:flex!important} .sm-hide{display:none!important} #navMasuk{display:inline-flex!important} }
+    @media(min-width:768px){ #heroGrid{grid-template-columns:1.05fr .95fr} #featGrid{grid-template-columns:repeat(4,1fr)} #kontakGrid{grid-template-columns:repeat(2,1fr)} }
+    @media(min-width:640px){ #grid{grid-template-columns:repeat(3,1fr)} }
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+  </style>
+
   <script>
-    const $ = (s) => document.querySelector(s);
+    const $ = s => document.querySelector(s);
     document.getElementById('year').textContent = new Date().getFullYear();
 
-    // ===== THEME SWITCHER (tema aksen + mode terang/gelap) =====
-    (function themeInit() {
-      const VALID = ['aurora', 'royal', 'ocean', 'emerald', 'sunset', 'candy', 'grape', 'gold'];
-      const root = document.documentElement;
-      const saved = localStorage.getItem('skin');
-      root.setAttribute('data-skin', VALID.includes(saved) ? saved : 'aurora');
-      const savedMode = localStorage.getItem('mode') === 'light' ? 'light' : 'dark';
-      root.setAttribute('data-mode', savedMode);
+    // ===== TEMA + MODE =====
+    (function(){
+      const SKINS=['aurora','royal','ocean','emerald','sunset','candy','grape','gold'];
+      const root=document.documentElement;
+      const savedSkin=localStorage.getItem('skin');
+      root.setAttribute('data-skin',SKINS.includes(savedSkin)?savedSkin:'aurora');
+      root.setAttribute('data-mode',localStorage.getItem('mode')==='light'?'light':'dark');
 
-      const panel = document.getElementById('skinPanel');
-      const toggle = document.getElementById('skinToggle');
-      const modeBtn = document.getElementById('modeToggle');
-      function markActive() {
-        const cur = root.getAttribute('data-skin');
-        document.querySelectorAll('.skinOpt .skin-dot').forEach((d) => d.setAttribute('data-active', d.parentElement.dataset.skin === cur ? '1' : '0'));
-      }
-      function syncModeIcon() { if (modeBtn) modeBtn.textContent = root.getAttribute('data-mode') === 'light' ? '☀️' : '🌙'; }
-      markActive(); syncModeIcon();
+      const panel=$('#skinPanel'), toggle=$('#skinToggle'), modeBtn=$('#modeToggle');
+      function markActive(){const cur=root.getAttribute('data-skin');document.querySelectorAll('.skinOpt .skin-dot').forEach(d=>d.setAttribute('data-active',d.parentElement.dataset.skin===cur?'1':'0'));}
+      function syncMode(){if(modeBtn)modeBtn.textContent=root.getAttribute('data-mode')==='light'?'☀️':'🌙';syncDrawerMode();}
+      markActive();syncMode();
 
-      if (toggle) {
-        toggle.addEventListener('click', (e) => { e.stopPropagation(); panel.classList.toggle('hidden'); });
-        document.addEventListener('click', (e) => { if (!panel.contains(e.target) && e.target !== toggle) panel.classList.add('hidden'); });
+      if(toggle){
+        toggle.addEventListener('click',e=>{e.stopPropagation();panel.style.display=panel.style.display==='none'||!panel.style.display?'block':'none';});
+        document.addEventListener('click',e=>{if(!panel.contains(e.target)&&e.target!==toggle)panel.style.display='none';});
       }
-      document.querySelectorAll('.skinOpt').forEach((b) => b.addEventListener('click', () => {
-        root.setAttribute('data-skin', b.dataset.skin);
-        localStorage.setItem('skin', b.dataset.skin);
-        markActive();
-        panel.classList.add('hidden');
+      document.querySelectorAll('.skinOpt').forEach(b=>b.addEventListener('click',()=>{
+        root.setAttribute('data-skin',b.dataset.skin);localStorage.setItem('skin',b.dataset.skin);markActive();if(panel)panel.style.display='none';
       }));
-      if (modeBtn) modeBtn.addEventListener('click', () => {
-        const next = root.getAttribute('data-mode') === 'light' ? 'dark' : 'light';
-        root.setAttribute('data-mode', next);
-        localStorage.setItem('mode', next);
-        syncModeIcon();
-        if (window.syncDrawerMode) window.syncDrawerMode();
+      if(modeBtn)modeBtn.addEventListener('click',()=>{
+        const next=root.getAttribute('data-mode')==='light'?'dark':'light';
+        root.setAttribute('data-mode',next);localStorage.setItem('mode',next);syncMode();
       });
+
+      window.syncDrawerMode=function(){
+        const light=root.getAttribute('data-mode')==='light';
+        const ic=$('#drawerModeIcon'),lb=$('#drawerModeLabel');
+        if(ic)ic.textContent=light?'☀️':'🌙';if(lb)lb.textContent=light?'Mode Terang':'Mode Gelap';
+      };
+    })();
+
+    // ===== DRAWER =====
+    (function(){
+      const overlay=$('#drawerOverlay'),drawer=$('#drawer'),open=$('#navToggle'),close=$('#drawerClose');
+      if(!overlay||!drawer||!open)return;
+      function show(){overlay.style.display='block';drawer.style.display='flex';requestAnimationFrame(()=>drawer.style.transform='translateX(0)');}
+      function hide(){drawer.style.transform='translateX(100%)';overlay.style.display='none';setTimeout(()=>drawer.style.display='none',300);}
+      open.addEventListener('click',show);
+      if(close)close.addEventListener('click',hide);
+      overlay.addEventListener('click',hide);
+      document.querySelectorAll('.drawer-link').forEach(a=>a.addEventListener('click',hide));
+      const dm=$('#drawerMode');
+      if(dm)dm.addEventListener('click',()=>{$('#modeToggle').click();});
     })();
 
     // ===== PROMO SLIDER =====
-    (function promoInit() {
-      const track = document.getElementById('promoSlides');
-      const dots = Array.from(document.querySelectorAll('.dot'));
-      if (!track || !dots.length) return;
-      let i = 0; const n = dots.length; let timer = null;
-      function go(idx) {
-        i = (idx + n) % n;
-        track.style.transform = 'translateX(-' + (i * 100) + '%)';
-        dots.forEach((d, k) => d.setAttribute('data-active', k === i ? '1' : '0'));
-      }
-      function start() { stop(); timer = setInterval(() => go(i + 1), 4500); }
-      function stop() { if (timer) clearInterval(timer); }
-      dots.forEach((d) => d.addEventListener('click', () => { go(Number(d.dataset.i)); start(); }));
+    (function(){
+      const track=$('#promoSlides'),dots=Array.from(document.querySelectorAll('.s-dot'));
+      if(!track||!dots.length)return;
+      let i=0,n=dots.length,timer;
+      function go(idx){i=(idx+n)%n;track.style.transform='translateX(-'+i*100+'%)';dots.forEach((d,k)=>d.setAttribute('data-active',k===i?'1':'0'));}
+      function start(){stop();timer=setInterval(()=>go(i+1),4500);}
+      function stop(){clearInterval(timer);}
+      dots.forEach(d=>d.addEventListener('click',()=>{go(+d.dataset.i);start();}));
       start();
     })();
 
-    function iconFor(cat) {
-      const c = (cat || '').toLowerCase();
-      if (c.includes('perdana') || c.includes('aktivasi') || c.includes('kartu')) return '📶';
-      if (c.includes('masa aktif') || c.includes('masa') || c.includes('aktif')) return '📅';
-      if (c.includes('pulsa')) return '📱';
-      if (c.includes('data') || c.includes('internet') || c.includes('kuota') || c.includes('wifi')) return '🌐';
-      if (c.includes('pln') || c.includes('listrik') || c.includes('token')) return '⚡';
-      if (c.includes('game') || c.includes('voucher game')) return '🎮';
-      if (c.includes('dana') || c.includes('ovo') || c.includes('gopay') || c.includes('shopee') || c.includes('emoney') || c.includes('e-money') || c.includes('e-wallet') || c.includes('ewallet') || c.includes('saldo') || c.includes('uang')) return '💳';
-      if (c.includes('voucher')) return '🎟️';
-      if (c.includes('tv') || c.includes('streaming') || c.includes('netflix') || c.includes('youtube')) return '📺';
-      if (c.includes('telepon') || c.includes('sms') || c.includes('nelpon')) return '☎️';
-      if (c.includes('roaming') || c.includes('haji') || c.includes('umroh') || c.includes('luar negeri')) return '✈️';
-      if (c.includes('bpjs') || c.includes('kesehatan') || c.includes('asuransi')) return '🏥';
-      if (c.includes('pdam') || c.includes('air')) return '🚰';
-      if (c.includes('bundling') || c.includes('paket') || c.includes('bonus')) return '🎁';
-      if (c.includes('pln') || c.includes('tagihan') || c.includes('bayar')) return '🧾';
-      return '🛍️';
+    // ===== TOAST =====
+    (function(){
+      const toast=$('#saleToast'),closeBtn=$('#saleClose');if(!toast)return;
+      let timer,hideTimer,stopped=false;
+      const NAMES=['budi','rian','siti','dewi','andi','putri','eko','fajar','nadia'];
+      const PRODUK=[{i:'📱',t:'Pulsa'},{i:'🌐',t:'Paket Data'},{i:'⚡',t:'Token PLN'},{i:'🎮',t:'Voucher Game'},{i:'💳',t:'Saldo E-Wallet'}];
+      const rand=a=>a[Math.floor(Math.random()*a.length)];
+      const mask=n=>n[0]+'***'+n.slice(-1);
+      function show(){
+        const p=rand(PRODUK),nm=rand(NAMES);
+        $('#saleIcon').textContent=p.i;
+        $('#saleMsg').innerHTML='<b>'+mask(nm)+'@gmail.com</b> baru saja top up <b>'+p.t+'</b>';
+        toast.style.transform='translateY(0)';
+        hideTimer=setTimeout(hide,5000);
+      }
+      function hide(){toast.style.transform='translateY(220%)';if(!stopped)timer=setTimeout(show,8000+Math.random()*6000);}
+      if(closeBtn)closeBtn.addEventListener('click',()=>{stopped=true;clearTimeout(timer);clearTimeout(hideTimer);toast.style.transform='translateY(220%)';});
+      timer=setTimeout(show,5000);
+    })();
+
+    // ===== iconFor =====
+    function iconFor(cat){
+      const c=(cat||'').toLowerCase();
+      if(c.includes('perdana')||c.includes('aktivasi')||c.includes('kartu'))return'📶';
+      if(c.includes('masa')||c.includes('aktif'))return'📅';
+      if(c.includes('pulsa'))return'📱';
+      if(c.includes('data')||c.includes('kuota')||c.includes('internet'))return'🌐';
+      if(c.includes('pln')||c.includes('listrik')||c.includes('token'))return'⚡';
+      if(c.includes('game'))return'🎮';
+      if(c.includes('dana')||c.includes('ovo')||c.includes('gopay')||c.includes('emoney')||c.includes('e-money')||c.includes('ewallet')||c.includes('saldo'))return'💳';
+      if(c.includes('voucher'))return'🎟️';
+      if(c.includes('tv')||c.includes('streaming'))return'📺';
+      if(c.includes('bpjs')||c.includes('kesehatan'))return'🏥';
+      if(c.includes('pdam')||c.includes('air'))return'🚰';
+      return'🛍️';
     }
 
-    fetch('/api/info').then(r => r.json()).then(({ data }) => {
-      if (!data) return;
-      $('#brand').textContent = data.store;
-      $('#brandFoot').textContent = data.store;
-      document.title = data.store + ' — Pulsa, Paket Data, PLN, Game, E-Money';
-      $('#cta-tg').href = data.botLink;
-      $('#wa').href = data.waLink;
-      $('#tg').href = data.tgLink;
-      var waFab = $('#waFab'); if (waFab) waFab.href = data.waLink;
-      var saleStore = $('#saleStore'); if (saleStore) saleStore.textContent = data.store;
-    }).catch(() => {});
+    // ===== API =====
+    fetch('/api/info').then(r=>r.json()).then(({data})=>{
+      if(!data)return;
+      const set=(id,v)=>{const el=$(id);if(el)el.textContent=v;};
+      set('#brand',data.store);set('#brandFoot',data.store);
+      document.title=data.store+' — Pulsa, Paket Data, PLN, Game, E-Money';
+      if($('#cta-tg'))$('#cta-tg').href=data.botLink;
+      if($('#wa'))$('#wa').href=data.waLink;
+      if($('#tg'))$('#tg').href=data.tgLink;
+      if($('#waFab'))$('#waFab').href=data.waLink;
+      if($('#saleStore'))$('#saleStore').textContent=data.store;
+    }).catch(()=>{});
 
-    // ===== DRAWER MENU (mobile) =====
-    (function drawerInit() {
-      const overlay = document.getElementById('drawerOverlay');
-      const drawer = document.getElementById('drawer');
-      const openBtn = document.getElementById('navToggle');
-      const closeBtn = document.getElementById('drawerClose');
-      if (!overlay || !drawer || !openBtn) return;
-      function open() {
-        overlay.classList.remove('hidden');
-        drawer.classList.remove('hidden');
-        drawer.classList.add('flex');
-        requestAnimationFrame(() => drawer.classList.remove('translate-x-full'));
-      }
-      function close() {
-        drawer.classList.add('translate-x-full');
-        overlay.classList.add('hidden');
-        setTimeout(() => { drawer.classList.add('hidden'); drawer.classList.remove('flex'); }, 300);
-      }
-      openBtn.addEventListener('click', open);
-      if (closeBtn) closeBtn.addEventListener('click', close);
-      overlay.addEventListener('click', close);
-      document.querySelectorAll('.drawer-link').forEach((a) => a.addEventListener('click', close));
-      // tombol mode di dalam drawer -> samakan dengan modeToggle
-      const dMode = document.getElementById('drawerMode');
-      if (dMode) dMode.addEventListener('click', () => {
-        const mb = document.getElementById('modeToggle'); if (mb) mb.click();
-        syncDrawerMode();
-      });
-      window.syncDrawerMode = function () {
-        const isLight = document.documentElement.getAttribute('data-mode') === 'light';
-        const ic = document.getElementById('drawerModeIcon'); const lb = document.getElementById('drawerModeLabel');
-        if (ic) ic.textContent = isLight ? '☀️' : '🌙';
-        if (lb) lb.textContent = isLight ? 'Mode Terang' : 'Mode Gelap';
-      };
-      syncDrawerMode();
-    })();
-
-    // ===== TOAST social-proof "Produk Terjual" =====
-    (function saleToastInit() {
-      const toast = document.getElementById('saleToast');
-      const closeBtn = document.getElementById('saleClose');
-      if (!toast) return;
-      let timer = null, hideTimer = null, stopped = false;
-      const NAMES = ['budi','rian','siti','agus','dewi','andi','putri','eko','rina','fajar','yusuf','intan','wawan','nadia','dimas','lia'];
-      const PRODUK = [
-        { i:'📱', t:'Pulsa' }, { i:'🌐', t:'Paket Data' }, { i:'⚡', t:'Token PLN' },
-        { i:'🎮', t:'Voucher Game' }, { i:'💳', t:'Saldo E-Wallet' }, { i:'📶', t:'Kartu Perdana' },
-      ];
-      function rand(a){ return a[Math.floor(Math.random()*a.length)]; }
-      function maskName(n){ return n[0] + '***' + n.slice(-1); }
-      function show() {
-        const p = rand(PRODUK); const name = rand(NAMES);
-        document.getElementById('saleIcon').textContent = p.i;
-        document.getElementById('saleMsg').innerHTML = '<b>' + maskName(name) + '@gmail.com</b> baru saja top up <b>' + p.t + '</b>';
-        toast.style.transform = 'translateY(0)';
-        hideTimer = setTimeout(hide, 5000);
-      }
-      function hide() {
-        toast.style.transform = 'translateY(220%)';
-        if (!stopped) timer = setTimeout(show, 9000 + Math.random() * 6000);
-      }
-      if (closeBtn) closeBtn.addEventListener('click', () => { stopped = true; clearTimeout(timer); clearTimeout(hideTimer); toast.style.transform='translateY(220%)'; });
-      timer = setTimeout(show, 4000);
-    })();
-
-    fetch('/api/products').then(r => r.json()).then(({ data }) => {
-      const grid = $('#grid');
-      if (!data || !data.length) {
-        grid.innerHTML = '<div class="col-span-full card p-6 text-center text-slate-400">Produk belum tersedia. Coba lagi nanti.</div>';
-        return;
-      }
-      // jumlah kategori asli (bukan angka statis)
-      const statCat = $('#statCat');
-      if (statCat) statCat.textContent = data.length;
-      grid.innerHTML = data.map(d => `
-        <div class="group card p-5">
-          <div class="grid h-12 w-12 place-items-center rounded-xl bg-gradient-to-br from-indigo-500/25 to-cyan-400/20 text-2xl ring-1 ring-white/10">${iconFor(d.category)}</div>
-          <div class="mt-4 font-semibold">${d.category}</div>
-          <div class="text-xs text-slate-400">${d.count} produk</div>
-          <div class="mt-2 text-sm text-slate-300">Mulai <span class="font-semibold text-white">${d.startFromText}</span></div>
-          <a href="/app.html"
-             class="btn-grad mt-4 block rounded-lg px-3 py-2 text-center text-sm font-semibold text-white">
-            Beli
-          </a>
-        </div>`).join('');
-    }).catch(() => {});
-
-    // Catatan: fitur Cek Transaksi kini ada di halaman terpisah /cek.html
+    fetch('/api/products').then(r=>r.json()).then(({data})=>{
+      const grid=$('#grid');if(!grid)return;
+      if(!data||!data.length){grid.innerHTML='<div class="card" style="padding:1.5rem;text-align:center;color:var(--muted);grid-column:1/-1">Produk belum tersedia.</div>';return;}
+      const sc=$('#statCat');if(sc)sc.textContent=data.length;
+      grid.innerHTML=data.map(d=>`<div class="card card-lift" style="padding:1.25rem">
+        <div style="display:grid;place-items:center;width:44px;height:44px;border-radius:.8rem;background:rgba(255,255,255,.05);font-size:1.4rem;margin-bottom:.85rem">${iconFor(d.category)}</div>
+        <div style="font-weight:700;font-size:.9rem;margin-bottom:.2rem">${d.category}</div>
+        <div style="font-size:.75rem;color:var(--muted);margin-bottom:.3rem">${d.count} produk</div>
+        <div style="font-size:.8rem;margin-bottom:.85rem">Mulai <b>${d.startFromText}</b></div>
+        <a href="/app.html" class="btn-main" style="padding:.55rem 1rem;font-size:.8rem;justify-content:center;text-decoration:none;border-radius:.7rem">Beli</a>
+      </div>`).join('');
+    }).catch(()=>{});
   </script>
 </body>
 </html>
