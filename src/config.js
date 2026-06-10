@@ -71,6 +71,18 @@ const config = {
     adminContact: process.env.ADMIN_CONTACT || '',
   },
 
+  // Login Google (OAuth2). Kosong = tombol Google nonaktif (no-op).
+  // Secret HANYA di .env. redirectUri harus sama persis dgn yang didaftarkan
+  // di Google Cloud Console (mis. https://domain/api/auth/google/callback).
+  google: {
+    clientId: process.env.GOOGLE_CLIENT_ID || '',
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
+    redirectUri: process.env.GOOGLE_REDIRECT_URI || '',
+    get enabled() {
+      return !!(this.clientId && this.clientSecret && this.redirectUri);
+    },
+  },
+
   // Grup notifikasi transaksi. Kosong = tidak kirim ke grup tsb.
   //  - privateId: detail LENGKAP (monitoring admin)
   //  - publicId : versi DISENSOR, hanya transaksi sukses (social proof)
