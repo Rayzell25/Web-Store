@@ -11,6 +11,7 @@
 const { config } = require('../config');
 const logger = require('../utils/logger');
 const { rupiah, escapeHtml, tanggal, LINE } = require('../utils/format');
+const { setTrxMsg, getTrxMsg, clearTrxMsg } = require('../utils/session');
 
 let botRef = null;
 
@@ -29,18 +30,40 @@ function maskTarget(value) {
   return `${head}${stars}${tail}`;
 }
 
-function send(chatId, text) {
-  if (!botRef || !chatId) return Promise.resolve();
-  return botRef
-    .sendMessage(chatId, text, { parse_mode: 'HTML', disable_web_page_preview: true })
-    .catch((e) => logger.warn('groupNotify gagal kirim:', e && e.message));
+/** Kirim pesan; kembalikan message_id bila sukses, null bila gagal. */
+async function send(chatId, text) {
+  if (!botRef || !chatId) return null;
+  try {
+    const m = await botRef.sendMessage(chatId, text, { parse_mode: 'HTML', disable_web_page_preview: true });
+    return m && m.message_id ? m.message_id : null;
+  } catch (e) {
+    logger.warn('groupNotify gagal kirim:', e && e.message);
+    return null;
+  }
+}
+
+/** Edit pesan; true bila berhasil (atau "not modified"). */
+async function edit(chatId, messageId, text) {
+  if (!botRef || !chatId || !messageId) return false;
+  try {
+    await botRef.editMessageText(text, {
+      chat_id: chatId, message_id: messageId,
+      parse_mode: 'HTML', disable_web_page_preview: true,
+    });
+    return true;
+  } catch (e) {
+    return String((e && e.message) || '').toLowerCase().includes('not modified');
+  }
 }
 
 /**
- * Kirim notif transaksi ke grup.
+ * Kirim/Update notif transaksi ke grup.
  * @param {object} info { status, productName, target, price, refId, sn, userName, userId }
+ *
+ * Grup PRIVATE: pesan PENDING disimpan (per refId) lalu DI-EDIT saat final
+ * (Sukses/Gagal) -> tidak menumpuk. Grup PUBLIC: hanya 1 pesan saat SUKSES.
  */
-function notifyTrx(info = {}) {
+async function notifyTrx(info = {}) {
   try {
     const {
       status = 'Sukses',
@@ -54,9 +77,10 @@ function notifyTrx(info = {}) {
     } = info;
 
     const icon = status === 'Sukses' ? '✅' : status === 'Gagal' ? '❌' : '⏳';
+    const isFinal = status === 'Sukses' || status === 'Gagal';
     const groups = config.groups || {};
 
-    // ---- Grup PRIVATE: lengkap ----
+    // ---- Grup PRIVATE: lengkap, 1 pesan yang di-edit dari Pending -> final ----
     if (groups.privateId) {
       const detail =
         `Produk : ${productName}\n` +
@@ -68,20 +92,27 @@ function notifyTrx(info = {}) {
           ? `User   : ${userName || '-'}${userId ? ' (' + userId + ')' : ''}\n`
           : '') +
         `Waktu  : ${tanggal(Date.now())}`;
-      send(
-        groups.privateId,
-        `<b>TRANSAKSI ${String(status).toUpperCase()}</b> ${icon}\n${LINE}\n<code>${escapeHtml(detail)}</code>`
-      );
+      const text = `<b>TRANSAKSI ${String(status).toUpperCase()}</b> ${icon}\n${LINE}\n<code>${escapeHtml(detail)}</code>`;
+
+      const prev = await getTrxMsg(refId, 'group').catch(() => null);
+      if (prev && prev.messageId) {
+        const ok = await edit(prev.chatId, prev.messageId, text);
+        if (!ok) await send(groups.privateId, text); // fallback kirim baru
+      } else {
+        const mid = await send(groups.privateId, text);
+        if (mid && !isFinal) await setTrxMsg(refId, 'group', groups.privateId, mid).catch(() => {});
+      }
+      if (isFinal) await clearTrxMsg(refId, 'group').catch(() => {});
     }
 
-    // ---- Grup PUBLIC: disensor, hanya yang SUKSES ----
+    // ---- Grup PUBLIC: disensor, hanya yang SUKSES (1 pesan) ----
     if (groups.publicId && status === 'Sukses') {
       const detail =
         `Produk : ${productName}\n` +
         `Tujuan : ${maskTarget(target)}\n` +
         `Harga  : ${rupiah(price)}\n` +
         `Waktu  : ${tanggal(Date.now())}`;
-      send(
+      await send(
         groups.publicId,
         `<b>TRANSAKSI BERHASIL</b> ${icon}\n${LINE}\n<code>${escapeHtml(detail)}</code>\n\n` +
         `Terima kasih sudah order di <b>${escapeHtml(config.store.name)}</b>! 🙌`

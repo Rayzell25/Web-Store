@@ -113,4 +113,48 @@ async function clearLastMenu(chatId) {
   memMenu.delete(Number(chatId));
 }
 
-module.exports = { setState, getState, clearState, claimState, setLastMenu, getLastMenu, clearLastMenu };
+// ===== tracking pesan transaksi per ref_id =====
+// Simpan { chatId, messageId } pesan "PENDING" (di DM user & grup private) supaya
+// saat status final (Sukses/Gagal) pesannya bisa DI-EDIT, bukan kirim baru.
+// TTL 1 jam: transaksi prabayar pasti final jauh sebelum itu.
+const TRXMSG_TTL_SEC = 60 * 60;
+const memTrxMsg = new Map(); // ref_id -> { value, expires }
+
+function trxMsgKey(refId, scope) {
+  return `trxmsg:${scope}:${refId}`;
+}
+
+async function setTrxMsg(refId, scope, chatId, messageId) {
+  if (!refId || !scope || !chatId || !messageId) return;
+  const payload = JSON.stringify({ chatId, messageId });
+  const redis = getClient();
+  if (redis) {
+    await redis.set(trxMsgKey(refId, scope), payload, { EX: TRXMSG_TTL_SEC });
+    return;
+  }
+  memTrxMsg.set(trxMsgKey(refId, scope), { value: payload, expires: Date.now() + TRXMSG_TTL_SEC * 1000 });
+}
+
+async function getTrxMsg(refId, scope) {
+  const redis = getClient();
+  if (redis) {
+    const raw = await redis.get(trxMsgKey(refId, scope));
+    return raw ? JSON.parse(raw) : null;
+  }
+  const s = memTrxMsg.get(trxMsgKey(refId, scope));
+  if (!s) return null;
+  if (Date.now() > s.expires) { memTrxMsg.delete(trxMsgKey(refId, scope)); return null; }
+  return JSON.parse(s.value);
+}
+
+async function clearTrxMsg(refId, scope) {
+  const redis = getClient();
+  if (redis) { await redis.del(trxMsgKey(refId, scope)); return; }
+  memTrxMsg.delete(trxMsgKey(refId, scope));
+}
+
+module.exports = {
+  setState, getState, clearState, claimState,
+  setLastMenu, getLastMenu, clearLastMenu,
+  setTrxMsg, getTrxMsg, clearTrxMsg,
+};

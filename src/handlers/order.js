@@ -16,7 +16,7 @@ const qrisService = require('../services/qrisService');
 const groupNotify = require('../services/groupNotify');
 const { config } = require('../config');
 const { tokenFor, valueOf } = require('../utils/registry');
-const { setState, clearState, getState, claimState } = require('../utils/session');
+const { setState, clearState, getState, claimState, setTrxMsg } = require('../utils/session');
 const { gridKeyboard, backButton } = require('../keyboards/menus');
 const { rupiah, escapeHtml, trxCode, truncate, LINE } = require('../utils/format');
 const { editOrSend } = require('../utils/ui');
@@ -247,8 +247,12 @@ async function pay(bot, chatId, messageId, userId, notifyAdmins, alert) {
   groupNotify.notifyTrx({ status, productName: product.product_name, target, price: harga, refId, sn, userName: user.name, userId });
 
   // Prabayar sering balas "Pending" lalu Sukses beberapa detik kemudian.
-  // Fast-poll: percepat finalisasi (Sukses/Gagal+refund) dalam hitungan detik.
-  if (status === 'Pending') digiflazzPoller.fastPoll(refId);
+  // Simpan id pesan ini supaya saat final nanti DI-EDIT (bukan kirim chat baru),
+  // lalu fast-poll percepat finalisasi (Sukses/Gagal+refund) dalam hitungan detik.
+  if (status === 'Pending') {
+    await setTrxMsg(refId, 'dm', chatId, messageId).catch(() => {});
+    digiflazzPoller.fastPoll(refId);
+  }
 }
 
 /** Bayar order via QRIS: generate QR, kirim foto, catat untuk di-poll. */

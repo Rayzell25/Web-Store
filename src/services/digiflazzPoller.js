@@ -7,6 +7,7 @@ const trxService = require('./trxService');
 const digiflazz = require('./digiflazz');
 const userService = require('./userService');
 const groupNotify = require('./groupNotify');
+const { setTrxMsg, getTrxMsg, clearTrxMsg } = require('../utils/session');
 const { rupiah, escapeHtml, LINE } = require('../utils/format');
 
 let botRef = null;
@@ -109,17 +110,15 @@ async function claimFinalize(refId, newStatus, sn, message) {
 async function markSukses(trx, sn, message) {
   const row = await claimFinalize(trx.ref_id, 'Sukses', sn, message);
   if (!row) return; // sudah ditangani
-  try {
-    const detail =
-      `Produk : ${trx.product_name}\n` +
-      `Tujuan : ${trx.target}\n` +
-      `Harga  : ${rupiah(trx.sell_price)}\n` +
-      (sn ? `SN     : ${sn}\n` : '') +
-      `Ref    : ${trx.ref_id}`;
-    await sendMessage(trx.user_id,
-      `<b>TRANSAKSI SUKSES</b> ✅\n${LINE}\n<code>${escapeHtml(detail)}</code>` +
-      (message ? `\n${escapeHtml(message)}` : ''));
-  } catch (e) { /* user mungkin blokir bot */ }
+  const detail =
+    `Produk : ${trx.product_name}\n` +
+    `Tujuan : ${trx.target}\n` +
+    `Harga  : ${rupiah(trx.sell_price)}\n` +
+    (sn ? `SN     : ${sn}\n` : '') +
+    `Ref    : ${trx.ref_id}`;
+  await notifyUserTrx(trx.ref_id, trx.user_id,
+    `<b>TRANSAKSI SUKSES</b> ✅\n${LINE}\n<code>${escapeHtml(detail)}</code>` +
+    (message ? `\n${escapeHtml(message)}` : ''));
   notifyRef(`✅ (rekonsiliasi) ${trx.product_name} → ${trx.target} SUKSES. Ref: ${trx.ref_id}`);
   groupNotify.notifyTrx({ status: 'Sukses', productName: trx.product_name, target: trx.target, price: trx.sell_price, refId: trx.ref_id, sn, userId: trx.user_id });
 }
@@ -134,14 +133,12 @@ async function markGagalRefund(trx, message) {
   } catch (e) {
     logger.error(`reconcile refund ${trx.ref_id} gagal:`, e.message);
   }
-  try {
-    await sendMessage(trx.user_id,
-      `<b>TRANSAKSI GAGAL</b> ❌\n${LINE}\n` +
-      `${escapeHtml(message || 'Transaksi gagal di provider.')}\n` +
-      `Saldo <b>${rupiah(trx.sell_price)}</b> dikembalikan.` +
-      (newBal != null ? `\nSaldo sekarang: ${rupiah(newBal)}` : '') +
-      `\nRef: <code>${escapeHtml(trx.ref_id)}</code>`);
-  } catch (e) { /* ignore */ }
+  await notifyUserTrx(trx.ref_id, trx.user_id,
+    `<b>TRANSAKSI GAGAL</b> ❌\n${LINE}\n` +
+    `${escapeHtml(message || 'Transaksi gagal di provider.')}\n` +
+    `Saldo <b>${rupiah(trx.sell_price)}</b> dikembalikan.` +
+    (newBal != null ? `\nSaldo sekarang: ${rupiah(newBal)}` : '') +
+    `\nRef: <code>${escapeHtml(trx.ref_id)}</code>`);
   notifyRef(`❌ (rekonsiliasi) ${trx.product_name} → ${trx.target} GAGAL, refund ${rupiah(trx.sell_price)}. Ref: ${trx.ref_id}`);
   groupNotify.notifyTrx({ status: 'Gagal', productName: trx.product_name, target: trx.target, price: trx.sell_price, refId: trx.ref_id, userId: trx.user_id });
 }
@@ -159,6 +156,31 @@ async function maybeTimeoutRefund(trx) {
 function sendMessage(chatId, text) {
   if (!botRef) return Promise.resolve();
   return botRef.sendMessage(chatId, text, { parse_mode: 'HTML' }).catch(() => {});
+}
+
+/**
+ * Kirim notif transaksi ke user. Kalau ada pesan "PENDING" (DM) yang tersimpan
+ * untuk refId ini, EDIT pesan itu jadi status final supaya tidak menumpuk chat.
+ * Kalau edit gagal / tak ada pesan tersimpan -> kirim pesan baru (fallback aman).
+ */
+async function notifyUserTrx(refId, userId, text) {
+  if (!botRef) return;
+  const prev = await getTrxMsg(refId, 'dm').catch(() => null);
+  if (prev && prev.chatId && prev.messageId) {
+    try {
+      await botRef.editMessageText(text, {
+        chat_id: prev.chatId, message_id: prev.messageId, parse_mode: 'HTML',
+      });
+      await clearTrxMsg(refId, 'dm').catch(() => {});
+      return;
+    } catch (e) {
+      const m = String((e && e.message) || '').toLowerCase();
+      if (m.includes('not modified')) { await clearTrxMsg(refId, 'dm').catch(() => {}); return; }
+      // gagal edit (mis. pesan dihapus) -> fallback kirim baru
+    }
+  }
+  await clearTrxMsg(refId, 'dm').catch(() => {});
+  await sendMessage(userId, text);
 }
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
