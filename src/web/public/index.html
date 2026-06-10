@@ -56,6 +56,17 @@
     .fade-up { opacity:0; transform:translateY(16px); animation:fu .7s cubic-bezier(.2,.7,.2,1) forwards; }
     .fade-up.d1{animation-delay:.08s}.fade-up.d2{animation-delay:.16s}.fade-up.d3{animation-delay:.24s}.fade-up.d4{animation-delay:.32s}
     @keyframes fu { to { opacity:1; transform:none; } }
+    @keyframes floaty { 0%,100%{ transform:translateY(0) } 50%{ transform:translateY(-10px) } }
+
+    /* promo slider */
+    .slides { display:flex; transition:transform .6s cubic-bezier(.6,.05,.2,1); }
+    .slide { min-width:100%; }
+    .dot { width:.5rem; height:.5rem; border-radius:9999px; background:rgba(255,255,255,.35); transition:width .3s, background .3s; }
+    .dot[data-active="1"] { width:1.5rem; background:linear-gradient(90deg,var(--a1),var(--a2)); }
+    /* marquee brand chips */
+    .marquee { display:flex; gap:.75rem; width:max-content; animation:scrollx 26s linear infinite; }
+    @keyframes scrollx { to { transform:translateX(-50%); } }
+    .chip { white-space:nowrap; }
 
     .gradient-text { background:linear-gradient(100deg,var(--a1),var(--a2)); -webkit-background-clip:text; background-clip:text; color:transparent; }
     .btn-grad { background:linear-gradient(100deg,var(--a1),var(--a2)); background-size:160% 100%; transition:background-position .5s, transform .2s, box-shadow .3s; }
@@ -131,10 +142,14 @@
     <header class="sticky top-0 z-30 border-b border-white/5 bg-[#070711]/70 backdrop-blur-xl">
       <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-3.5 sm:px-5 sm:py-4">
         <a href="#" class="flex min-w-0 items-center gap-2.5">
-          <span class="logo-grad grid h-9 w-9 shrink-0 place-items-center rounded-2xl shadow-lg shadow-indigo-500/40 sm:h-10 sm:w-10">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z" fill="white"/></svg>
+          <span class="logo-grad relative grid h-10 w-10 shrink-0 place-items-center rounded-[0.9rem] shadow-lg shadow-indigo-500/40 sm:h-11 sm:w-11">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M13 2.5 5 13.2c-.3.4 0 1 .5 1H10l-1.2 6.6c-.1.7.8 1.1 1.3.5L19 10.3c.3-.4 0-1-.5-1H14l1.2-6.3c.1-.7-.8-1.1-1.2-.5Z" fill="white"/></svg>
+            <span class="absolute inset-0 rounded-[0.9rem] ring-1 ring-white/25"></span>
           </span>
-          <span class="truncate font-display text-sm font-bold tracking-tight gradient-text sm:text-base" id="brand">RAYZELL STORE PPOB</span>
+          <span class="flex min-w-0 flex-col leading-none">
+            <span class="truncate font-display text-sm font-extrabold tracking-tight gradient-text sm:text-[15px]" id="brand">RAYZELL STORE</span>
+            <span class="text-[9px] font-semibold uppercase tracking-[0.25em] text-slate-500">PPOB · DIGITAL</span>
+          </span>
         </a>
         <div class="flex items-center gap-2 sm:gap-6">
           <nav class="hidden gap-7 text-sm text-slate-400 sm:flex">
@@ -184,35 +199,110 @@
     </aside>
 
     <!-- HERO -->
-    <section class="mx-auto max-w-6xl px-5 pt-20 pb-16 sm:pt-28 sm:pb-20">
-      <div class="mx-auto max-w-3xl text-center">
-        <div class="fade-up mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs text-slate-300 backdrop-blur">
-          <span class="relative flex h-2 w-2"><span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60"></span><span class="relative inline-flex h-2 w-2 rounded-full bg-emerald-400"></span></span>
-          Transaksi otomatis 24 jam
+    <section class="relative mx-auto max-w-6xl px-5 pt-12 pb-10 sm:pt-16 sm:pb-14">
+      <div class="grid items-center gap-8 lg:grid-cols-[1.05fr_.95fr]">
+        <!-- kiri -->
+        <div class="text-center lg:text-left">
+          <div class="fade-up mb-5 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs text-slate-300 backdrop-blur">
+            <span class="relative flex h-2 w-2"><span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60"></span><span class="relative inline-flex h-2 w-2 rounded-full bg-emerald-400"></span></span>
+            Otomatis 24 jam · proses instan
+          </div>
+          <h1 class="fade-up d1 text-[2.3rem] font-extrabold leading-[1.05] sm:text-6xl">
+            Top Up &amp; Tagihan,<br />
+            <span class="gradient-text">murah &amp; instan.</span>
+          </h1>
+          <p class="fade-up d2 mx-auto mt-5 max-w-lg text-base leading-relaxed text-slate-400 sm:text-lg lg:mx-0">
+            Pulsa, Paket Data, Token PLN, Voucher Game &amp; E-Money. Harga bersaing, proses otomatis, langsung dari web maupun Telegram.
+          </p>
+          <div class="fade-up d3 mt-7 flex flex-wrap justify-center gap-3 lg:justify-start">
+            <a id="cta-buy" href="/app.html" class="btn-grad rounded-xl px-7 py-3.5 font-semibold text-white shadow-lg shadow-indigo-500/30">Masuk &amp; Belanja</a>
+            <a id="cta-tg" href="#" target="_blank" rel="noopener" class="rounded-xl border border-white/15 bg-white/5 px-7 py-3.5 font-semibold text-slate-100 backdrop-blur transition hover:bg-white/10">Lewat Telegram</a>
+          </div>
+          <div class="fade-up d4 mt-8 grid max-w-md grid-cols-3 gap-3 lg:mx-0">
+            <div class="card ring-soft px-3 py-4 text-center"><div class="font-display text-xl font-bold sm:text-3xl">24/7</div><div class="mt-1 text-[11px] text-slate-500">Otomatis</div></div>
+            <div class="card ring-soft px-3 py-4 text-center"><div class="font-display text-xl font-bold sm:text-3xl" id="statCat">—</div><div class="mt-1 text-[11px] text-slate-500">Kategori</div></div>
+            <div class="card ring-soft px-3 py-4 text-center"><div class="font-display text-xl font-bold sm:text-3xl">QRIS</div><div class="mt-1 text-[11px] text-slate-500">&amp; Saldo</div></div>
+          </div>
         </div>
-        <h1 class="fade-up d1 text-[2.6rem] font-bold leading-[1.05] sm:text-7xl">
-          Isi Ulang Apa Saja,<br class="hidden sm:block" />
-          <span class="gradient-text">dalam hitungan detik.</span>
-        </h1>
-        <p class="fade-up d2 mx-auto mt-6 max-w-xl text-base leading-relaxed text-slate-400 sm:text-lg">
-          Pulsa, Paket Data, Token PLN, Voucher Game &amp; E-Money — harga bersaing, proses otomatis, langsung dari Telegram maupun web.
-        </p>
-        <div class="fade-up d3 mt-9 flex flex-wrap justify-center gap-3">
-          <a id="cta-buy" href="/app.html"
-             class="btn-grad rounded-xl px-7 py-3.5 font-semibold text-white shadow-lg shadow-indigo-500/30">
-            Masuk &amp; Belanja
-          </a>
-          <a id="cta-tg" href="#" target="_blank" rel="noopener" class="rounded-xl border border-white/15 bg-white/5 px-7 py-3.5 font-semibold text-slate-100 backdrop-blur transition hover:bg-white/10">
-            Lewat Telegram
-          </a>
+
+        <!-- kanan: PROMO SLIDER -->
+        <div class="fade-up d3">
+          <div class="card ring-soft overflow-hidden p-0">
+            <div class="relative">
+              <div id="promoSlides" class="slides">
+                <div class="slide">
+                  <div class="relative flex min-h-[13rem] flex-col justify-between p-6 sm:min-h-[15rem]" style="background:linear-gradient(135deg,var(--a1),var(--a2))">
+                    <div class="text-white">
+                      <div class="text-[11px] font-semibold uppercase tracking-widest opacity-80">Promo Spesial</div>
+                      <div class="mt-1 font-display text-2xl font-extrabold sm:text-3xl">Paket Data Murah</div>
+                      <p class="mt-1 max-w-[16rem] text-sm text-white/85">Kuota besar harga hemat untuk semua operator.</p>
+                    </div>
+                    <a href="/app.html" class="w-fit rounded-lg bg-white/95 px-4 py-2 text-sm font-bold text-slate-900 transition hover:bg-white">Beli Sekarang →</a>
+                    <div class="pointer-events-none absolute -right-4 -top-4 text-[7rem] opacity-20">🌐</div>
+                  </div>
+                </div>
+                <div class="slide">
+                  <div class="relative flex min-h-[13rem] flex-col justify-between p-6 sm:min-h-[15rem]" style="background:linear-gradient(135deg,#f59e0b,#f97316)">
+                    <div class="text-white">
+                      <div class="text-[11px] font-semibold uppercase tracking-widest opacity-80">Bayar Mudah</div>
+                      <div class="mt-1 font-display text-2xl font-extrabold sm:text-3xl">Token PLN Instan</div>
+                      <p class="mt-1 max-w-[16rem] text-sm text-white/85">Struk &amp; token langsung masuk dalam hitungan detik.</p>
+                    </div>
+                    <a href="/app.html" class="w-fit rounded-lg bg-white/95 px-4 py-2 text-sm font-bold text-slate-900 transition hover:bg-white">Beli Sekarang →</a>
+                    <div class="pointer-events-none absolute -right-4 -top-4 text-[7rem] opacity-20">⚡</div>
+                  </div>
+                </div>
+                <div class="slide">
+                  <div class="relative flex min-h-[13rem] flex-col justify-between p-6 sm:min-h-[15rem]" style="background:linear-gradient(135deg,#8b5cf6,#ec4899)">
+                    <div class="text-white">
+                      <div class="text-[11px] font-semibold uppercase tracking-widest opacity-80">Top Up Game</div>
+                      <div class="mt-1 font-display text-2xl font-extrabold sm:text-3xl">Voucher &amp; Diamond</div>
+                      <p class="mt-1 max-w-[16rem] text-sm text-white/85">Semua game favorit, harga reseller tersedia.</p>
+                    </div>
+                    <a href="/app.html" class="w-fit rounded-lg bg-white/95 px-4 py-2 text-sm font-bold text-slate-900 transition hover:bg-white">Beli Sekarang →</a>
+                    <div class="pointer-events-none absolute -right-4 -top-4 text-[7rem] opacity-20">🎮</div>
+                  </div>
+                </div>
+              </div>
+              <div class="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-2">
+                <span class="dot" data-i="0" data-active="1"></span>
+                <span class="dot" data-i="1"></span>
+                <span class="dot" data-i="2"></span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      <!-- trust badges -->
-      <div class="fade-up d4 mx-auto mt-16 grid max-w-3xl grid-cols-3 gap-3">
-        <div class="card ring-soft px-4 py-5 text-center"><div class="font-display text-2xl font-bold sm:text-4xl">24/7</div><div class="mt-1 text-xs text-slate-500">Otomatis</div></div>
-        <div class="card ring-soft px-4 py-5 text-center"><div class="font-display text-2xl font-bold sm:text-4xl" id="statCat">—</div><div class="mt-1 text-xs text-slate-500">Kategori Produk</div></div>
-        <div class="card ring-soft px-4 py-5 text-center"><div class="font-display text-2xl font-bold sm:text-4xl">QRIS</div><div class="mt-1 text-xs text-slate-500">&amp; Saldo</div></div>
+      <!-- brand marquee -->
+      <div class="fade-up d4 relative mt-10 overflow-hidden [mask-image:linear-gradient(90deg,transparent,#000_12%,#000_88%,transparent)]">
+        <div class="marquee text-sm text-slate-400">
+          <span class="chip rounded-full border border-white/10 bg-white/5 px-4 py-2">📱 Telkomsel</span>
+          <span class="chip rounded-full border border-white/10 bg-white/5 px-4 py-2">🌐 XL · Axis</span>
+          <span class="chip rounded-full border border-white/10 bg-white/5 px-4 py-2">📶 Indosat</span>
+          <span class="chip rounded-full border border-white/10 bg-white/5 px-4 py-2">⚡ PLN</span>
+          <span class="chip rounded-full border border-white/10 bg-white/5 px-4 py-2">🎮 Mobile Legends</span>
+          <span class="chip rounded-full border border-white/10 bg-white/5 px-4 py-2">💳 DANA · OVO · GoPay</span>
+          <span class="chip rounded-full border border-white/10 bg-white/5 px-4 py-2">📺 Netflix · Viu</span>
+          <!-- duplikat utk loop mulus -->
+          <span class="chip rounded-full border border-white/10 bg-white/5 px-4 py-2">📱 Telkomsel</span>
+          <span class="chip rounded-full border border-white/10 bg-white/5 px-4 py-2">🌐 XL · Axis</span>
+          <span class="chip rounded-full border border-white/10 bg-white/5 px-4 py-2">📶 Indosat</span>
+          <span class="chip rounded-full border border-white/10 bg-white/5 px-4 py-2">⚡ PLN</span>
+          <span class="chip rounded-full border border-white/10 bg-white/5 px-4 py-2">🎮 Mobile Legends</span>
+          <span class="chip rounded-full border border-white/10 bg-white/5 px-4 py-2">💳 DANA · OVO · GoPay</span>
+          <span class="chip rounded-full border border-white/10 bg-white/5 px-4 py-2">📺 Netflix · Viu</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- KEUNGGULAN -->
+    <section class="mx-auto max-w-6xl px-5 py-8">
+      <div class="grid grid-cols-2 gap-3.5 sm:grid-cols-4">
+        <div class="card p-5"><div class="grid h-11 w-11 place-items-center rounded-xl bg-white/5 text-2xl">⚡</div><div class="mt-3 font-semibold">Proses Instan</div><div class="mt-1 text-xs text-slate-400">Otomatis 24 jam, masuk dalam hitungan detik.</div></div>
+        <div class="card p-5"><div class="grid h-11 w-11 place-items-center rounded-xl bg-white/5 text-2xl">💰</div><div class="mt-3 font-semibold">Harga Bersaing</div><div class="mt-1 text-xs text-slate-400">Murah untuk member, lebih hemat untuk reseller.</div></div>
+        <div class="card p-5"><div class="grid h-11 w-11 place-items-center rounded-xl bg-white/5 text-2xl">🔒</div><div class="mt-3 font-semibold">Aman &amp; Terpercaya</div><div class="mt-1 text-xs text-slate-400">Login terverifikasi, transaksi tercatat rapi.</div></div>
+        <div class="card p-5"><div class="grid h-11 w-11 place-items-center rounded-xl bg-white/5 text-2xl">🎧</div><div class="mt-3 font-semibold">CS Responsif</div><div class="mt-1 text-xs text-slate-400">Bantuan cepat via WhatsApp &amp; Telegram.</div></div>
       </div>
     </section>
 
@@ -262,8 +352,8 @@
     <!-- FOOTER -->
     <footer class="border-t border-white/5">
       <div class="mx-auto flex max-w-6xl flex-col items-center gap-2 px-5 py-10 text-center text-sm text-slate-500">
-        <span class="logo-grad grid h-8 w-8 place-items-center rounded-lg">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z" fill="white"/></svg>
+        <span class="logo-grad grid h-9 w-9 place-items-center rounded-xl">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M13 2.5 5 13.2c-.3.4 0 1 .5 1H10l-1.2 6.6c-.1.7.8 1.1 1.3.5L19 10.3c.3-.4 0-1-.5-1H14l1.2-6.3c.1-.7-.8-1.1-1.2-.5Z" fill="white"/></svg>
         </span>
         <p>&copy;<span id="year"></span> <span id="brandFoot">Rayzell Store PPOB</span>. Seluruh hak cipta dilindungi.</p>
       </div>
@@ -336,6 +426,23 @@
         syncModeIcon();
         if (window.syncDrawerMode) window.syncDrawerMode();
       });
+    })();
+
+    // ===== PROMO SLIDER =====
+    (function promoInit() {
+      const track = document.getElementById('promoSlides');
+      const dots = Array.from(document.querySelectorAll('.dot'));
+      if (!track || !dots.length) return;
+      let i = 0; const n = dots.length; let timer = null;
+      function go(idx) {
+        i = (idx + n) % n;
+        track.style.transform = 'translateX(-' + (i * 100) + '%)';
+        dots.forEach((d, k) => d.setAttribute('data-active', k === i ? '1' : '0'));
+      }
+      function start() { stop(); timer = setInterval(() => go(i + 1), 4500); }
+      function stop() { if (timer) clearInterval(timer); }
+      dots.forEach((d) => d.addEventListener('click', () => { go(Number(d.dataset.i)); start(); }));
+      start();
     })();
 
     function iconFor(cat) {
