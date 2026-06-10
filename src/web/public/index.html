@@ -8,41 +8,64 @@
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%236366f1'/><stop offset='1' stop-color='%23a855f7'/></linearGradient></defs><rect width='32' height='32' rx='8' fill='url(%23g)'/><path d='M17.5 6 9 18h6l-1.5 8 8.5-12h-6z' fill='white'/></svg>" />
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <style>
-    body { font-family: 'Inter', sans-serif; }
-    .fade-up { opacity: 0; transform: translateY(14px); animation: fu .6s ease forwards; }
-    .fade-up.d1 { animation-delay: .08s; } .fade-up.d2 { animation-delay: .16s; } .fade-up.d3 { animation-delay: .24s; }
-    @keyframes fu { to { opacity: 1; transform: none; } }
-    .glow { background:
-      radial-gradient(40rem 22rem at 50% -8%, rgba(99,102,241,.28), transparent 60%),
-      radial-gradient(28rem 18rem at 85% 8%, rgba(168,85,247,.20), transparent 60%),
-      radial-gradient(26rem 18rem at 12% 14%, rgba(56,189,248,.14), transparent 60%); }
+    :root { --bg:#070711; --ink:#e8e9f3; --muted:#9aa0b4; --accent:#7c5cff; --accent2:#22d3ee; }
+    * { -webkit-tap-highlight-color: transparent; }
+    body { font-family:'Inter',system-ui,sans-serif; background:var(--bg); color:var(--ink); }
+    h1,h2,h3,.font-display { font-family:'Sora','Inter',sans-serif; letter-spacing:-.02em; }
+
+    /* ambient aurora */
+    .aurora::before, .aurora::after {
+      content:""; position:absolute; border-radius:9999px; filter:blur(90px); opacity:.55; z-index:0;
+      animation: drift 18s ease-in-out infinite;
+    }
+    .aurora::before { width:46rem; height:30rem; left:-8rem; top:-12rem;
+      background:radial-gradient(circle at 30% 30%, #6d4bff, transparent 60%); }
+    .aurora::after { width:40rem; height:26rem; right:-10rem; top:-6rem;
+      background:radial-gradient(circle at 70% 30%, #18b8d6, transparent 60%); animation-delay:-9s; }
+    @keyframes drift { 0%,100%{ transform:translate(0,0) scale(1);} 50%{ transform:translate(2rem,1.5rem) scale(1.08);} }
+
+    /* fine grid + grain for texture (kills the flat 'AI' look) */
     .grid-bg { background-image:
-      linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px);
-      background-size: 44px 44px;
-      mask-image: radial-gradient(60rem 30rem at 50% 0%, #000 30%, transparent 75%); }
-    .gradient-text { background: linear-gradient(100deg,#a5b4fc,#e9d5ff 45%,#7dd3fc); -webkit-background-clip: text; background-clip: text; color: transparent; }
-    .btn-grad { background: linear-gradient(100deg,#6366f1,#a855f7); }
-    .btn-grad:hover { filter: brightness(1.08); }
+      linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.04) 1px, transparent 1px);
+      background-size: 52px 52px;
+      mask-image: radial-gradient(58rem 32rem at 50% -2%, #000 35%, transparent 78%); }
+    .grain { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.4'/%3E%3C/svg%3E"); opacity:.025; }
+
+    .fade-up { opacity:0; transform:translateY(16px); animation:fu .7s cubic-bezier(.2,.7,.2,1) forwards; }
+    .fade-up.d1{animation-delay:.08s}.fade-up.d2{animation-delay:.16s}.fade-up.d3{animation-delay:.24s}.fade-up.d4{animation-delay:.32s}
+    @keyframes fu { to { opacity:1; transform:none; } }
+
+    .gradient-text { background:linear-gradient(100deg,#c4b5fd,#a78bfa 35%,#67e8f9); -webkit-background-clip:text; background-clip:text; color:transparent; }
+    .btn-grad { background:linear-gradient(100deg,#7c5cff,#9b5cff 55%,#22d3ee); background-size:160% 100%; transition:background-position .5s, transform .2s, box-shadow .3s; }
+    .btn-grad:hover { background-position:100% 0; transform:translateY(-1px); }
+
+    /* gradient hairline border cards */
+    .card { position:relative; border-radius:1.25rem; background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02)); border:1px solid rgba(255,255,255,.08); transition:transform .25s, border-color .25s, box-shadow .25s; }
+    .card:hover { transform:translateY(-3px); border-color:rgba(124,92,255,.45); box-shadow:0 18px 50px -20px rgba(124,92,255,.5); }
+    .ring-soft { box-shadow:0 0 0 1px rgba(255,255,255,.06), 0 30px 80px -40px rgba(124,92,255,.45); }
+    ::-webkit-scrollbar{width:9px;height:9px}::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:9px}
   </style>
 </head>
-<body class="relative min-h-screen bg-slate-950 text-slate-100 antialiased">
+<body class="relative min-h-screen antialiased">
 
   <!-- background layers -->
-  <div class="pointer-events-none absolute inset-0 glow"></div>
-  <div class="pointer-events-none absolute inset-0 grid-bg"></div>
+  <div class="aurora pointer-events-none fixed inset-0"></div>
+  <div class="grid-bg pointer-events-none fixed inset-0"></div>
+  <div class="grain pointer-events-none fixed inset-0"></div>
 
-  <div class="relative">
+  <div class="relative z-10">
     <!-- NAV -->
-    <header class="sticky top-0 z-30 border-b border-white/5 bg-slate-950/70 backdrop-blur-xl">
-      <div class="mx-auto flex max-w-5xl items-center justify-between px-5 py-4">
+    <header class="sticky top-0 z-30 border-b border-white/5 bg-[#070711]/70 backdrop-blur-xl">
+      <div class="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
         <a href="#" class="flex items-center gap-2.5">
-          <span class="grid h-10 w-10 place-items-center rounded-2xl shadow-lg shadow-indigo-500/40" style="background:linear-gradient(135deg,#6366f1,#a855f7)">
+          <span class="grid h-10 w-10 place-items-center rounded-2xl shadow-lg shadow-indigo-500/40" style="background:linear-gradient(135deg,#7c5cff,#22d3ee)">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z" fill="white"/></svg>
           </span>
-          <span class="text-lg font-extrabold tracking-wide" style="background:linear-gradient(90deg,#818cf8,#c084fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent" id="brand">RAYZELL STORE PPOB</span>
+          <span class="font-display text-base font-bold tracking-tight gradient-text" id="brand">RAYZELL STORE PPOB</span>
         </a>
         <div class="flex items-center gap-6">
           <nav class="hidden gap-7 text-sm text-slate-400 sm:flex">
@@ -56,70 +79,77 @@
     </header>
 
     <!-- HERO -->
-    <section class="mx-auto max-w-5xl px-5 pt-24 pb-20 text-center">
-      <div class="fade-up mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs text-slate-300 backdrop-blur">
-        <span class="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400"></span>
-        Transaksi otomatis 24 jam
-      </div>
-      <h1 class="fade-up d1 text-4xl font-extrabold leading-[1.1] tracking-tight sm:text-6xl">
-        Isi Ulang Apa Saja,<br class="hidden sm:block" />
-        <span class="gradient-text">Dalam Hitungan Detik.</span>
-      </h1>
-      <p class="fade-up d2 mx-auto mt-6 max-w-xl text-base text-slate-400 sm:text-lg">
-        Pulsa, Paket Data, Token PLN, Voucher Game &amp; E-Money — harga bersaing, proses otomatis langsung dari Telegram.
-      </p>
-      <div class="fade-up d3 mt-9 flex flex-wrap justify-center gap-3">
-        <a id="cta-buy" href="/app.html"
-           class="btn-grad rounded-xl px-7 py-3.5 font-semibold text-white shadow-lg shadow-indigo-500/30 transition">
-          Masuk &amp; Belanja
-        </a>
-        <a id="cta-tg" href="#" target="_blank" rel="noopener" class="rounded-xl border border-white/15 bg-white/5 px-7 py-3.5 font-semibold text-slate-100 backdrop-blur transition hover:bg-white/10">
-          Lewat Telegram
-        </a>
+    <section class="mx-auto max-w-6xl px-5 pt-20 pb-16 sm:pt-28 sm:pb-20">
+      <div class="mx-auto max-w-3xl text-center">
+        <div class="fade-up mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs text-slate-300 backdrop-blur">
+          <span class="relative flex h-2 w-2"><span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60"></span><span class="relative inline-flex h-2 w-2 rounded-full bg-emerald-400"></span></span>
+          Transaksi otomatis 24 jam
+        </div>
+        <h1 class="fade-up d1 text-[2.6rem] font-bold leading-[1.05] sm:text-7xl">
+          Isi Ulang Apa Saja,<br class="hidden sm:block" />
+          <span class="gradient-text">dalam hitungan detik.</span>
+        </h1>
+        <p class="fade-up d2 mx-auto mt-6 max-w-xl text-base leading-relaxed text-slate-400 sm:text-lg">
+          Pulsa, Paket Data, Token PLN, Voucher Game &amp; E-Money — harga bersaing, proses otomatis, langsung dari Telegram maupun web.
+        </p>
+        <div class="fade-up d3 mt-9 flex flex-wrap justify-center gap-3">
+          <a id="cta-buy" href="/app.html"
+             class="btn-grad rounded-xl px-7 py-3.5 font-semibold text-white shadow-lg shadow-indigo-500/30">
+            Masuk &amp; Belanja
+          </a>
+          <a id="cta-tg" href="#" target="_blank" rel="noopener" class="rounded-xl border border-white/15 bg-white/5 px-7 py-3.5 font-semibold text-slate-100 backdrop-blur transition hover:bg-white/10">
+            Lewat Telegram
+          </a>
+        </div>
       </div>
 
       <!-- trust badges -->
-      <div class="fade-up d3 mx-auto mt-14 grid max-w-2xl grid-cols-3 gap-4 text-center">
-        <div><div class="text-2xl font-extrabold sm:text-3xl">24/7</div><div class="mt-1 text-xs text-slate-500">Otomatis</div></div>
-        <div><div class="text-2xl font-extrabold sm:text-3xl">5+</div><div class="mt-1 text-xs text-slate-500">Kategori Produk</div></div>
-        <div><div class="text-2xl font-extrabold sm:text-3xl">QRIS</div><div class="mt-1 text-xs text-slate-500">& Saldo</div></div>
+      <div class="fade-up d4 mx-auto mt-16 grid max-w-3xl grid-cols-3 gap-3">
+        <div class="card ring-soft px-4 py-5 text-center"><div class="font-display text-2xl font-bold sm:text-4xl">24/7</div><div class="mt-1 text-xs text-slate-500">Otomatis</div></div>
+        <div class="card ring-soft px-4 py-5 text-center"><div class="font-display text-2xl font-bold sm:text-4xl">5+</div><div class="mt-1 text-xs text-slate-500">Kategori Produk</div></div>
+        <div class="card ring-soft px-4 py-5 text-center"><div class="font-display text-2xl font-bold sm:text-4xl">QRIS</div><div class="mt-1 text-xs text-slate-500">&amp; Saldo</div></div>
       </div>
     </section>
 
     <!-- LAYANAN -->
-    <section id="layanan" class="mx-auto max-w-5xl px-5 py-16">
-      <div class="mb-8">
-        <h2 class="text-2xl font-bold tracking-tight sm:text-3xl">Layanan</h2>
-        <p class="mt-2 text-sm text-slate-400">Harga termurah per kategori. Klik Beli untuk transaksi via Telegram.</p>
+    <section id="layanan" class="mx-auto max-w-6xl px-5 py-16">
+      <div class="mb-8 flex items-end justify-between gap-4">
+        <div>
+          <div class="mb-2 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-indigo-300/80">Katalog</div>
+          <h2 class="text-2xl font-bold sm:text-3xl">Layanan kami</h2>
+          <p class="mt-2 text-sm text-slate-400">Harga termurah per kategori. Klik Beli untuk transaksi.</p>
+        </div>
       </div>
-      <div id="grid" class="grid grid-cols-2 gap-3 sm:grid-cols-3">
-        <div class="col-span-full rounded-2xl border border-white/10 bg-white/5 p-6 text-center text-slate-400">Memuat layanan…</div>
+      <div id="grid" class="grid grid-cols-2 gap-3.5 sm:grid-cols-3">
+        <div class="col-span-full card p-6 text-center text-slate-400">Memuat layanan…</div>
       </div>
     </section>
 
     <!-- CEK TRANSAKSI -->
-    <section id="cek" class="mx-auto max-w-5xl px-5 py-16">
-      <div class="overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-white/[0.07] to-white/[0.02] p-7 sm:p-10">
-        <h2 class="text-2xl font-bold tracking-tight sm:text-3xl">Cek Status Transaksi</h2>
+    <section id="cek" class="mx-auto max-w-6xl px-5 py-16">
+      <div class="card ring-soft overflow-hidden p-7 sm:p-10">
+        <div class="mb-2 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-cyan-300/80">Lacak</div>
+        <h2 class="text-2xl font-bold sm:text-3xl">Cek Status Transaksi</h2>
         <p class="mt-2 text-sm text-slate-400">Masukkan Ref ID transaksi kamu (mis. RAYZELL-XXXXX).</p>
         <div class="mt-6 flex flex-col gap-3 sm:flex-row">
           <input id="ref" type="text" placeholder="Ref ID…"
-                 class="w-full rounded-xl border border-white/10 bg-slate-900/70 px-4 py-3.5 text-slate-100 outline-none placeholder:text-slate-500 focus:border-indigo-400/60" />
-          <button id="cekBtn" class="btn-grad rounded-xl px-8 py-3.5 font-semibold text-white shadow-lg shadow-indigo-500/30 transition">Cek</button>
+                 class="w-full rounded-xl border border-white/10 bg-[#0b0b18]/80 px-4 py-3.5 text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-indigo-400/60 focus:ring-2 focus:ring-indigo-500/20" />
+          <button id="cekBtn" class="btn-grad rounded-xl px-8 py-3.5 font-semibold text-white shadow-lg shadow-indigo-500/30">Cek</button>
         </div>
-        <div id="cekResult" class="mt-5 hidden rounded-xl border border-white/10 bg-slate-900/70 p-5 text-sm"></div>
+        <div id="cekResult" class="mt-5 hidden rounded-xl border border-white/10 bg-[#0b0b18]/80 p-5 text-sm"></div>
       </div>
     </section>
 
     <!-- KONTAK -->
-    <section id="kontak" class="mx-auto max-w-5xl px-5 py-16">
-      <h2 class="text-2xl font-bold tracking-tight sm:text-3xl">Kontak</h2>
+    <section id="kontak" class="mx-auto max-w-6xl px-5 py-16">
+      <div class="mb-2 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-indigo-300/80">Bantuan</div>
+      <h2 class="text-2xl font-bold sm:text-3xl">Kontak</h2>
       <p class="mt-2 text-sm text-slate-400">Butuh bantuan? Hubungi kami.</p>
-      <div class="mt-6 grid gap-3 sm:grid-cols-2">
+      <div class="mt-6 grid gap-3.5 sm:grid-cols-2">
         <a id="wa" href="#" target="_blank" rel="noopener"
-           class="group flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 p-6 transition hover:border-emerald-400/30 hover:bg-emerald-400/5">
+           class="card group flex items-center justify-between p-6 hover:!border-emerald-400/40">
           <span class="flex items-center gap-3">
-            <span class="grid h-10 w-10 place-items-center rounded-xl bg-emerald-500/15 text-emerald-400">
+            <span class="grid h-11 w-11 place-items-center rounded-xl bg-emerald-500/15 text-emerald-400">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15l-1.3 4.8 4.9-1.3A10 10 0 1 0 12 2Zm5.3 14.1c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .1-1.7-.1-.4-.1-.9-.3-1.6-.6-2.7-1.2-4.5-4-4.6-4.2-.1-.2-1.1-1.5-1.1-2.8 0-1.3.7-2 .9-2.2.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 1.9c.1.2.1.4 0 .5l-.4.6c-.2.2-.3.4-.1.7.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.4 2.4 1.5.2.1.4.1.6-.1l.7-.9c.2-.2.4-.2.6-.1l1.8.9c.2.1.4.2.4.3.1.2.1.7-.1 1.2Z"/></svg>
             </span>
             <span class="font-semibold">WhatsApp</span>
@@ -127,9 +157,9 @@
           <span class="text-slate-400 transition group-hover:translate-x-0.5">Chat →</span>
         </a>
         <a id="tg" href="#" target="_blank" rel="noopener"
-           class="group flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 p-6 transition hover:border-sky-400/30 hover:bg-sky-400/5">
+           class="card group flex items-center justify-between p-6 hover:!border-sky-400/40">
           <span class="flex items-center gap-3">
-            <span class="grid h-10 w-10 place-items-center rounded-xl bg-sky-500/15 text-sky-400">
+            <span class="grid h-11 w-11 place-items-center rounded-xl bg-sky-500/15 text-sky-400">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M21.9 4.3 18.7 19c-.2 1-.9 1.3-1.8.8l-4.9-3.6-2.4 2.3c-.3.3-.5.5-1 .5l.3-5 9-8.1c.4-.3-.1-.5-.6-.2L6.4 13 1.6 11.5c-1-.3-1-1 .2-1.5l18.7-7.2c.9-.3 1.6.2 1.4 1.5Z"/></svg>
             </span>
             <span class="font-semibold">Telegram</span>
@@ -141,8 +171,8 @@
 
     <!-- FOOTER -->
     <footer class="border-t border-white/5">
-      <div class="mx-auto flex max-w-5xl flex-col items-center gap-2 px-5 py-10 text-center text-sm text-slate-500">
-        <span class="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-indigo-500 to-purple-500">
+      <div class="mx-auto flex max-w-6xl flex-col items-center gap-2 px-5 py-10 text-center text-sm text-slate-500">
+        <span class="grid h-8 w-8 place-items-center rounded-lg" style="background:linear-gradient(135deg,#7c5cff,#22d3ee)">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z" fill="white"/></svg>
         </span>
         © <span id="year"></span> <span id="brandFoot">Rayzell Store PPOB</span>. Seluruh hak cipta dilindungi.
@@ -179,18 +209,18 @@
     fetch('/api/products').then(r => r.json()).then(({ data }) => {
       const grid = $('#grid');
       if (!data || !data.length) {
-        grid.innerHTML = '<div class="col-span-full rounded-2xl border border-white/10 bg-white/5 p-6 text-center text-slate-400">Produk belum tersedia. Coba lagi nanti.</div>';
+        grid.innerHTML = '<div class="col-span-full card p-6 text-center text-slate-400">Produk belum tersedia. Coba lagi nanti.</div>';
         return;
       }
       const botLink = $('#cta-tg').href || '#';
       grid.innerHTML = data.map(d => `
-        <div class="group rounded-2xl border border-white/10 bg-white/5 p-5 transition hover:-translate-y-0.5 hover:border-indigo-400/30 hover:bg-white/[0.07]">
-          <div class="grid h-11 w-11 place-items-center rounded-xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 text-2xl">${iconFor(d.category)}</div>
+        <div class="group card p-5">
+          <div class="grid h-12 w-12 place-items-center rounded-xl bg-gradient-to-br from-indigo-500/25 to-cyan-400/20 text-2xl ring-1 ring-white/10">${iconFor(d.category)}</div>
           <div class="mt-4 font-semibold">${d.category}</div>
           <div class="text-xs text-slate-400">${d.count} produk</div>
           <div class="mt-2 text-sm text-slate-300">Mulai <span class="font-semibold text-white">${d.startFromText}</span></div>
           <a href="${botLink}" target="_blank" rel="noopener"
-             class="btn-grad mt-4 block rounded-lg px-3 py-2 text-center text-sm font-semibold text-white transition">
+             class="btn-grad mt-4 block rounded-lg px-3 py-2 text-center text-sm font-semibold text-white">
             Beli
           </a>
         </div>`).join('');
