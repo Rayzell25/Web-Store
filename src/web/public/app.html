@@ -12,9 +12,16 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <style>
-    :root { --bg:#070711; }
+    :root {
+      --bg:#070711; --a1:#7c5cff; --a2:#22d3ee; --a1soft:rgba(124,92,255,.45);
+    }
+    [data-skin="aurora"]  { --bg:#070711; --a1:#7c5cff; --a2:#22d3ee; --a1soft:rgba(124,92,255,.45); }
+    [data-skin="sunset"]  { --bg:#0d0710; --a1:#fb7185; --a2:#fbbf24; --a1soft:rgba(251,113,133,.45); }
+    [data-skin="emerald"] { --bg:#03100c; --a1:#34d399; --a2:#22d3ee; --a1soft:rgba(52,211,153,.4); }
+    [data-skin="mono"]    { --bg:#0a0a0c; --a1:#cbd5e1; --a2:#94a3b8; --a1soft:rgba(203,213,225,.3); }
+    [data-skin="royal"]   { --bg:#070a18; --a1:#60a5fa; --a2:#a78bfa; --a1soft:rgba(96,165,250,.45); }
     * { -webkit-tap-highlight-color: transparent; }
-    body { font-family:'Inter',system-ui,sans-serif; background:var(--bg); color:#e8e9f3; }
+    body { font-family:'Inter',system-ui,sans-serif; background:var(--bg); color:#e8e9f3; transition:background .4s ease; }
     h1,h2,h3 { font-family:'Sora','Inter',sans-serif; letter-spacing:-.02em; }
     .fade-up { opacity:0; transform:translateY(14px); animation:fu .6s cubic-bezier(.2,.7,.2,1) forwards; }
     @keyframes fu { to { opacity:1; transform:none; } }
@@ -22,8 +29,8 @@
     /* ambient aurora + texture (lift the flat look) */
     .aurora::before, .aurora::after { content:""; position:absolute; border-radius:9999px; filter:blur(90px); opacity:.5;
       animation:drift 18s ease-in-out infinite; }
-    .aurora::before { width:42rem; height:28rem; left:-9rem; top:-12rem; background:radial-gradient(circle at 30% 30%, #6d4bff, transparent 60%); }
-    .aurora::after { width:38rem; height:24rem; right:-10rem; top:-8rem; background:radial-gradient(circle at 70% 30%, #18b8d6, transparent 60%); animation-delay:-9s; }
+    .aurora::before { width:42rem; height:28rem; left:-9rem; top:-12rem; background:radial-gradient(circle at 30% 30%, var(--a1), transparent 60%); }
+    .aurora::after { width:38rem; height:24rem; right:-10rem; top:-8rem; background:radial-gradient(circle at 70% 30%, var(--a2), transparent 60%); animation-delay:-9s; }
     @keyframes drift { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(1.6rem,1.2rem) scale(1.07)} }
     .grid-bg { background-image:
       linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px),
@@ -32,17 +39,36 @@
       mask-image: radial-gradient(58rem 30rem at 50% 0%, #000 32%, transparent 78%); }
     .grain { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.4'/%3E%3C/svg%3E"); opacity:.025; }
 
-    .gradient-text { background:linear-gradient(100deg,#c4b5fd,#a78bfa 35%,#67e8f9); -webkit-background-clip:text; background-clip:text; color:transparent; }
-    .btn-grad { background:linear-gradient(100deg,#7c5cff,#9b5cff 55%,#22d3ee); background-size:160% 100%; transition:background-position .5s, transform .2s, box-shadow .3s; }
+    .gradient-text { background:linear-gradient(100deg,var(--a1),var(--a2)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+    .btn-grad { background:linear-gradient(100deg,var(--a1),var(--a2)); background-size:160% 100%; transition:background-position .5s, transform .2s, box-shadow .3s; }
     .btn-grad:hover { background-position:100% 0; transform:translateY(-1px); }
+    .logo-grad { background:linear-gradient(135deg,var(--a1),var(--a2)); }
+    .skin-dot { width:1.5rem; height:1.5rem; border-radius:9999px; border:2px solid rgba(255,255,255,.25); cursor:pointer; transition:transform .15s; }
+    .skin-dot:hover { transform:scale(1.12); }
+    .skin-dot[data-active="1"] { border-color:#fff; box-shadow:0 0 0 2px rgba(255,255,255,.25); }
     .spin { animation: sp 1s linear infinite; } @keyframes sp { to { transform: rotate(360deg); } }
     ::-webkit-scrollbar { width: 9px; height: 9px; } ::-webkit-scrollbar-thumb { background: rgba(255,255,255,.12); border-radius: 9px; }
   </style>
 </head>
-<body class="relative min-h-screen text-slate-100 antialiased" style="background:#070711">
+<body class="relative min-h-screen text-slate-100 antialiased">
   <div class="aurora pointer-events-none fixed inset-0"></div>
   <div class="grid-bg pointer-events-none fixed inset-0"></div>
   <div class="grain pointer-events-none fixed inset-0"></div>
+
+  <!-- THEME SWITCHER -->
+  <div class="fixed bottom-5 right-5 z-[60]">
+    <button id="skinToggle" aria-label="Ganti tema" class="grid h-12 w-12 place-items-center rounded-full border border-white/15 bg-white/5 text-lg shadow-lg backdrop-blur transition hover:bg-white/10">🎨</button>
+    <div id="skinPanel" class="absolute bottom-14 right-0 hidden w-44 rounded-2xl border border-white/10 bg-[#0b0b18]/95 p-3 shadow-2xl backdrop-blur">
+      <div class="mb-2 px-1 text-xs font-semibold text-slate-400">Pilih Tema</div>
+      <div class="grid grid-cols-1 gap-1.5">
+        <button class="skinOpt flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-sm text-slate-200 transition hover:bg-white/10" data-skin="aurora"><span class="skin-dot" style="background:linear-gradient(135deg,#7c5cff,#22d3ee)"></span>Aurora</button>
+        <button class="skinOpt flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-sm text-slate-200 transition hover:bg-white/10" data-skin="royal"><span class="skin-dot" style="background:linear-gradient(135deg,#60a5fa,#a78bfa)"></span>Royal</button>
+        <button class="skinOpt flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-sm text-slate-200 transition hover:bg-white/10" data-skin="sunset"><span class="skin-dot" style="background:linear-gradient(135deg,#fb7185,#fbbf24)"></span>Sunset</button>
+        <button class="skinOpt flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-sm text-slate-200 transition hover:bg-white/10" data-skin="emerald"><span class="skin-dot" style="background:linear-gradient(135deg,#34d399,#22d3ee)"></span>Emerald</button>
+        <button class="skinOpt flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-sm text-slate-200 transition hover:bg-white/10" data-skin="mono"><span class="skin-dot" style="background:linear-gradient(135deg,#cbd5e1,#94a3b8)"></span>Mono</button>
+      </div>
+    </div>
+  </div>
 
   <div class="relative">
     <!-- NAV -->
@@ -54,7 +80,7 @@
             Kembali
           </button>
           <a href="/" class="flex items-center gap-2.5">
-            <span class="grid h-10 w-10 place-items-center rounded-2xl shadow-lg shadow-indigo-500/40" style="background:linear-gradient(135deg,#7c5cff,#22d3ee)">
+            <span class="logo-grad grid h-10 w-10 place-items-center rounded-2xl shadow-lg shadow-indigo-500/40">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z" fill="white"/></svg>
             </span>
             <span class="font-bold tracking-tight gradient-text" style="font-family:'Sora',sans-serif" id="brand">RAYZELL STORE PPOB</span>
@@ -138,7 +164,7 @@
 
     <footer class="border-t border-white/5">
       <div class="mx-auto flex max-w-3xl flex-col items-center gap-2 px-5 py-8 text-center text-xs text-slate-500">
-        © <span id="year"></span> <span id="brandFoot">Rayzell Store PPOB</span>. Belanja aman & otomatis.
+©<span id="year"></span> <span id="brandFoot">Rayzell Store PPOB</span>. Seluruh hak cipta dilindungi.
       </div>
     </footer>
   </div>
@@ -164,6 +190,29 @@
     const $ = (s) => document.querySelector(s);
     const $$ = (s) => Array.from(document.querySelectorAll(s));
     document.getElementById('year').textContent = new Date().getFullYear();
+
+    // ===== THEME SWITCHER =====
+    (function themeInit() {
+      const VALID = ['aurora', 'royal', 'sunset', 'emerald', 'mono'];
+      const saved = localStorage.getItem('skin');
+      document.documentElement.setAttribute('data-skin', VALID.includes(saved) ? saved : 'aurora');
+      const panel = document.getElementById('skinPanel');
+      const toggle = document.getElementById('skinToggle');
+      if (!panel || !toggle) return;
+      function markActive() {
+        const cur = document.documentElement.getAttribute('data-skin');
+        document.querySelectorAll('.skinOpt .skin-dot').forEach((d) => d.setAttribute('data-active', d.parentElement.dataset.skin === cur ? '1' : '0'));
+      }
+      markActive();
+      toggle.addEventListener('click', (e) => { e.stopPropagation(); panel.classList.toggle('hidden'); });
+      document.addEventListener('click', (e) => { if (!panel.contains(e.target) && e.target !== toggle) panel.classList.add('hidden'); });
+      document.querySelectorAll('.skinOpt').forEach((b) => b.addEventListener('click', () => {
+        document.documentElement.setAttribute('data-skin', b.dataset.skin);
+        localStorage.setItem('skin', b.dataset.skin);
+        markActive();
+        panel.classList.add('hidden');
+      }));
+    })();
     const rupiah = (n) => 'Rp ' + Number(n || 0).toLocaleString('id-ID');
     function token() { return localStorage.getItem('member_token') || ''; }
 
@@ -333,14 +382,22 @@
 
     function iconFor(cat) {
       const c = (cat || '').toLowerCase();
+      if (c.includes('perdana') || c.includes('aktivasi') || c.includes('kartu')) return '📶';
+      if (c.includes('masa aktif') || c.includes('masa') || c.includes('aktif')) return '📅';
       if (c.includes('pulsa')) return '📱';
-      if (c.includes('data')) return '🌐';
-      if (c.includes('pln') || c.includes('listrik')) return '⚡';
-      if (c.includes('game')) return '🎮';
-      if (c.includes('emoney') || c.includes('e-money') || c.includes('saldo')) return '💳';
+      if (c.includes('data') || c.includes('internet') || c.includes('kuota') || c.includes('wifi')) return '🌐';
+      if (c.includes('pln') || c.includes('listrik') || c.includes('token')) return '⚡';
+      if (c.includes('game') || c.includes('voucher game')) return '🎮';
+      if (c.includes('dana') || c.includes('ovo') || c.includes('gopay') || c.includes('shopee') || c.includes('emoney') || c.includes('e-money') || c.includes('e-wallet') || c.includes('ewallet') || c.includes('saldo') || c.includes('uang')) return '💳';
       if (c.includes('voucher')) return '🎟️';
-      if (c.includes('tv')) return '📺';
-      return '📦';
+      if (c.includes('tv') || c.includes('streaming') || c.includes('netflix') || c.includes('youtube')) return '📺';
+      if (c.includes('telepon') || c.includes('sms') || c.includes('nelpon')) return '☎️';
+      if (c.includes('roaming') || c.includes('haji') || c.includes('umroh') || c.includes('luar negeri')) return '✈️';
+      if (c.includes('bpjs') || c.includes('kesehatan') || c.includes('asuransi')) return '🏥';
+      if (c.includes('pdam') || c.includes('air')) return '🚰';
+      if (c.includes('bundling') || c.includes('paket') || c.includes('bonus')) return '🎁';
+      if (c.includes('tagihan') || c.includes('bayar')) return '🧾';
+      return '🛍️';
     }
 
     async function loadCategories() {

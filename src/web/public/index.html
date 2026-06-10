@@ -11,9 +11,19 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <style>
-    :root { --bg:#070711; --ink:#e8e9f3; --muted:#9aa0b4; --accent:#7c5cff; --accent2:#22d3ee; }
+    :root {
+      --bg:#070711; --ink:#e8e9f3; --muted:#9aa0b4;
+      --a1:#7c5cff; --a2:#22d3ee;        /* accent gradient */
+      --a1soft:rgba(124,92,255,.45);
+    }
+    [data-skin="aurora"]  { --bg:#070711; --a1:#7c5cff; --a2:#22d3ee; --a1soft:rgba(124,92,255,.45); }
+    [data-skin="sunset"]  { --bg:#0d0710; --a1:#fb7185; --a2:#fbbf24; --a1soft:rgba(251,113,133,.45); }
+    [data-skin="emerald"] { --bg:#03100c; --a1:#34d399; --a2:#22d3ee; --a1soft:rgba(52,211,153,.4); }
+    [data-skin="mono"]    { --bg:#0a0a0c; --a1:#cbd5e1; --a2:#94a3b8; --a1soft:rgba(203,213,225,.3); }
+    [data-skin="royal"]   { --bg:#070a18; --a1:#60a5fa; --a2:#a78bfa; --a1soft:rgba(96,165,250,.45); }
+
     * { -webkit-tap-highlight-color: transparent; }
-    body { font-family:'Inter',system-ui,sans-serif; background:var(--bg); color:var(--ink); }
+    body { font-family:'Inter',system-ui,sans-serif; background:var(--bg); color:var(--ink); transition:background .4s ease; }
     h1,h2,h3,.font-display { font-family:'Sora','Inter',sans-serif; letter-spacing:-.02em; }
 
     /* ambient aurora */
@@ -22,9 +32,9 @@
       animation: drift 18s ease-in-out infinite;
     }
     .aurora::before { width:46rem; height:30rem; left:-8rem; top:-12rem;
-      background:radial-gradient(circle at 30% 30%, #6d4bff, transparent 60%); }
+      background:radial-gradient(circle at 30% 30%, var(--a1), transparent 60%); }
     .aurora::after { width:40rem; height:26rem; right:-10rem; top:-6rem;
-      background:radial-gradient(circle at 70% 30%, #18b8d6, transparent 60%); animation-delay:-9s; }
+      background:radial-gradient(circle at 70% 30%, var(--a2), transparent 60%); animation-delay:-9s; }
     @keyframes drift { 0%,100%{ transform:translate(0,0) scale(1);} 50%{ transform:translate(2rem,1.5rem) scale(1.08);} }
 
     /* fine grid + grain for texture (kills the flat 'AI' look) */
@@ -39,14 +49,19 @@
     .fade-up.d1{animation-delay:.08s}.fade-up.d2{animation-delay:.16s}.fade-up.d3{animation-delay:.24s}.fade-up.d4{animation-delay:.32s}
     @keyframes fu { to { opacity:1; transform:none; } }
 
-    .gradient-text { background:linear-gradient(100deg,#c4b5fd,#a78bfa 35%,#67e8f9); -webkit-background-clip:text; background-clip:text; color:transparent; }
-    .btn-grad { background:linear-gradient(100deg,#7c5cff,#9b5cff 55%,#22d3ee); background-size:160% 100%; transition:background-position .5s, transform .2s, box-shadow .3s; }
+    .gradient-text { background:linear-gradient(100deg,var(--a1),var(--a2)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+    .btn-grad { background:linear-gradient(100deg,var(--a1),var(--a2)); background-size:160% 100%; transition:background-position .5s, transform .2s, box-shadow .3s; }
     .btn-grad:hover { background-position:100% 0; transform:translateY(-1px); }
+    .logo-grad { background:linear-gradient(135deg,var(--a1),var(--a2)); }
 
     /* gradient hairline border cards */
     .card { position:relative; border-radius:1.25rem; background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02)); border:1px solid rgba(255,255,255,.08); transition:transform .25s, border-color .25s, box-shadow .25s; }
-    .card:hover { transform:translateY(-3px); border-color:rgba(124,92,255,.45); box-shadow:0 18px 50px -20px rgba(124,92,255,.5); }
-    .ring-soft { box-shadow:0 0 0 1px rgba(255,255,255,.06), 0 30px 80px -40px rgba(124,92,255,.45); }
+    .card:hover { transform:translateY(-3px); border-color:var(--a1soft); box-shadow:0 18px 50px -20px var(--a1soft); }
+    .ring-soft { box-shadow:0 0 0 1px rgba(255,255,255,.06), 0 30px 80px -40px var(--a1soft); }
+    /* theme switcher */
+    .skin-dot { width:1.5rem; height:1.5rem; border-radius:9999px; border:2px solid rgba(255,255,255,.25); cursor:pointer; transition:transform .15s; }
+    .skin-dot:hover { transform:scale(1.12); }
+    .skin-dot[data-active="1"] { border-color:#fff; box-shadow:0 0 0 2px rgba(255,255,255,.25); }
     ::-webkit-scrollbar{width:9px;height:9px}::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:9px}
   </style>
 </head>
@@ -57,12 +72,27 @@
   <div class="grid-bg pointer-events-none fixed inset-0"></div>
   <div class="grain pointer-events-none fixed inset-0"></div>
 
+  <!-- THEME SWITCHER -->
+  <div class="fixed bottom-5 right-5 z-40">
+    <button id="skinToggle" aria-label="Ganti tema" class="grid h-12 w-12 place-items-center rounded-full border border-white/15 bg-white/5 text-lg shadow-lg backdrop-blur transition hover:bg-white/10">🎨</button>
+    <div id="skinPanel" class="absolute bottom-14 right-0 hidden w-44 rounded-2xl border border-white/10 bg-[#0b0b18]/95 p-3 shadow-2xl backdrop-blur">
+      <div class="mb-2 px-1 text-xs font-semibold text-slate-400">Pilih Tema</div>
+      <div class="grid grid-cols-1 gap-1.5">
+        <button class="skinOpt flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-sm text-slate-200 transition hover:bg-white/10" data-skin="aurora"><span class="skin-dot" style="background:linear-gradient(135deg,#7c5cff,#22d3ee)"></span>Aurora</button>
+        <button class="skinOpt flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-sm text-slate-200 transition hover:bg-white/10" data-skin="royal"><span class="skin-dot" style="background:linear-gradient(135deg,#60a5fa,#a78bfa)"></span>Royal</button>
+        <button class="skinOpt flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-sm text-slate-200 transition hover:bg-white/10" data-skin="sunset"><span class="skin-dot" style="background:linear-gradient(135deg,#fb7185,#fbbf24)"></span>Sunset</button>
+        <button class="skinOpt flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-sm text-slate-200 transition hover:bg-white/10" data-skin="emerald"><span class="skin-dot" style="background:linear-gradient(135deg,#34d399,#22d3ee)"></span>Emerald</button>
+        <button class="skinOpt flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-sm text-slate-200 transition hover:bg-white/10" data-skin="mono"><span class="skin-dot" style="background:linear-gradient(135deg,#cbd5e1,#94a3b8)"></span>Mono</button>
+      </div>
+    </div>
+  </div>
+
   <div class="relative z-10">
     <!-- NAV -->
     <header class="sticky top-0 z-30 border-b border-white/5 bg-[#070711]/70 backdrop-blur-xl">
       <div class="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
         <a href="#" class="flex items-center gap-2.5">
-          <span class="grid h-10 w-10 place-items-center rounded-2xl shadow-lg shadow-indigo-500/40" style="background:linear-gradient(135deg,#7c5cff,#22d3ee)">
+          <span class="logo-grad grid h-10 w-10 place-items-center rounded-2xl shadow-lg shadow-indigo-500/40">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z" fill="white"/></svg>
           </span>
           <span class="font-display text-base font-bold tracking-tight gradient-text" id="brand">RAYZELL STORE PPOB</span>
@@ -172,10 +202,10 @@
     <!-- FOOTER -->
     <footer class="border-t border-white/5">
       <div class="mx-auto flex max-w-6xl flex-col items-center gap-2 px-5 py-10 text-center text-sm text-slate-500">
-        <span class="grid h-8 w-8 place-items-center rounded-lg" style="background:linear-gradient(135deg,#7c5cff,#22d3ee)">
+        <span class="logo-grad grid h-8 w-8 place-items-center rounded-lg">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z" fill="white"/></svg>
         </span>
-        © <span id="year"></span> <span id="brandFoot">Rayzell Store PPOB</span>. Seluruh hak cipta dilindungi.
+©<span id="year"></span> <span id="brandFoot">Rayzell Store PPOB</span>. Seluruh hak cipta dilindungi.
       </div>
     </footer>
   </div>
@@ -184,16 +214,48 @@
     const $ = (s) => document.querySelector(s);
     document.getElementById('year').textContent = new Date().getFullYear();
 
+    // ===== THEME SWITCHER =====
+    (function themeInit() {
+      const VALID = ['aurora', 'royal', 'sunset', 'emerald', 'mono'];
+      const saved = localStorage.getItem('skin');
+      const skin = VALID.includes(saved) ? saved : 'aurora';
+      document.documentElement.setAttribute('data-skin', skin);
+      const panel = document.getElementById('skinPanel');
+      const toggle = document.getElementById('skinToggle');
+      function markActive() {
+        const cur = document.documentElement.getAttribute('data-skin');
+        document.querySelectorAll('.skinOpt .skin-dot').forEach((d) => d.setAttribute('data-active', d.parentElement.dataset.skin === cur ? '1' : '0'));
+      }
+      markActive();
+      toggle.addEventListener('click', (e) => { e.stopPropagation(); panel.classList.toggle('hidden'); });
+      document.addEventListener('click', (e) => { if (!panel.contains(e.target) && e.target !== toggle) panel.classList.add('hidden'); });
+      document.querySelectorAll('.skinOpt').forEach((b) => b.addEventListener('click', () => {
+        const s = b.dataset.skin;
+        document.documentElement.setAttribute('data-skin', s);
+        localStorage.setItem('skin', s);
+        markActive();
+        panel.classList.add('hidden');
+      }));
+    })();
+
     function iconFor(cat) {
       const c = (cat || '').toLowerCase();
+      if (c.includes('perdana') || c.includes('aktivasi') || c.includes('kartu')) return '📶';
+      if (c.includes('masa aktif') || c.includes('masa') || c.includes('aktif')) return '📅';
       if (c.includes('pulsa')) return '📱';
-      if (c.includes('data')) return '🌐';
-      if (c.includes('pln') || c.includes('listrik')) return '⚡';
-      if (c.includes('game')) return '🎮';
-      if (c.includes('emoney') || c.includes('e-money') || c.includes('saldo')) return '💳';
+      if (c.includes('data') || c.includes('internet') || c.includes('kuota') || c.includes('wifi')) return '🌐';
+      if (c.includes('pln') || c.includes('listrik') || c.includes('token')) return '⚡';
+      if (c.includes('game') || c.includes('voucher game')) return '🎮';
+      if (c.includes('dana') || c.includes('ovo') || c.includes('gopay') || c.includes('shopee') || c.includes('emoney') || c.includes('e-money') || c.includes('e-wallet') || c.includes('ewallet') || c.includes('saldo') || c.includes('uang')) return '💳';
       if (c.includes('voucher')) return '🎟️';
-      if (c.includes('tv')) return '📺';
-      return '📦';
+      if (c.includes('tv') || c.includes('streaming') || c.includes('netflix') || c.includes('youtube')) return '📺';
+      if (c.includes('telepon') || c.includes('sms') || c.includes('nelpon')) return '☎️';
+      if (c.includes('roaming') || c.includes('haji') || c.includes('umroh') || c.includes('luar negeri')) return '✈️';
+      if (c.includes('bpjs') || c.includes('kesehatan') || c.includes('asuransi')) return '🏥';
+      if (c.includes('pdam') || c.includes('air')) return '🚰';
+      if (c.includes('bundling') || c.includes('paket') || c.includes('bonus')) return '🎁';
+      if (c.includes('pln') || c.includes('tagihan') || c.includes('bayar')) return '🧾';
+      return '🛍️';
     }
 
     fetch('/api/info').then(r => r.json()).then(({ data }) => {
