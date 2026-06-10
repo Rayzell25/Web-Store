@@ -15,13 +15,19 @@
     :root {
       --bg:#070711; --a1:#7c5cff; --a2:#22d3ee; --a1soft:rgba(124,92,255,.45);
     }
-    [data-skin="aurora"]  { --bg:#070711; --a1:#7c5cff; --a2:#22d3ee; --a1soft:rgba(124,92,255,.45); }
-    [data-skin="sunset"]  { --bg:#0d0710; --a1:#fb7185; --a2:#fbbf24; --a1soft:rgba(251,113,133,.45); }
-    [data-skin="emerald"] { --bg:#03100c; --a1:#34d399; --a2:#22d3ee; --a1soft:rgba(52,211,153,.4); }
-    [data-skin="mono"]    { --bg:#0a0a0c; --a1:#cbd5e1; --a2:#94a3b8; --a1soft:rgba(203,213,225,.3); }
-    [data-skin="royal"]   { --bg:#070a18; --a1:#60a5fa; --a2:#a78bfa; --a1soft:rgba(96,165,250,.45); }
+    /* ===== 8 tema aksen ===== */
+    [data-skin="aurora"]  { --a1:#7c5cff; --a2:#22d3ee; --a1soft:rgba(124,92,255,.45); --dbg:#070711; }
+    [data-skin="royal"]   { --a1:#6366f1; --a2:#a78bfa; --a1soft:rgba(99,102,241,.45);  --dbg:#070a18; }
+    [data-skin="sunset"]  { --a1:#fb7185; --a2:#fbbf24; --a1soft:rgba(251,113,133,.45); --dbg:#120710; }
+    [data-skin="emerald"] { --a1:#10b981; --a2:#34d399; --a1soft:rgba(16,185,129,.4);   --dbg:#03100c; }
+    [data-skin="ocean"]   { --a1:#38bdf8; --a2:#6366f1; --a1soft:rgba(56,189,248,.42);  --dbg:#040a14; }
+    [data-skin="candy"]   { --a1:#e879f9; --a2:#fb7185; --a1soft:rgba(232,121,249,.42); --dbg:#0e0613; }
+    [data-skin="gold"]    { --a1:#f59e0b; --a2:#f97316; --a1soft:rgba(245,158,11,.4);   --dbg:#100a02; }
+    [data-skin="grape"]   { --a1:#8b5cf6; --a2:#ec4899; --a1soft:rgba(139,92,246,.45);  --dbg:#0c0714; }
+    :root, [data-mode="dark"] { --bg:var(--dbg,#070711); --ink:#e8e9f3; }
+    [data-mode="light"] { --bg:#eef0f7; --ink:#0f172a; }
     * { -webkit-tap-highlight-color: transparent; }
-    body { font-family:'Inter',system-ui,sans-serif; background:var(--bg); color:#e8e9f3; transition:background .4s ease; }
+    body { font-family:'Inter',system-ui,sans-serif; background:var(--bg); color:var(--ink); transition:background .4s ease, color .3s ease; }
     h1,h2,h3 { font-family:'Sora','Inter',sans-serif; letter-spacing:-.02em; }
     .fade-up { opacity:0; transform:translateY(14px); animation:fu .6s cubic-bezier(.2,.7,.2,1) forwards; }
     @keyframes fu { to { opacity:1; transform:none; } }
@@ -47,10 +53,35 @@
     .skin-dot:hover { transform:scale(1.12); }
     .skin-dot[data-active="1"] { border-color:#fff; box-shadow:0 0 0 2px rgba(255,255,255,.25); }
     .spin { animation: sp 1s linear infinite; } @keyframes sp { to { transform: rotate(360deg); } }
+
+    /* ===== LIGHT MODE remap util classes ===== */
+    [data-mode="light"] .text-white { color:#0f172a !important; }
+    [data-mode="light"] .text-slate-100,
+    [data-mode="light"] .text-slate-200,
+    [data-mode="light"] .text-slate-300 { color:#1e293b !important; }
+    [data-mode="light"] .text-slate-400,
+    [data-mode="light"] .text-slate-500,
+    [data-mode="light"] .text-slate-600 { color:#64748b !important; }
+    [data-mode="light"] .bg-white\/5  { background-color:rgba(15,23,42,.04) !important; }
+    [data-mode="light"] .bg-white\/10 { background-color:rgba(15,23,42,.07) !important; }
+    [data-mode="light"] .border-white\/5  { border-color:rgba(15,23,42,.08) !important; }
+    [data-mode="light"] .border-white\/10 { border-color:rgba(15,23,42,.12) !important; }
+    [data-mode="light"] .border-white\/15 { border-color:rgba(15,23,42,.16) !important; }
+    [data-mode="light"] .bg-slate-900\/70 { background-color:#ffffff !important; }
+    [data-mode="light"] .bg-\[\#070711\]\/70 { background-color:rgba(238,240,247,.8) !important; }
+    [data-mode="light"] .bg-\[\#070711\]\/85 { background-color:rgba(238,240,247,.9) !important; }
+    [data-mode="light"] .bg-\[\#0b0b18\]\/95 { background-color:#ffffff !important; }
+    [data-mode="light"] .bg-\[\#0d0d1c\] { background-color:#ffffff !important; }
+    [data-mode="light"] .grid-bg { background-image:
+      linear-gradient(rgba(15,23,42,.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(15,23,42,.05) 1px, transparent 1px); }
+    [data-mode="light"] .aurora::before, [data-mode="light"] .aurora::after { opacity:.30; }
+    [data-mode="light"] .grain { opacity:.015; }
+
     ::-webkit-scrollbar { width: 9px; height: 9px; } ::-webkit-scrollbar-thumb { background: rgba(255,255,255,.12); border-radius: 9px; }
   </style>
 </head>
-<body class="relative min-h-screen text-slate-100 antialiased">
+<body class="relative min-h-screen antialiased">
   <div class="aurora pointer-events-none fixed inset-0"></div>
   <div class="grid-bg pointer-events-none fixed inset-0"></div>
   <div class="grain pointer-events-none fixed inset-0"></div>
@@ -58,14 +89,17 @@
   <!-- THEME SWITCHER -->
   <div class="fixed bottom-5 right-5 z-[60]">
     <button id="skinToggle" aria-label="Ganti tema" class="grid h-12 w-12 place-items-center rounded-full border border-white/15 bg-white/5 text-lg shadow-lg backdrop-blur transition hover:bg-white/10">🎨</button>
-    <div id="skinPanel" class="absolute bottom-14 right-0 hidden w-44 rounded-2xl border border-white/10 bg-[#0b0b18]/95 p-3 shadow-2xl backdrop-blur">
+    <div id="skinPanel" class="absolute bottom-14 right-0 hidden w-48 rounded-2xl border border-white/10 bg-[#0b0b18]/95 p-3 shadow-2xl backdrop-blur">
       <div class="mb-2 px-1 text-xs font-semibold text-slate-400">Pilih Tema</div>
-      <div class="grid grid-cols-1 gap-1.5">
+      <div class="grid grid-cols-1 gap-1">
         <button class="skinOpt flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-sm text-slate-200 transition hover:bg-white/10" data-skin="aurora"><span class="skin-dot" style="background:linear-gradient(135deg,#7c5cff,#22d3ee)"></span>Aurora</button>
-        <button class="skinOpt flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-sm text-slate-200 transition hover:bg-white/10" data-skin="royal"><span class="skin-dot" style="background:linear-gradient(135deg,#60a5fa,#a78bfa)"></span>Royal</button>
+        <button class="skinOpt flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-sm text-slate-200 transition hover:bg-white/10" data-skin="royal"><span class="skin-dot" style="background:linear-gradient(135deg,#6366f1,#a78bfa)"></span>Royal</button>
+        <button class="skinOpt flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-sm text-slate-200 transition hover:bg-white/10" data-skin="ocean"><span class="skin-dot" style="background:linear-gradient(135deg,#38bdf8,#6366f1)"></span>Ocean</button>
+        <button class="skinOpt flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-sm text-slate-200 transition hover:bg-white/10" data-skin="emerald"><span class="skin-dot" style="background:linear-gradient(135deg,#10b981,#34d399)"></span>Emerald</button>
         <button class="skinOpt flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-sm text-slate-200 transition hover:bg-white/10" data-skin="sunset"><span class="skin-dot" style="background:linear-gradient(135deg,#fb7185,#fbbf24)"></span>Sunset</button>
-        <button class="skinOpt flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-sm text-slate-200 transition hover:bg-white/10" data-skin="emerald"><span class="skin-dot" style="background:linear-gradient(135deg,#34d399,#22d3ee)"></span>Emerald</button>
-        <button class="skinOpt flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-sm text-slate-200 transition hover:bg-white/10" data-skin="mono"><span class="skin-dot" style="background:linear-gradient(135deg,#cbd5e1,#94a3b8)"></span>Mono</button>
+        <button class="skinOpt flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-sm text-slate-200 transition hover:bg-white/10" data-skin="candy"><span class="skin-dot" style="background:linear-gradient(135deg,#e879f9,#fb7185)"></span>Candy</button>
+        <button class="skinOpt flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-sm text-slate-200 transition hover:bg-white/10" data-skin="grape"><span class="skin-dot" style="background:linear-gradient(135deg,#8b5cf6,#ec4899)"></span>Grape</button>
+        <button class="skinOpt flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-sm text-slate-200 transition hover:bg-white/10" data-skin="gold"><span class="skin-dot" style="background:linear-gradient(135deg,#f59e0b,#f97316)"></span>Gold</button>
       </div>
     </div>
   </div>
@@ -79,6 +113,7 @@
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M15 6l-6 6 6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
             Kembali
           </button>
+          <button id="modeToggle" aria-label="Mode terang/gelap" class="grid h-8 w-8 place-items-center rounded-full border border-white/10 bg-white/5 text-sm transition hover:bg-white/10">🌙</button>
           <a href="/" class="flex items-center gap-2.5">
             <span class="logo-grad grid h-10 w-10 place-items-center rounded-2xl shadow-lg shadow-indigo-500/40">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z" fill="white"/></svg>
@@ -191,27 +226,41 @@
     const $$ = (s) => Array.from(document.querySelectorAll(s));
     document.getElementById('year').textContent = new Date().getFullYear();
 
-    // ===== THEME SWITCHER =====
+    // ===== THEME SWITCHER (8 tema aksen + mode terang/gelap) =====
     (function themeInit() {
-      const VALID = ['aurora', 'royal', 'sunset', 'emerald', 'mono'];
+      const VALID = ['aurora', 'royal', 'ocean', 'emerald', 'sunset', 'candy', 'grape', 'gold'];
+      const root = document.documentElement;
       const saved = localStorage.getItem('skin');
-      document.documentElement.setAttribute('data-skin', VALID.includes(saved) ? saved : 'aurora');
+      root.setAttribute('data-skin', VALID.includes(saved) ? saved : 'aurora');
+      const savedMode = localStorage.getItem('mode') === 'light' ? 'light' : 'dark';
+      root.setAttribute('data-mode', savedMode);
+
       const panel = document.getElementById('skinPanel');
       const toggle = document.getElementById('skinToggle');
-      if (!panel || !toggle) return;
+      const modeBtn = document.getElementById('modeToggle');
       function markActive() {
-        const cur = document.documentElement.getAttribute('data-skin');
+        const cur = root.getAttribute('data-skin');
         document.querySelectorAll('.skinOpt .skin-dot').forEach((d) => d.setAttribute('data-active', d.parentElement.dataset.skin === cur ? '1' : '0'));
       }
-      markActive();
-      toggle.addEventListener('click', (e) => { e.stopPropagation(); panel.classList.toggle('hidden'); });
-      document.addEventListener('click', (e) => { if (!panel.contains(e.target) && e.target !== toggle) panel.classList.add('hidden'); });
-      document.querySelectorAll('.skinOpt').forEach((b) => b.addEventListener('click', () => {
-        document.documentElement.setAttribute('data-skin', b.dataset.skin);
-        localStorage.setItem('skin', b.dataset.skin);
-        markActive();
-        panel.classList.add('hidden');
-      }));
+      function syncModeIcon() { if (modeBtn) modeBtn.textContent = root.getAttribute('data-mode') === 'light' ? '☀️' : '🌙'; }
+      markActive(); syncModeIcon();
+
+      if (panel && toggle) {
+        toggle.addEventListener('click', (e) => { e.stopPropagation(); panel.classList.toggle('hidden'); });
+        document.addEventListener('click', (e) => { if (!panel.contains(e.target) && e.target !== toggle) panel.classList.add('hidden'); });
+        document.querySelectorAll('.skinOpt').forEach((b) => b.addEventListener('click', () => {
+          root.setAttribute('data-skin', b.dataset.skin);
+          localStorage.setItem('skin', b.dataset.skin);
+          markActive();
+          panel.classList.add('hidden');
+        }));
+      }
+      if (modeBtn) modeBtn.addEventListener('click', () => {
+        const next = root.getAttribute('data-mode') === 'light' ? 'dark' : 'light';
+        root.setAttribute('data-mode', next);
+        localStorage.setItem('mode', next);
+        syncModeIcon();
+      });
     })();
     const rupiah = (n) => 'Rp ' + Number(n || 0).toLocaleString('id-ID');
     function token() { return localStorage.getItem('member_token') || ''; }
