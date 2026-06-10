@@ -128,6 +128,30 @@ function requireUser(req, res, next) {
   next();
 }
 
+// ===== Google OAuth: state bertanda-tangan (anti-tamper / anti-CSRF) =====
+const OAUTH_STATE_TTL_MS = 10 * 60 * 1000; // 10 menit
+function makeOAuthState(linkUserId) {
+  const payload = JSON.stringify({
+    l: linkUserId ? Number(linkUserId) : 0,
+    n: crypto.randomBytes(8).toString('hex'),
+    e: Date.now() + OAUTH_STATE_TTL_MS,
+  });
+  const b64 = Buffer.from(payload).toString('base64url');
+  const sig = crypto.createHmac('sha256', MEMBER_SECRET).update(b64).digest('hex');
+  return b64 + '.' + sig;
+}
+function readOAuthState(state) {
+  try {
+    const [b64, sig] = String(state || '').split('.');
+    if (!b64 || !sig) return null;
+    const expected = crypto.createHmac('sha256', MEMBER_SECRET).update(b64).digest('hex');
+    if (sig.length !== expected.length || !crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) return null;
+    const data = JSON.parse(Buffer.from(b64, 'base64url').toString('utf8'));
+    if (!data || Date.now() > Number(data.e)) return null;
+    return data;
+  } catch (e) { return null; }
+}
+
 function waNumber() {
   let n = String(process.env.CONTACT_WA || '6287826532525').replace(/[^\d]/g, '');
   if (n.startsWith('0')) n = '62' + n.slice(1);
@@ -213,7 +237,7 @@ app.get('/api/trx/:refId', async (req, res) => {
 // info kontak & nama toko
 app.get('/api/info', (req, res) => {
   const botUsername = String(process.env.BOT_USERNAME || '').replace(/^@/, '');
-  res.json({ ok: true, data: { store: STORE_NAME, botUsername, ...CONTACT } });
+  res.json({ ok: true, data: { store: STORE_NAME, botUsername, googleEnabled: config.google.enabled, ...CONTACT } });
 });
 
 app.get('/health', (req, res) => res.json({ ok: true }));
@@ -257,6 +281,118 @@ app.post('/api/auth/webapp', async (req, res) => {
   } catch (e) {
     logger.error('web /api/auth/webapp:', e.message);
     res.status(500).json({ ok: false, message: 'Terjadi kesalahan saat login.' });
+  }
+});
+
+// ===================== GOOGLE OAUTH (opsional) =====================
+// Aktif hanya bila GOOGLE_CLIENT_ID/SECRET/REDIRECT_URI di-set di .env.
+// Alur: /api/auth/google?link=<token?>  -> redirect ke Google
+//       /api/auth/google/callback       -> tukar code, verifikasi, login/link
+
+// helper: tukar authorization code -> tokens, lalu ambil profil dari id_token
+async function googleExchange(code) {
+  const body = new URLSearchParams({
+    code,
+    client_id: config.google.clientId,
+    client_secret: config.google.clientSecret,
+    redirect_uri: config.google.redirectUri,
+    grant_type: 'authorization_code',
+  });
+  const r = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: body.toString(),
+  });
+  if (!r.ok) throw new Error('Gagal tukar token Google (' + r.status + ')');
+  const tok = await r.json();
+  if (!tok.id_token) throw new Error('id_token tidak ada');
+  // Verifikasi id_token via tokeninfo (cukup & sederhana untuk server-side).
+  const infoR = await fetch('https://oauth2.googleapis.com/tokeninfo?id_token=' + encodeURIComponent(tok.id_token));
+  if (!infoR.ok) throw new Error('Gagal verifikasi id_token Google');
+  const info = await infoR.json();
+  if (String(info.aud) !== String(config.google.clientId)) throw new Error('Audience id_token tidak cocok');
+  if (!info.sub) throw new Error('Profil Google tidak valid');
+  return { sub: info.sub, email: info.email || null, name: info.name || info.email || 'Google User' };
+}
+
+function htmlRedirect(res, message, token) {
+  // halaman kecil yang menyimpan token (kalau ada) lalu pindah ke /app.html
+  const safeMsg = String(message || '').replace(/[<>&]/g, '');
+  res.set('Content-Type', 'text/html; charset=utf-8');
+  res.send(`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>body{font-family:system-ui,sans-serif;background:#070711;color:#e8e9f3;display:grid;place-items:center;min-height:100vh;margin:0}</style></head>
+<body><div style="text-align:center"><div style="font-size:13px;opacity:.8">${safeMsg}</div></div>
+<script>try{${token ? `localStorage.setItem('member_token', ${JSON.stringify(token)});` : ''}}catch(e){}
+setTimeout(function(){location.replace('/app.html');}, 600);</script></body></html>`);
+}
+
+// mulai OAuth -> redirect ke Google
+app.get('/api/auth/google', (req, res) => {
+  if (!config.google.enabled) return res.status(404).send('Google login tidak aktif.');
+  // Kalau ada Bearer token member valid -> mode LINK (hubungkan ke akun ini).
+  let linkUserId = 0;
+  const t = (req.headers.authorization || '').replace(/^Bearer\s+/i, '').trim()
+    || String(req.query.link || '').trim();
+  const uid = verifyMemberToken(t);
+  if (uid) linkUserId = uid;
+  const state = makeOAuthState(linkUserId);
+  const params = new URLSearchParams({
+    client_id: config.google.clientId,
+    redirect_uri: config.google.redirectUri,
+    response_type: 'code',
+    scope: 'openid email profile',
+    state,
+    prompt: 'select_account',
+    access_type: 'online',
+  });
+  res.redirect('https://accounts.google.com/o/oauth2/v2/auth?' + params.toString());
+});
+
+// callback dari Google
+app.get('/api/auth/google/callback', async (req, res) => {
+  if (!config.google.enabled) return res.status(404).send('Google login tidak aktif.');
+  try {
+    const code = String(req.query.code || '');
+    const st = readOAuthState(req.query.state);
+    if (!code || !st) return htmlRedirect(res, 'Sesi login Google kedaluwarsa. Coba lagi.');
+
+    const profile = await googleExchange(code);
+    const link = await one('SELECT user_id FROM google_links WHERE google_sub = $1', [profile.sub]);
+
+    // Sudah pernah terhubung -> login langsung ke user tsb.
+    if (link && link.user_id) {
+      const token = genMemberToken(link.user_id);
+      return htmlRedirect(res, 'Login Google berhasil. Mengalihkan…', token);
+    }
+
+    // Mode LINK: ada user Telegram aktif -> hubungkan Google ke akun itu.
+    if (st.l) {
+      const u = await userService.getUser(st.l);
+      if (!u) return htmlRedirect(res, 'Akun tidak ditemukan. Login Telegram dulu.');
+      await query(
+        `INSERT INTO google_links (google_sub, user_id, email, name, created_at)
+         VALUES ($1,$2,$3,$4,$5) ON CONFLICT (google_sub) DO UPDATE SET user_id = $2, email = $3`,
+        [profile.sub, Number(st.l), profile.email, profile.name, Date.now()]
+      );
+      const token = genMemberToken(st.l);
+      return htmlRedirect(res, 'Akun Google berhasil dihubungkan!', token);
+    }
+
+    // Belum terhubung & tidak ada sesi Telegram -> minta hubungkan via Telegram dulu.
+    return htmlRedirect(res, 'Akun Google ini belum terhubung. Masuk dengan Telegram dulu, lalu tekan "Hubungkan Google".');
+  } catch (e) {
+    logger.error('web google callback:', e.message);
+    return htmlRedirect(res, 'Login Google gagal. Coba lagi.');
+  }
+});
+
+// status link Google untuk member yang sedang login
+app.get('/api/auth/google/status', requireUser, async (req, res) => {
+  try {
+    const row = await one('SELECT email FROM google_links WHERE user_id = $1', [req.userId]);
+    res.json({ ok: true, linked: !!row, email: row ? row.email : null });
+  } catch (e) {
+    res.json({ ok: false, linked: false });
   }
 });
 

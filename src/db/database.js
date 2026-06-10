@@ -109,6 +109,15 @@ async function init() {
       value TEXT
     );
 
+    -- Hubungkan akun Google ke user (Telegram) id. 1 Google = 1 user.
+    CREATE TABLE IF NOT EXISTS google_links (
+      google_sub  TEXT PRIMARY KEY,         -- Google subject id (stabil per akun)
+      user_id     BIGINT NOT NULL,          -- = users.id (Telegram id)
+      email       TEXT,
+      name        TEXT,
+      created_at  BIGINT NOT NULL
+    );
+
     CREATE TABLE IF NOT EXISTS markups (
       sku        TEXT PRIMARY KEY,
       type       TEXT NOT NULL DEFAULT 'flat',
@@ -138,6 +147,7 @@ async function init() {
     CREATE INDEX IF NOT EXISTS idx_products_cat ON products(category);
     CREATE INDEX IF NOT EXISTS idx_topups_status ON topups(status);
     CREATE INDEX IF NOT EXISTS idx_qris_status ON qris_payments(status);
+    CREATE INDEX IF NOT EXISTS idx_google_links_user ON google_links(user_id);
   `);
   logger.info('Database PostgreSQL siap.');
 }
