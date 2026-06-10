@@ -421,7 +421,7 @@ app.get('/api/me', requireUser, async (req, res) => {
   try {
     const u = await userService.getUser(req.userId);
     if (!u) return res.status(401).json({ ok: false, message: 'Akun tidak ditemukan.' });
-    res.json({ ok: true, data: { name: u.name, balance: u.balance, role: u.role } });
+    res.json({ ok: true, data: { id: u.id, name: u.name, balance: u.balance, role: u.role } });
   } catch (e) {
     logger.error('web /api/me:', e.message);
     res.json({ ok: false, message: e.message });
