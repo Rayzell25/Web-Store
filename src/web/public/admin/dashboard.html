@@ -91,6 +91,34 @@
         </table>
       </div>
     </div>
+
+    <!-- BANNER PRODUK -->
+    <div class="mt-6 rounded-2xl" style="background:var(--card);border:1px solid var(--border)">
+      <div class="flex items-center justify-between border-b px-6 py-4" style="border-color:var(--border)">
+        <h2 class="font-semibold">Banner Per-Produk</h2>
+        <span class="text-xs" style="color:var(--muted)">Gambar kecil di atas kartu produk di web store</span>
+      </div>
+      <div class="p-6">
+        <!-- Step 1: Kategori -->
+        <div class="grid gap-3 sm:flex sm:items-end sm:gap-4">
+          <div class="flex-1">
+            <label class="mb-1 block text-xs font-medium" style="color:var(--muted)">Kategori</label>
+            <select id="bannerCat" class="w-full rounded-xl px-3 py-2.5 text-sm" style="background:var(--bg);border:1px solid var(--border);color:var(--text)">
+              <option value="">— Pilih kategori —</option>
+            </select>
+          </div>
+          <div class="flex-1">
+            <label class="mb-1 block text-xs font-medium" style="color:var(--muted)">Brand</label>
+            <select id="bannerBrand" class="w-full rounded-xl px-3 py-2.5 text-sm" disabled style="background:var(--bg);border:1px solid var(--border);color:var(--text)">
+              <option value="">— Pilih brand —</option>
+            </select>
+          </div>
+          <button onclick="loadBannerProducts()" class="rounded-xl px-5 py-2.5 text-sm font-semibold" style="background:var(--btn);color:var(--btn-text)">Tampilkan</button>
+        </div>
+        <!-- Daftar produk dengan input banner -->
+        <div id="bannerList" class="mt-5 space-y-3"></div>
+      </div>
+    </div>
   </main>
   <script>
     const saved = localStorage.getItem('theme') || 'dark';
@@ -169,7 +197,81 @@
       loadData();
     }
     if (!token()) window.location = '/admin/';
-    else { loadData(); setInterval(loadData, 30000); }
+    else { loadData(); setInterval(loadData, 30000); initBanner(); }
+
+    // ===== BANNER PRODUK =====
+    async function initBanner() {
+      try {
+        const r = await fetch('/api/admin/products/categories', { headers: ah() });
+        const j = await r.json();
+        if (!j.ok || !j.data.length) return;
+        const sel = document.getElementById('bannerCat');
+        j.data.forEach(c => sel.innerHTML += `<option value="${esc(c.category)}">${esc(c.category)} (${c.c})</option>`);
+        sel.addEventListener('change', loadBannerBrands);
+        document.getElementById('bannerBrand').addEventListener('change', () => {});
+      } catch(e){}
+    }
+
+    async function loadBannerBrands() {
+      const cat = document.getElementById('bannerCat').value;
+      const brandSel = document.getElementById('bannerBrand');
+      brandSel.innerHTML = '<option value="">— Pilih brand —</option>';
+      brandSel.disabled = true;
+      document.getElementById('bannerList').innerHTML = '';
+      if (!cat) return;
+      try {
+        const r = await fetch('/api/admin/products/brands?category=' + encodeURIComponent(cat), { headers: ah() });
+        const j = await r.json();
+        if (!j.ok || !j.data.length) return;
+        j.data.forEach(b => brandSel.innerHTML += `<option value="${esc(b.brand)}">${esc(b.brand)} (${b.c})</option>`);
+        brandSel.disabled = false;
+      } catch(e){}
+    }
+
+    async function loadBannerProducts() {
+      const cat = document.getElementById('bannerCat').value;
+      const brand = document.getElementById('bannerBrand').value;
+      const box = document.getElementById('bannerList');
+      if (!cat || !brand) { box.innerHTML = '<p class="text-sm" style="color:var(--muted)">Pilih kategori &amp; brand dulu.</p>'; return; }
+      box.innerHTML = '<p class="text-sm" style="color:var(--muted)">Memuat…</p>';
+      try {
+        const r = await fetch('/api/admin/products/list?category=' + encodeURIComponent(cat) + '&brand=' + encodeURIComponent(brand), { headers: ah() });
+        const j = await r.json();
+        if (!j.ok || !j.data.length) { box.innerHTML = '<p class="text-sm" style="color:var(--muted)">Tidak ada produk.</p>'; return; }
+        box.innerHTML = j.data.map(p => `
+          <div class="flex flex-col gap-2 rounded-xl p-4 sm:flex-row sm:items-center sm:gap-3" style="background:var(--bg);border:1px solid var(--border)">
+            <div class="min-w-0 flex-1">
+              <div class="truncate text-sm font-semibold">${esc(p.product_name)}</div>
+              <div class="text-[11px]" style="color:var(--muted)">${esc(p.buyer_sku_code)} · ${rupiah(p.price)}</div>
+              ${p.banner_url ? `<img src="${esc(p.banner_url)}" alt="banner" class="mt-2 h-10 w-auto rounded" onerror="this.style.display='none'">` : ''}
+            </div>
+            <div class="flex gap-2 sm:w-64">
+              <input id="banner_${esc(p.buyer_sku_code)}" type="text" placeholder="https://... (kosong = hapus)" value="${esc(p.banner_url||'')}"
+                class="w-full rounded-lg px-3 py-2 text-xs" style="background:var(--card);border:1px solid var(--border);color:var(--text)"/>
+              <button onclick="saveBanner('${esc(p.buyer_sku_code)}')" class="shrink-0 rounded-lg px-3 py-2 text-xs font-semibold" style="background:var(--btn);color:var(--btn-text)">Simpan</button>
+            </div>
+          </div>`).join('');
+      } catch(e){ box.innerHTML = '<p class="text-sm text-rose-400">Gagal memuat.</p>'; }
+    }
+
+    async function saveBanner(sku) {
+      const input = document.getElementById('banner_' + sku);
+      if (!input) return;
+      const url = input.value.trim();
+      try {
+        const r = await fetch('/api/admin/products/' + encodeURIComponent(sku) + '/banner', {
+          method: 'PUT', headers: ah(), body: JSON.stringify({ url })
+        });
+        const j = await r.json();
+        if (j.ok) {
+          input.style.borderColor = '#10b981';
+          setTimeout(() => input.style.borderColor = '', 1500);
+          loadBannerProducts();
+        } else {
+          alert(j.message || 'Gagal simpan.');
+        }
+      } catch(e){ alert('Gagal terhubung.'); }
+    }
   </script>
 </body>
 </html>

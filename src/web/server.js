@@ -472,7 +472,7 @@ app.get('/api/catalog/items', async (req, res) => {
     const rows = await productService.getProductsByBrand(category, brand);
     const data = rows.map((p) => {
       const price = sellPrice(p, 'MEMBER');
-      return { sku: p.buyer_sku_code, name: p.product_name, price, priceText: rupiah(price) };
+      return { sku: p.buyer_sku_code, name: p.product_name, price, priceText: rupiah(price), banner: p.banner_url || null };
     });
     res.json({ ok: true, data });
   } catch (e) {
@@ -795,6 +795,68 @@ app.post('/api/admin/topups/:id/reject', requireAdmin, async (req, res) => {
     res.json({ ok: true, message: `Top up #${id} ditolak.` });
   } catch (e) {
     logger.error('web reject topup:', e.message);
+    res.json({ ok: false, message: e.message });
+  }
+});
+
+// ===================== ADMIN: BANNER PRODUK =====================
+
+// daftar kategori (buat panel banner)
+app.get('/api/admin/products/categories', requireAdmin, async (req, res) => {
+  try {
+    const rows = await all(
+      `SELECT category, COUNT(*)::int AS c FROM products WHERE status='active' GROUP BY category ORDER BY category`
+    );
+    res.json({ ok: true, data: rows });
+  } catch (e) { res.json({ ok: false, message: e.message }); }
+});
+
+// daftar brand per kategori
+app.get('/api/admin/products/brands', requireAdmin, async (req, res) => {
+  try {
+    const cat = String(req.query.category || '').trim();
+    if (!cat) return res.json({ ok: false, data: [] });
+    const rows = await all(
+      `SELECT brand, COUNT(*)::int AS c FROM products WHERE status='active' AND category=$1 GROUP BY brand ORDER BY brand`,
+      [cat]
+    );
+    res.json({ ok: true, data: rows });
+  } catch (e) { res.json({ ok: false, message: e.message }); }
+});
+
+// daftar produk per brand (dengan banner_url kalau ada)
+app.get('/api/admin/products/list', requireAdmin, async (req, res) => {
+  try {
+    const cat = String(req.query.category || '').trim();
+    const brand = String(req.query.brand || '').trim();
+    if (!cat || !brand) return res.json({ ok: false, data: [] });
+    const rows = await all(
+      `SELECT buyer_sku_code, product_name, price, banner_url FROM products WHERE status='active' AND category=$1 AND brand=$2 ORDER BY product_name`,
+      [cat, brand]
+    );
+    res.json({ ok: true, data: rows });
+  } catch (e) { res.json({ ok: false, message: e.message }); }
+});
+
+// set / hapus banner produk
+app.put('/api/admin/products/:sku/banner', requireAdmin, async (req, res) => {
+  try {
+    const sku = String(req.params.sku || '').trim();
+    if (!sku) return res.json({ ok: false, message: 'SKU tidak valid.' });
+    const url = String((req.body && req.body.url) || '').trim();
+    // validasi: kosong = hapus; tidak kosong harus URL valid
+    if (url && !/^https?:\/\/.+/.test(url)) {
+      return res.json({ ok: false, message: 'URL harus diawali https:// atau http://' });
+    }
+    const result = await query(
+      `UPDATE products SET banner_url=$1 WHERE buyer_sku_code=$2 RETURNING buyer_sku_code, product_name, banner_url`,
+      [url || null, sku]
+    );
+    if (!result.rows.length) return res.json({ ok: false, message: 'Produk tidak ditemukan.' });
+    const p = result.rows[0];
+    res.json({ ok: true, message: url ? `Banner "${p.product_name}" diset.` : `Banner "${p.product_name}" dihapus.`, data: p });
+  } catch (e) {
+    logger.error('web banner produk:', e.message);
     res.json({ ok: false, message: e.message });
   }
 });
