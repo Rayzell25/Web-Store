@@ -139,7 +139,7 @@
         <div class="flex items-center gap-2 sm:gap-6">
           <nav class="hidden gap-7 text-sm text-slate-400 sm:flex">
             <a href="#layanan" class="transition hover:text-white">Layanan</a>
-            <a href="#cek" class="transition hover:text-white">Cek Transaksi</a>
+            <a href="/cek.html" class="transition hover:text-white">Cek Transaksi</a>
             <a href="#kontak" class="transition hover:text-white">Kontak</a>
           </nav>
           <a href="/app.html" class="hidden rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-100 backdrop-blur transition hover:bg-white/10 sm:block">Masuk</a>
@@ -165,7 +165,7 @@
         <a href="#layanan" class="drawer-link flex items-center gap-3 rounded-xl px-3 py-3 font-medium text-slate-200 transition hover:bg-white/10">
           <span class="grid h-9 w-9 place-items-center rounded-lg bg-white/5">🛍️</span> Layanan
         </a>
-        <a href="#cek" class="drawer-link flex items-center gap-3 rounded-xl px-3 py-3 font-medium text-slate-200 transition hover:bg-white/10">
+        <a href="/cek.html" class="drawer-link flex items-center gap-3 rounded-xl px-3 py-3 font-medium text-slate-200 transition hover:bg-white/10">
           <span class="grid h-9 w-9 place-items-center rounded-lg bg-white/5">🚚</span> Cek Transaksi
         </a>
         <a href="#kontak" class="drawer-link flex items-center gap-3 rounded-xl px-3 py-3 font-medium text-slate-200 transition hover:bg-white/10">
@@ -230,21 +230,6 @@
       </div>
     </section>
 
-    <!-- CEK TRANSAKSI -->
-    <section id="cek" class="mx-auto max-w-6xl px-5 py-16">
-      <div class="card ring-soft overflow-hidden p-7 sm:p-10">
-        <div class="mb-2 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-cyan-300/80">Lacak</div>
-        <h2 class="text-2xl font-bold sm:text-3xl">Cek Status Transaksi</h2>
-        <p class="mt-2 text-sm text-slate-400">Masukkan Ref ID transaksi kamu (mis. RAYZELL-XXXXX).</p>
-        <div class="mt-6 flex flex-col gap-3 sm:flex-row">
-          <input id="ref" type="text" placeholder="Ref ID…"
-                 class="w-full rounded-xl border border-white/10 bg-[#0b0b18]/80 px-4 py-3.5 text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-indigo-400/60 focus:ring-2 focus:ring-indigo-500/20" />
-          <button id="cekBtn" class="btn-grad rounded-xl px-8 py-3.5 font-semibold text-white shadow-lg shadow-indigo-500/30">Cek</button>
-        </div>
-        <div id="cekResult" class="mt-5 hidden rounded-xl border border-white/10 bg-[#0b0b18]/80 p-5 text-sm"></div>
-      </div>
-    </section>
-
     <!-- KONTAK -->
     <section id="kontak" class="mx-auto max-w-6xl px-5 py-16">
       <div class="mb-2 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-indigo-300/80">Bantuan</div>
@@ -291,8 +276,8 @@
     <svg width="28" height="28" viewBox="0 0 24 24" fill="white"><path d="M12 2a10 10 0 0 0-8.6 15l-1.3 4.8 4.9-1.3A10 10 0 1 0 12 2Zm5.3 14.1c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .1-1.7-.1-.4-.1-.9-.3-1.6-.6-2.7-1.2-4.5-4-4.6-4.2-.1-.2-1.1-1.5-1.1-2.8 0-1.3.7-2 .9-2.2.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 1.9c.1.2.1.4 0 .5l-.4.6c-.2.2-.3.4-.1.7.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.4 2.4 1.5.2.1.4.1.6-.1l.7-.9c.2-.2.4-.2.6-.1l1.8.9c.2.1.4.2.4.3.1.2.1.7-.1 1.2Z"/></svg>
   </a>
 
-  <!-- TOAST social-proof "Produk Terjual" -->
-  <div id="saleToast" class="fixed bottom-5 left-1/2 z-40 w-[min(92vw,22rem)] -translate-x-1/2 translate-y-[160%] rounded-2xl border border-white/10 bg-[#0b0b18]/95 p-3.5 shadow-2xl backdrop-blur transition-transform duration-500 sm:left-5 sm:translate-x-0">
+  <!-- TOAST social-proof "Produk Terjual" (di ATAS tombol WA, kiri — tidak menabrak) -->
+  <div id="saleToast" class="fixed bottom-24 left-4 z-30 w-[min(88vw,20rem)] rounded-2xl border border-white/10 bg-[#0b0b18]/95 p-3.5 shadow-2xl backdrop-blur transition-transform duration-500" style="transform:translateY(220%)">
     <div class="flex items-start gap-3">
       <div id="saleIcon" class="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-indigo-500/25 to-cyan-400/20 text-2xl ring-1 ring-white/10">🛍️</div>
       <div class="min-w-0 flex-1">
@@ -440,14 +425,13 @@
         document.getElementById('saleIcon').textContent = p.i;
         document.getElementById('saleMsg').innerHTML = '<b>' + maskName(name) + '@gmail.com</b> baru saja top up <b>' + p.t + '</b>';
         toast.style.transform = 'translateY(0)';
-        toast.classList.add('sm:translate-x-0');
         hideTimer = setTimeout(hide, 5000);
       }
       function hide() {
-        toast.style.transform = '';
+        toast.style.transform = 'translateY(220%)';
         if (!stopped) timer = setTimeout(show, 9000 + Math.random() * 6000);
       }
-      if (closeBtn) closeBtn.addEventListener('click', () => { stopped = true; clearTimeout(timer); clearTimeout(hideTimer); toast.style.transform=''; });
+      if (closeBtn) closeBtn.addEventListener('click', () => { stopped = true; clearTimeout(timer); clearTimeout(hideTimer); toast.style.transform='translateY(220%)'; });
       timer = setTimeout(show, 4000);
     })();
 
@@ -473,32 +457,7 @@
         </div>`).join('');
     }).catch(() => {});
 
-    async function cek() {
-      const ref = $('#ref').value.trim();
-      const box = $('#cekResult');
-      if (!ref) { box.classList.remove('hidden'); box.innerHTML = 'Masukkan Ref ID dulu.'; return; }
-      box.classList.remove('hidden');
-      box.innerHTML = 'Mengecek…';
-      try {
-        const r = await fetch('/api/trx/' + encodeURIComponent(ref));
-        const j = await r.json();
-        if (!j.ok) { box.innerHTML = '❌ ' + (j.message || 'Tidak ditemukan'); return; }
-        const d = j.data;
-        const color = d.status === 'Sukses' ? 'text-emerald-400' : d.status === 'Gagal' ? 'text-rose-400' : 'text-amber-400';
-        box.innerHTML = `
-          <div class="grid gap-1.5">
-            <div class="flex justify-between"><span class="text-slate-400">Ref ID</span><span class="font-mono text-xs">${d.ref_id}</span></div>
-            <div class="flex justify-between"><span class="text-slate-400">Produk</span><span>${d.product || '-'}</span></div>
-            <div class="flex justify-between"><span class="text-slate-400">Tujuan</span><span>${d.target || '-'}</span></div>
-            <div class="flex justify-between"><span class="text-slate-400">Status</span><span class="font-semibold ${color}">${d.status}</span></div>
-            <div class="flex justify-between"><span class="text-slate-400">Waktu</span><span>${d.waktu}</span></div>
-          </div>`;
-      } catch (e) {
-        box.innerHTML = '⚠️ Gagal terhubung. Coba lagi.';
-      }
-    }
-    $('#cekBtn').addEventListener('click', cek);
-    $('#ref').addEventListener('keydown', (e) => { if (e.key === 'Enter') cek(); });
+    // Catatan: fitur Cek Transaksi kini ada di halaman terpisah /cek.html
   </script>
 </body>
 </html>
