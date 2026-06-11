@@ -346,7 +346,7 @@
       const root = document.documentElement;
       const saved = localStorage.getItem('skin');
       root.setAttribute('data-skin', VALID.includes(saved) ? saved : 'aurora');
-      const savedMode = localStorage.getItem('mode') === 'light' ? 'light' : 'dark';
+      const savedMode = localStorage.getItem('mode') === 'dark' ? 'dark' : 'light';
       root.setAttribute('data-mode', savedMode);
 
       const panel = document.getElementById('skinPanel');
