@@ -275,10 +275,18 @@ app.get('/api/trx/:refId', async (req, res) => {
   }
 });
 
-// info kontak & nama toko
-app.get('/api/info', (req, res) => {
+// info kontak & nama toko (store + logo diambil dari konfigurasi tampilan/CMS)
+app.get('/api/info', async (req, res) => {
   const botUsername = String(process.env.BOT_USERNAME || '').replace(/^@/, '');
-  res.json({ ok: true, data: { store: STORE_NAME, botUsername, googleEnabled: config.google.enabled, ...CONTACT } });
+  let store = STORE_NAME, logoUrl = '';
+  try { const s = await getSite(); store = s.storeName || STORE_NAME; logoUrl = s.logoUrl || ''; } catch (e) { /* fallback default */ }
+  res.json({ ok: true, data: { store, logoUrl, botUsername, googleEnabled: config.google.enabled, ...CONTACT } });
+});
+
+// konfigurasi tampilan web (publik) — dipakai beranda untuk render konten
+app.get('/api/site', async (req, res) => {
+  try { res.json({ ok: true, data: await getSite() }); }
+  catch (e) { logger.error('web /api/site:', e.message); res.json({ ok: false, data: null }); }
 });
 
 app.get('/health', (req, res) => res.json({ ok: true }));
@@ -1026,6 +1034,129 @@ app.post('/api/admin/brandlogos/clear', requireAdmin, async (req, res) => {
   } catch (e) {
     logger.error('web brandlogo clear:', e.message);
     res.json({ ok: false, message: 'Gagal menghapus logo.' });
+  }
+});
+
+// ===================== PENGATURAN TAMPILAN WEB (CMS sederhana) =====================
+// Disimpan sebagai 1 JSON di settings key 'site_config'. Tanpa migrasi DB.
+const DEFAULT_SITE = {
+  storeName: STORE_NAME,
+  logoUrl: '',
+  hero: {
+    title: 'Top up & tagihan, murah & instan.',
+    subtitle: 'Pulsa, paket data, token PLN, voucher game & e-money — harga bersaing, proses otomatis, langsung dari web maupun Telegram.',
+  },
+  why: {
+    title: 'Kenapa pilih kami?',
+    subtitle: 'Cepat, murah, dan terpercaya.',
+    items: [
+      { icon: '⚡', title: 'Proses Instan', desc: 'Otomatis 24 jam, masuk dalam hitungan detik.' },
+      { icon: '💰', title: 'Harga Bersaing', desc: 'Murah untuk member, lebih hemat untuk reseller.' },
+      { icon: '🔒', title: 'Aman & Terpercaya', desc: 'Login terverifikasi, transaksi tercatat rapi.' },
+      { icon: '🎧', title: 'CS Responsif', desc: 'Bantuan cepat via WhatsApp & Telegram.' },
+    ],
+  },
+  contact: { title: 'Kontak', subtitle: 'Butuh bantuan? Hubungi kami.' },
+  footer: { about: 'Layanan top up & pembayaran tagihan otomatis 24 jam: pulsa, paket data, token PLN, voucher game, dan e-money. Cepat, murah, terpercaya.' },
+};
+function clampStr(v, max) { return String(v == null ? '' : v).slice(0, max); }
+
+async function getSite() {
+  let stored = {};
+  try {
+    const row = await one("SELECT value FROM settings WHERE key = 'site_config'");
+    if (row && row.value) stored = JSON.parse(row.value) || {};
+  } catch (e) { stored = {}; }
+  const s = stored || {};
+  const w = s.why || {};
+  return {
+    storeName: s.storeName || DEFAULT_SITE.storeName,
+    logoUrl: s.logoUrl || '',
+    hero: {
+      title: (s.hero && s.hero.title) || DEFAULT_SITE.hero.title,
+      subtitle: (s.hero && s.hero.subtitle) || DEFAULT_SITE.hero.subtitle,
+    },
+    why: {
+      title: w.title || DEFAULT_SITE.why.title,
+      subtitle: w.subtitle || DEFAULT_SITE.why.subtitle,
+      items: (Array.isArray(w.items) && w.items.length) ? w.items : DEFAULT_SITE.why.items,
+    },
+    contact: {
+      title: (s.contact && s.contact.title) || DEFAULT_SITE.contact.title,
+      subtitle: (s.contact && s.contact.subtitle) || DEFAULT_SITE.contact.subtitle,
+    },
+    footer: { about: (s.footer && s.footer.about) || DEFAULT_SITE.footer.about },
+  };
+}
+async function saveSiteConfig(cfg) {
+  await query(
+    "INSERT INTO settings(key, value) VALUES('site_config', $1) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value",
+    [JSON.stringify(cfg)]
+  );
+}
+
+// baca konfigurasi (admin)
+app.get('/api/admin/site', requireAdmin, async (req, res) => {
+  try { res.json({ ok: true, data: await getSite() }); }
+  catch (e) { logger.error('web /api/admin/site:', e.message); res.json({ ok: false }); }
+});
+
+// simpan teks/konten (logo dikelola endpoint terpisah agar tidak terhapus)
+app.post('/api/admin/site', requireAdmin, async (req, res) => {
+  try {
+    const b = req.body || {};
+    const cur = await getSite();
+    let items = cur.why.items;
+    if (b.why && Array.isArray(b.why.items)) {
+      items = b.why.items.slice(0, 12)
+        .map((it) => ({ icon: clampStr(it.icon, 8), title: clampStr(it.title, 60), desc: clampStr(it.desc, 160) }))
+        .filter((it) => it.title || it.desc);
+    }
+    const cfg = {
+      storeName: clampStr(b.storeName, 60) || cur.storeName,
+      logoUrl: cur.logoUrl,
+      hero: {
+        title: clampStr(b.hero && b.hero.title, 90) || cur.hero.title,
+        subtitle: clampStr(b.hero && b.hero.subtitle, 220) || cur.hero.subtitle,
+      },
+      why: {
+        title: clampStr(b.why && b.why.title, 80) || cur.why.title,
+        subtitle: clampStr(b.why && b.why.subtitle, 160) || cur.why.subtitle,
+        items: items.length ? items : cur.why.items,
+      },
+      contact: {
+        title: clampStr(b.contact && b.contact.title, 60) || cur.contact.title,
+        subtitle: clampStr(b.contact && b.contact.subtitle, 160) || cur.contact.subtitle,
+      },
+      footer: { about: clampStr(b.footer && b.footer.about, 400) || cur.footer.about },
+    };
+    await saveSiteConfig(cfg);
+    res.json({ ok: true, message: 'Pengaturan tampilan disimpan.', data: cfg });
+  } catch (e) {
+    logger.error('web save site:', e.message);
+    res.json({ ok: false, message: 'Gagal menyimpan pengaturan.' });
+  }
+});
+
+// upload / hapus logo web
+app.post('/api/admin/site/logo', requireAdmin, async (req, res) => {
+  try {
+    const cfg = await getSite();
+    if (req.body && req.body.clear) {
+      if (cfg.logoUrl) unlinkUpload(cfg.logoUrl);
+      cfg.logoUrl = '';
+      await saveSiteConfig(cfg);
+      return res.json({ ok: true, message: 'Logo web dihapus.', url: '' });
+    }
+    const saved = saveBase64Image(req.body && req.body.data);
+    if (saved.error) return res.json({ ok: false, message: saved.error });
+    if (cfg.logoUrl) unlinkUpload(cfg.logoUrl);
+    cfg.logoUrl = saved.url;
+    await saveSiteConfig(cfg);
+    res.json({ ok: true, message: 'Logo web diperbarui.', url: saved.url });
+  } catch (e) {
+    logger.error('web site logo:', e.message);
+    res.json({ ok: false, message: 'Gagal mengunggah logo.' });
   }
 });
 

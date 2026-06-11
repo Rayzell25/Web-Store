@@ -160,7 +160,7 @@
           Kembali
         </button>
         <a href="/" style="display:flex;align-items:center;gap:.55rem;min-width:0">
-          <span class="g-bg" style="display:grid;place-items:center;width:36px;height:36px;border-radius:.7rem;flex-shrink:0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M13 3.5 5.5 14c-.4.5 0 1.2.6 1.2H11l-1.5 8c-.2.8 1 1.3 1.5.6L18.5 13c.4-.5 0-1.2-.6-1.2H13l1.5-7.7c.2-.8-1-1.3-1.5-.6z" fill="white"/></svg></span>
+          <span class="g-bg" id="navLogo" style="display:grid;place-items:center;width:36px;height:36px;border-radius:.7rem;flex-shrink:0;overflow:hidden"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M13 3.5 5.5 14c-.4.5 0 1.2.6 1.2H11l-1.5 8c-.2.8 1 1.3 1.5.6L18.5 13c.4-.5 0-1.2-.6-1.2H13l1.5-7.7c.2-.8-1-1.3-1.5-.6z" fill="white"/></svg></span>
           <span class="g-text" id="brand" style="font-weight:800;font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px">RAYZELL STORE</span>
         </a>
       </div>
@@ -448,6 +448,10 @@
           $('#brandFoot').textContent = INFO.store;
           document.title = 'Belanja — ' + INFO.store;
           const gn = $('#gateStoreName'); if (gn) gn.textContent = INFO.store;
+        }
+        if (INFO.logoUrl) {
+          const nl = $('#navLogo');
+          if (nl) { nl.style.background = 'transparent'; nl.innerHTML = '<img src="' + esc(INFO.logoUrl) + '" alt="logo" style="width:100%;height:100%;object-fit:contain">'; }
         }
         const waFab = $('#waFab'); if (waFab && INFO.waLink) waFab.href = INFO.waLink;
       } catch (e) {}
