@@ -139,6 +139,66 @@
         <div id="logoList" class="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2"></div>
       </div>
     </div>
+
+    <!-- PENGATURAN TAMPILAN WEB (CMS) -->
+    <div class="mt-6 rounded-2xl" style="background:var(--card);border:1px solid var(--border)">
+      <div class="flex items-center justify-between border-b px-6 py-4" style="border-color:var(--border)">
+        <h2 class="font-semibold">Pengaturan Tampilan Web</h2>
+        <span class="text-xs" style="color:var(--muted)">Edit nama, logo, hero, "Kenapa pilih kami", kontak &amp; footer — lalu Simpan.</span>
+      </div>
+      <div class="space-y-5 p-6">
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label class="mb-1 block text-xs font-medium" style="color:var(--muted)">Nama Store</label>
+            <input id="setStoreName" type="text" class="w-full rounded-xl px-3 py-2.5 text-sm" style="background:var(--bg);border:1px solid var(--border);color:var(--text)"/>
+          </div>
+          <div>
+            <label class="mb-1 block text-xs font-medium" style="color:var(--muted)">Logo Web</label>
+            <div class="flex items-center gap-3">
+              <div class="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-xl" style="background:var(--bg);border:1px solid var(--border)">
+                <img id="setLogoPreview" class="hidden h-full w-full" style="object-fit:contain" alt=""/>
+                <span id="setLogoEmpty" class="text-lg" style="color:var(--muted)">🖼️</span>
+              </div>
+              <input id="setLogoFile" type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml" class="hidden" onchange="uploadSiteLogo(this)"/>
+              <button id="setLogoBtn" onclick="document.getElementById('setLogoFile').click()" class="rounded-lg px-3 py-2 text-xs font-semibold" style="background:var(--btn);color:var(--btn-text)">📷 Upload</button>
+              <button onclick="removeSiteLogo()" class="rounded-lg px-3 py-2 text-xs font-semibold" style="background:#f43f5e;color:#fff">Hapus</button>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="mb-2 text-sm font-semibold">Hero (judul utama beranda)</div>
+          <input id="setHeroTitle" type="text" placeholder="Judul" class="mb-2 w-full rounded-xl px-3 py-2.5 text-sm" style="background:var(--bg);border:1px solid var(--border);color:var(--text)"/>
+          <textarea id="setHeroSubtitle" rows="2" placeholder="Sub-judul" class="w-full rounded-xl px-3 py-2.5 text-sm" style="background:var(--bg);border:1px solid var(--border);color:var(--text)"></textarea>
+        </div>
+
+        <div>
+          <div class="mb-2 flex items-center justify-between">
+            <div class="text-sm font-semibold">Section "Kenapa pilih kami"</div>
+            <button onclick="addWhyItem()" class="rounded-lg px-3 py-1.5 text-xs font-semibold" style="background:var(--btn);color:var(--btn-text)">+ Tambah Item</button>
+          </div>
+          <input id="setWhyTitle" type="text" placeholder="Judul section" class="mb-2 w-full rounded-xl px-3 py-2.5 text-sm" style="background:var(--bg);border:1px solid var(--border);color:var(--text)"/>
+          <input id="setWhySubtitle" type="text" placeholder="Sub-judul section" class="mb-3 w-full rounded-xl px-3 py-2.5 text-sm" style="background:var(--bg);border:1px solid var(--border);color:var(--text)"/>
+          <div id="setWhyList" class="space-y-2"></div>
+        </div>
+
+        <div>
+          <div class="mb-2 text-sm font-semibold">Section Kontak</div>
+          <input id="setKontakTitle" type="text" placeholder="Judul" class="mb-2 w-full rounded-xl px-3 py-2.5 text-sm" style="background:var(--bg);border:1px solid var(--border);color:var(--text)"/>
+          <input id="setKontakSubtitle" type="text" placeholder="Sub-judul" class="w-full rounded-xl px-3 py-2.5 text-sm" style="background:var(--bg);border:1px solid var(--border);color:var(--text)"/>
+        </div>
+
+        <div>
+          <div class="mb-2 text-sm font-semibold">Footer (deskripsi bawah)</div>
+          <textarea id="setFooterAbout" rows="3" class="w-full rounded-xl px-3 py-2.5 text-sm" style="background:var(--bg);border:1px solid var(--border);color:var(--text)"></textarea>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <button onclick="saveSite()" class="rounded-xl px-6 py-2.5 text-sm font-bold" style="background:var(--btn);color:var(--btn-text)">💾 Simpan &amp; Apply</button>
+          <span id="setMsg" class="text-xs" style="color:var(--muted)"></span>
+        </div>
+      </div>
+    </div>
   </main>
   <script>
     const saved = localStorage.getItem('theme') || 'dark';
@@ -217,7 +277,7 @@
       loadData();
     }
     if (!token()) window.location = '/admin/';
-    else { loadData(); setInterval(loadData, 30000); initBanner(); initBrandLogos(); }
+    else { loadData(); setInterval(loadData, 30000); initBanner(); initBrandLogos(); initSite(); }
 
     // ===== BANNER PRODUK =====
     async function initBanner() {
@@ -418,6 +478,59 @@
         const j = await r.json();
         if (j.ok) loadBrandLogos(); else alert(j.message || 'Gagal hapus.');
       } catch(e){ alert('Gagal terhubung.'); }
+    }
+    // ===== PENGATURAN TAMPILAN WEB (CMS) =====
+    function val(id){ const el=document.getElementById(id); return el?el.value:''; }
+    function setLogoPreview(url){
+      const img=document.getElementById('setLogoPreview'), empty=document.getElementById('setLogoEmpty');
+      if(url){ if(img){ img.src=url; img.classList.remove('hidden'); } if(empty) empty.classList.add('hidden'); }
+      else { if(img){ img.src=''; img.classList.add('hidden'); } if(empty) empty.classList.remove('hidden'); }
+    }
+    function whyRowHtml(it,i){
+      return `<div class="whyRow flex items-center gap-2 rounded-xl p-2" style="background:var(--bg);border:1px solid var(--border)">
+        <input class="whyIcon w-12 rounded-lg px-2 py-2 text-center text-sm" style="background:var(--card);border:1px solid var(--border);color:var(--text)" value="${esc(it.icon||'')}" placeholder="⚡"/>
+        <input class="whyTitle flex-1 rounded-lg px-2 py-2 text-sm" style="background:var(--card);border:1px solid var(--border);color:var(--text)" value="${esc(it.title||'')}" placeholder="Judul"/>
+        <input class="whyDesc flex-1 rounded-lg px-2 py-2 text-sm" style="background:var(--card);border:1px solid var(--border);color:var(--text)" value="${esc(it.desc||'')}" placeholder="Deskripsi"/>
+        <button onclick="removeWhyItem(${i})" class="shrink-0 rounded-lg px-2.5 py-2 text-xs font-semibold" style="background:#f43f5e;color:#fff">✕</button>
+      </div>`;
+    }
+    function renderWhyEditor(items){ const box=document.getElementById('setWhyList'); box.innerHTML=(items||[]).map((it,i)=>whyRowHtml(it,i)).join(''); }
+    function collectWhy(){ return Array.from(document.querySelectorAll('#setWhyList .whyRow')).map(r=>({ icon:r.querySelector('.whyIcon').value, title:r.querySelector('.whyTitle').value, desc:r.querySelector('.whyDesc').value })); }
+    function addWhyItem(){ const cur=collectWhy(); cur.push({icon:'✨',title:'',desc:''}); renderWhyEditor(cur); }
+    function removeWhyItem(i){ const cur=collectWhy(); cur.splice(i,1); renderWhyEditor(cur); }
+    async function initSite(){
+      try{
+        const r=await fetch('/api/admin/site',{headers:ah()}); const j=await r.json();
+        if(!j.ok||!j.data) return; const d=j.data;
+        const setv=(id,v)=>{ const el=document.getElementById(id); if(el) el.value=v||''; };
+        setv('setStoreName',d.storeName);
+        setv('setHeroTitle',d.hero&&d.hero.title); setv('setHeroSubtitle',d.hero&&d.hero.subtitle);
+        setv('setWhyTitle',d.why&&d.why.title); setv('setWhySubtitle',d.why&&d.why.subtitle);
+        setv('setKontakTitle',d.contact&&d.contact.title); setv('setKontakSubtitle',d.contact&&d.contact.subtitle);
+        setv('setFooterAbout',d.footer&&d.footer.about);
+        setLogoPreview(d.logoUrl); renderWhyEditor((d.why&&d.why.items)||[]);
+      }catch(e){}
+    }
+    async function saveSite(){
+      const msg=document.getElementById('setMsg');
+      const body={ storeName:val('setStoreName'), hero:{title:val('setHeroTitle'),subtitle:val('setHeroSubtitle')}, why:{title:val('setWhyTitle'),subtitle:val('setWhySubtitle'),items:collectWhy()}, contact:{title:val('setKontakTitle'),subtitle:val('setKontakSubtitle')}, footer:{about:val('setFooterAbout')} };
+      if(msg) msg.textContent='Menyimpan…';
+      try{ const r=await fetch('/api/admin/site',{method:'POST',headers:ah(),body:JSON.stringify(body)}); const j=await r.json(); if(msg){ msg.textContent=j.ok?'✓ Tersimpan & apply. Refresh beranda untuk lihat.':(j.message||'Gagal.'); msg.style.color=j.ok?'#10b981':'#f43f5e'; } }
+      catch(e){ if(msg){ msg.textContent='Gagal terhubung.'; msg.style.color='#f43f5e'; } }
+    }
+    async function uploadSiteLogo(inputEl){
+      const file=inputEl.files&&inputEl.files[0]; if(!file) return;
+      if(!/^image\//.test(file.type)){ alert('File harus gambar.'); inputEl.value=''; return; }
+      if(file.size>3*1024*1024){ alert('Ukuran maksimal 3 MB.'); inputEl.value=''; return; }
+      const btn=document.getElementById('setLogoBtn'); const old=btn?btn.textContent:''; if(btn){ btn.textContent='Mengunggah…'; btn.disabled=true; }
+      const reader=new FileReader();
+      reader.onload=async()=>{ try{ const r=await fetch('/api/admin/site/logo',{method:'POST',headers:ah(),body:JSON.stringify({data:reader.result})}); const j=await r.json(); if(j.ok){ setLogoPreview(j.url); } else alert(j.message||'Gagal upload.'); }catch(e){ alert('Gagal terhubung.'); } if(btn){ btn.textContent=old; btn.disabled=false; } inputEl.value=''; };
+      reader.onerror=()=>{ alert('Gagal membaca file.'); inputEl.value=''; if(btn){ btn.textContent=old; btn.disabled=false; } };
+      reader.readAsDataURL(file);
+    }
+    async function removeSiteLogo(){
+      if(!confirm('Hapus logo web?')) return;
+      try{ const r=await fetch('/api/admin/site/logo',{method:'POST',headers:ah(),body:JSON.stringify({clear:true})}); const j=await r.json(); if(j.ok) setLogoPreview(''); else alert(j.message||'Gagal.'); }catch(e){ alert('Gagal terhubung.'); }
     }
   </script>
 </body>

@@ -145,7 +145,7 @@
   <nav class="bar">
     <div class="wrap nav-in">
       <a href="/" style="display:flex;align-items:center;gap:.6rem;min-width:0">
-        <span class="g-bg" style="display:grid;place-items:center;width:38px;height:38px;border-radius:.75rem;flex-shrink:0">
+        <span class="g-bg" id="navLogo" style="display:grid;place-items:center;width:38px;height:38px;border-radius:.75rem;flex-shrink:0;overflow:hidden">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M13 3.5 5.5 14c-.4.5 0 1.2.6 1.2H11l-1.5 8c-.2.8 1 1.3 1.5.6L18.5 13c.4-.5 0-1.2-.6-1.2H13l1.5-7.7c.2-.8-1-1.3-1.5-.6z" fill="white"/></svg>
         </span>
         <span style="display:flex;flex-direction:column;line-height:1.1;min-width:0">
@@ -195,10 +195,10 @@
           <span style="width:.5rem;height:.5rem;border-radius:999px;background:#22c55e;animation:pulse 1.8s infinite"></span>
           Otomatis 24 jam · proses instan
         </div>
-        <h1 style="font-size:clamp(1.95rem,5vw,3.25rem);font-weight:800;line-height:1.08;letter-spacing:-.03em;margin:0 0 .9rem">
-          Top up &amp; tagihan,<br><span class="g-text">murah &amp; instan.</span>
+        <h1 id="heroTitle" style="font-size:clamp(1.95rem,5vw,3.25rem);font-weight:800;line-height:1.08;letter-spacing:-.03em;margin:0 0 .9rem">
+          Top up &amp; tagihan, <span class="g-text">murah &amp; instan.</span>
         </h1>
-        <p style="font-size:.98rem;line-height:1.6;color:var(--muted);max-width:460px;margin:0 0 1.4rem">
+        <p id="heroSubtitle" style="font-size:.98rem;line-height:1.6;color:var(--muted);max-width:460px;margin:0 0 1.4rem">
           Pulsa, paket data, token PLN, voucher game &amp; e-money — harga bersaing, proses otomatis, langsung dari web maupun Telegram.
         </p>
         <div style="display:flex;flex-wrap:wrap;gap:.6rem;margin-bottom:1.6rem">
@@ -276,9 +276,9 @@
   <section class="wrap" style="padding-top:2.5rem;padding-bottom:1rem">
     <div class="sec-head">
       <span class="sec-ic" style="background:linear-gradient(135deg,#f59e0b,#f97316)">⭐</span>
-      <div><h2 class="sec-title">Kenapa pilih kami?</h2><div style="font-size:.8rem;color:var(--muted)">Cepat, murah, dan terpercaya.</div></div>
+      <div><h2 class="sec-title" id="whyTitle">Kenapa pilih kami?</h2><div id="whySubtitle" style="font-size:.8rem;color:var(--muted)">Cepat, murah, dan terpercaya.</div></div>
     </div>
-    <div class="why">
+    <div class="why" id="whyGrid">
       <div class="card why-card"><div style="font-size:1.5rem;margin-bottom:.6rem">⚡</div><div style="font-weight:700;font-size:.9rem;margin-bottom:.3rem">Proses Instan</div><div style="font-size:.8rem;color:var(--muted)">Otomatis 24 jam, masuk dalam hitungan detik.</div></div>
       <div class="card why-card"><div style="font-size:1.5rem;margin-bottom:.6rem">💰</div><div style="font-weight:700;font-size:.9rem;margin-bottom:.3rem">Harga Bersaing</div><div style="font-size:.8rem;color:var(--muted)">Murah untuk member, lebih hemat untuk reseller.</div></div>
       <div class="card why-card"><div style="font-size:1.5rem;margin-bottom:.6rem">🔒</div><div style="font-weight:700;font-size:.9rem;margin-bottom:.3rem">Aman &amp; Terpercaya</div><div style="font-size:.8rem;color:var(--muted)">Login terverifikasi, transaksi tercatat rapi.</div></div>
@@ -290,7 +290,7 @@
   <section class="wrap" id="kontak" style="padding-top:2.5rem;padding-bottom:2.5rem">
     <div class="sec-head">
       <span class="sec-ic" style="background:linear-gradient(135deg,#22c55e,#16a34a)">🎧</span>
-      <div><h2 class="sec-title">Kontak</h2><div style="font-size:.8rem;color:var(--muted)">Butuh bantuan? Hubungi kami.</div></div>
+      <div><h2 class="sec-title" id="kontakTitle">Kontak</h2><div id="kontakSubtitle" style="font-size:.8rem;color:var(--muted)">Butuh bantuan? Hubungi kami.</div></div>
     </div>
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:.85rem">
       <a id="wa" href="#" target="_blank" rel="noopener" class="card" style="display:flex;align-items:center;justify-content:space-between;padding:1.2rem">
@@ -310,10 +310,10 @@
       <div class="ft-grid">
         <div>
           <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.85rem">
-            <span class="g-bg" style="display:grid;place-items:center;width:34px;height:34px;border-radius:.7rem"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M13 3.5 5.5 14c-.4.5 0 1.2.6 1.2H11l-1.5 8c-.2.8 1 1.3 1.5.6L18.5 13c.4-.5 0-1.2-.6-1.2H13l1.5-7.7c.2-.8-1-1.3-1.5-.6z" fill="white"/></svg></span>
+            <span class="g-bg" id="footLogo" style="display:grid;place-items:center;width:34px;height:34px;border-radius:.7rem;overflow:hidden"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M13 3.5 5.5 14c-.4.5 0 1.2.6 1.2H11l-1.5 8c-.2.8 1 1.3 1.5.6L18.5 13c.4-.5 0-1.2-.6-1.2H13l1.5-7.7c.2-.8-1-1.3-1.5-.6z" fill="white"/></svg></span>
             <span class="g-text" id="brandFoot2" style="font-weight:800;font-size:1rem">Rayzell Store PPOB</span>
           </div>
-          <p style="font-size:.84rem;color:var(--muted);line-height:1.6;margin:0 0 1rem;max-width:340px">Layanan top up &amp; pembayaran tagihan otomatis 24 jam: pulsa, paket data, token PLN, voucher game, dan e-money. Cepat, murah, terpercaya.</p>
+          <p id="footerAbout" style="font-size:.84rem;color:var(--muted);line-height:1.6;margin:0 0 1rem;max-width:340px">Layanan top up &amp; pembayaran tagihan otomatis 24 jam: pulsa, paket data, token PLN, voucher game, dan e-money. Cepat, murah, terpercaya.</p>
           <div style="display:flex;gap:.5rem">
             <a id="ftWa" href="#" target="_blank" rel="noopener" class="icon-btn" aria-label="WhatsApp"><svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15l-1.3 4.8 4.9-1.3A10 10 0 1 0 12 2Zm5.3 14.1c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .1-1.7-.1-.4-.1-.9-.3-1.6-.6-2.7-1.2-4.5-4-4.6-4.2-.1-.2-1.1-1.5-1.1-2.8 0-1.3.7-2 .9-2.2.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 1.9c.1.2.1.4 0 .5l-.4.6c-.2.2-.3.4-.1.7.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.4 2.4 1.5.2.1.4.1.6-.1l.7-.9c.2-.2.4-.2.6-.1l1.8.9c.2.1.4.2.4.3.1.2.1.7-.1 1.2Z"/></svg></a>
             <a id="ftTg" href="#" target="_blank" rel="noopener" class="icon-btn" aria-label="Telegram"><svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M21.9 4.3 18.7 19c-.2 1-.9 1.3-1.8.8l-4.9-3.6-2.4 2.3c-.3.3-.5.5-1 .5l.3-5 9-8.1c.4-.3-.1-.5-.6-.2L6.4 13 1.6 11.5c-1-.3-1-1 .2-1.5l18.7-7.2c.9-.3 1.6.2 1.4 1.5Z"/></svg></a>
@@ -464,14 +464,41 @@
     }
 
     // ===== API: info kontak/brand =====
+    function applyLogo(url) {
+      if (!url) return;
+      const img = '<img src="' + escapeHtml(url) + '" alt="logo" style="width:100%;height:100%;object-fit:contain">';
+      ['#navLogo', '#footLogo'].forEach((id) => { const el = $(id); if (el) { el.style.background = 'transparent'; el.innerHTML = img; } });
+    }
     fetch('/api/info').then((r) => r.json()).then(({ data }) => {
       if (!data) return;
       const set = (id, v) => { const el = $(id); if (el && v) el.textContent = v; };
       set('#brand', data.store); set('#brandFoot', data.store); set('#brandFoot2', data.store);
       if (data.store) document.title = data.store + ' — Pulsa, Paket Data, PLN, Game, E-Money';
+      applyLogo(data.logoUrl);
       if ($('#cta-tg') && data.botLink) $('#cta-tg').href = data.botLink;
       if (data.waLink) ['#wa','#waFab','#ftWa'].forEach((id) => { const el = $(id); if (el) el.href = data.waLink; });
       if (data.tgLink) ['#tg','#ftTg'].forEach((id) => { const el = $(id); if (el) el.href = data.tgLink; });
+    }).catch(() => {});
+
+    // ===== API: konten tampilan (CMS) — hero, why, kontak, footer =====
+    fetch('/api/site').then((r) => r.json()).then(({ data }) => {
+      if (!data) return;
+      const t = (id, v) => { const el = $(id); if (el && v != null && v !== '') el.textContent = v; };
+      if (data.storeName) { t('#brand', data.storeName); t('#brandFoot', data.storeName); t('#brandFoot2', data.storeName); }
+      if (data.hero) { t('#heroTitle', data.hero.title); t('#heroSubtitle', data.hero.subtitle); }
+      if (data.why) {
+        t('#whyTitle', data.why.title); t('#whySubtitle', data.why.subtitle);
+        const g = $('#whyGrid');
+        if (g && Array.isArray(data.why.items)) {
+          g.innerHTML = data.why.items.map((it) =>
+            '<div class="card why-card"><div style="font-size:1.5rem;margin-bottom:.6rem">' + escapeHtml(it.icon || '✨') +
+            '</div><div style="font-weight:700;font-size:.9rem;margin-bottom:.3rem">' + escapeHtml(it.title || '') +
+            '</div><div style="font-size:.8rem;color:var(--muted)">' + escapeHtml(it.desc || '') + '</div></div>'
+          ).join('');
+        }
+      }
+      if (data.contact) { t('#kontakTitle', data.contact.title); t('#kontakSubtitle', data.contact.subtitle); }
+      if (data.footer) t('#footerAbout', data.footer.about);
     }).catch(() => {});
 
     // ===== API: storefront (kategori -> brand + logo) =====
