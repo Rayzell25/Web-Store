@@ -537,8 +537,14 @@
       renderCrumb();
       $('#beliView').innerHTML = loadingCard();
       try {
-        const j = await api('/api/catalog');
-        if (!j.ok || !j.data.length) { $('#beliView').innerHTML = loadingCard('Produk belum tersedia.'); return; }
+        // Gunakan fetch langsung (bukan api()) karena /api/catalog adalah endpoint
+        // publik — tidak perlu token, tidak auto-reload bila 401.
+        const r = await fetch('/api/catalog', { headers: { 'Content-Type': 'application/json' } });
+        const j = await r.json();
+        if (!j.ok || !j.data.length) {
+          $('#beliView').innerHTML = loadingCard('Produk belum tersedia. Minta admin jalankan Sync Produk dari menu Admin.');
+          return;
+        }
         $('#beliView').innerHTML = '<div class="grid grid-cols-2 gap-3 sm:grid-cols-3">' + j.data.map((d) => `
           <button data-cat="${esc(d.category)}" class="catCard group rounded-2xl border border-white/10 bg-white/5 p-4 text-left transition hover:-translate-y-0.5 hover:border-indigo-400/30 hover:bg-white/[0.07]">
             <div class="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 text-xl">${iconFor(d.category)}</div>
@@ -547,7 +553,9 @@
             <div class="mt-1 text-xs text-slate-300">Mulai <span class="font-semibold text-white">${d.startFromText}</span></div>
           </button>`).join('') + '</div>';
         $$('#beliView .catCard').forEach((el) => el.addEventListener('click', () => loadBrands(el.dataset.cat)));
-      } catch (e) { $('#beliView').innerHTML = loadingCard('Gagal memuat. Coba lagi.'); }
+      } catch (e) {
+        $('#beliView').innerHTML = loadingCard('Gagal memuat produk. Coba lagi atau refresh halaman.');
+      }
     }
 
     async function loadBrands(category) {
