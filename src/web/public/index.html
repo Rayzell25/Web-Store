@@ -62,29 +62,35 @@
     .icon-btn { display:grid; place-items:center; width:40px; height:40px; border-radius:.7rem; border:1px solid var(--border); background:var(--card); color:var(--ink); cursor:pointer; flex-shrink:0; transition:background .2s; }
     .icon-btn:hover { background:color-mix(in srgb, var(--ink) 6%, transparent); }
 
-    /* chips */
-    .chips { display:flex; gap:.5rem; overflow-x:auto; padding:.25rem .1rem; scrollbar-width:none; }
-    .chips::-webkit-scrollbar { display:none; }
-    .chip { flex:0 0 auto; display:inline-flex; align-items:center; gap:.45rem; white-space:nowrap; padding:.6rem 1.1rem; border-radius:999px; font-size:.85rem; font-weight:600; cursor:pointer; border:1px solid var(--border); background:var(--card); color:var(--muted); transition:all .18s ease; }
-    .chip:hover { color:var(--ink); }
-    .chip[data-active="1"] { background:linear-gradient(120deg,var(--a1),var(--a2)); color:#fff; border-color:transparent; box-shadow:0 8px 20px -10px var(--a1soft); }
-
     /* section heading */
     .sec-head { display:flex; align-items:center; gap:.75rem; margin:0 0 1.1rem; }
     .sec-ic { display:grid; place-items:center; width:42px; height:42px; border-radius:.85rem; font-size:1.25rem; flex-shrink:0; }
-    .sec-title { font-size:1.15rem; font-weight:800; margin:0; letter-spacing:-.01em; }
-    @media(min-width:640px){ .sec-title{ font-size:1.35rem; } }
+    .sec-title { font-size:1.12rem; font-weight:800; margin:0; letter-spacing:-.01em; }
+    @media(min-width:640px){ .sec-title{ font-size:1.3rem; } }
 
-    /* product grid (konsisten HP & PC via auto-fill) */
-    .pgrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:.85rem; }
-    @media(min-width:640px){ .pgrid{ grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:1rem; } }
+    /* === KATEGORI SECTION (gaya Ditopup) === */
+    .catsec { margin-bottom:2rem; }
+    .catsec-head { display:flex; align-items:center; gap:.6rem; margin:0 0 .95rem; }
+    .catsec-ic { display:grid; place-items:center; width:34px; height:34px; border-radius:.65rem; font-size:1.05rem; flex-shrink:0; color:#fff; }
+    .catsec-title { font-size:1.02rem; font-weight:800; margin:0; letter-spacing:-.01em; }
+    @media(min-width:640px){ .catsec-title{ font-size:1.18rem; } }
+    .catsec-count { font-size:.72rem; color:var(--muted); font-weight:600; }
+
+    /* product grid — rapi & seragam: 3 kolom di HP, lebih di layar besar */
+    .pgrid { display:grid; grid-template-columns:repeat(3,1fr); gap:.7rem; }
+    @media(min-width:480px){ .pgrid{ grid-template-columns:repeat(4,1fr); gap:.8rem; } }
+    @media(min-width:768px){ .pgrid{ grid-template-columns:repeat(5,1fr); gap:.9rem; } }
+    @media(min-width:1024px){ .pgrid{ grid-template-columns:repeat(6,1fr); } }
+
     .pcard { position:relative; overflow:hidden; display:flex; flex-direction:column; }
-    .pcard-img { position:relative; aspect-ratio:1/1; display:grid; place-items:center; font-size:2.6rem; }
-    .pcard-body { padding:.7rem .8rem .85rem; }
-    .pcard-name { font-weight:700; font-size:.9rem; line-height:1.25; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .pcard-meta { font-size:.74rem; color:var(--muted); margin-top:.15rem; }
-    .pcard-price { font-size:.82rem; font-weight:700; margin-top:.45rem; }
-    .fav { position:absolute; top:.55rem; right:.55rem; z-index:2; display:grid; place-items:center; width:30px; height:30px; border-radius:999px; background:rgba(255,255,255,.85); border:none; cursor:pointer; color:#94a3b8; transition:transform .15s, color .15s; }
+    .pcard-img { position:relative; aspect-ratio:1/1; display:grid; place-items:center; font-size:2.2rem; }
+    @media(min-width:640px){ .pcard-img{ font-size:2.6rem; } }
+    .pcard-body { padding:.55rem .6rem .65rem; }
+    .pcard-name { font-weight:700; font-size:.82rem; line-height:1.25; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .pcard-meta { font-size:.68rem; color:var(--muted); margin-top:.12rem; }
+    .pcard-price { font-size:.74rem; font-weight:700; margin-top:.35rem; }
+    @media(min-width:640px){ .pcard-name{ font-size:.9rem; } .pcard-meta{ font-size:.74rem; } .pcard-price{ font-size:.82rem; } }
+    .fav { position:absolute; top:.45rem; right:.45rem; z-index:2; display:grid; place-items:center; width:27px; height:27px; border-radius:999px; background:rgba(255,255,255,.85); border:none; cursor:pointer; color:#94a3b8; transition:transform .15s, color .15s; }
     .fav:hover { transform:scale(1.1); }
     .fav[data-on="1"] { color:#ef4444; }
 
@@ -110,6 +116,18 @@
     .drw-link { display:flex; align-items:center; gap:.85rem; padding:.8rem 1rem; border-radius:.8rem; font-weight:600; font-size:.92rem; text-decoration:none; color:var(--ink); background:transparent; border:none; cursor:pointer; width:100%; text-align:left; transition:background .2s; }
     .drw-link:hover { background:color-mix(in srgb, var(--ink) 6%, transparent); }
     .drw-ic { display:grid; place-items:center; width:36px; height:36px; border-radius:.7rem; background:color-mix(in srgb, var(--ink) 6%, transparent); font-size:1.05rem; }
+
+    /* why-us grid */
+    .why { display:grid; grid-template-columns:repeat(2,1fr); gap:.7rem; }
+    @media(min-width:768px){ .why{ grid-template-columns:repeat(4,1fr); gap:.85rem; } }
+
+    /* footer */
+    .ft-grid { display:grid; grid-template-columns:1fr; gap:1.6rem; }
+    @media(min-width:640px){ .ft-grid{ grid-template-columns:1.4fr 1fr 1fr; gap:1.5rem; } }
+    .ft-h { font-size:.8rem; font-weight:800; text-transform:uppercase; letter-spacing:.08em; margin:0 0 .85rem; }
+    .ft-link { display:block; font-size:.85rem; color:var(--muted); text-decoration:none; padding:.3rem 0; transition:color .2s; }
+    .ft-link:hover { color:var(--ink); }
+    .pay-chip { display:inline-flex; align-items:center; justify-content:center; background:var(--card); border:1px solid var(--border); border-radius:.55rem; padding:.4rem .7rem; font-size:.72rem; font-weight:700; color:var(--muted); }
 
     /* fade-in */
     .fa { opacity:0; transform:translateY(12px); animation:fa .55s cubic-bezier(.2,.7,.2,1) forwards; }
@@ -234,34 +252,29 @@
     </div>
   </div>
 
-  <!-- ========== LAYANAN ========== -->
+  <!-- ========== LAYANAN (per-kategori, gaya Ditopup) ========== -->
   <main class="wrap" id="layanan" style="padding-bottom:1rem">
-    <!-- filter chips -->
-    <div class="card" style="padding:.6rem;margin-bottom:1.5rem">
-      <div class="chips" id="chips">
-        <span class="chip" data-cat="__all" data-active="1"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg> Semua</span>
-      </div>
-    </div>
-
     <div class="sec-head">
       <span class="sec-ic g-bg" style="color:#fff">🛍️</span>
       <div>
         <h2 class="sec-title">Layanan kami</h2>
-        <div style="font-size:.8rem;color:var(--muted)">Harga termurah per kategori. Klik untuk transaksi.</div>
+        <div style="font-size:.8rem;color:var(--muted)">Pilih kategori, lalu klik untuk transaksi. Harga termurah per kategori.</div>
       </div>
     </div>
 
-    <div id="grid" class="pgrid">
-      <div class="card" style="padding:1.4rem;text-align:center;color:var(--muted);grid-column:1/-1">Memuat layanan…</div>
-    </div>
-    <div style="text-align:center;margin-top:1.4rem">
-      <button id="moreBtn" class="btn btn-ghost" style="display:none">Tampilkan lainnya…</button>
+    <!-- semua section kategori dibangun di sini -->
+    <div id="sections">
+      <div class="card" style="padding:1.4rem;text-align:center;color:var(--muted)">Memuat layanan…</div>
     </div>
   </main>
 
   <!-- KEUNGGULAN -->
   <section class="wrap" style="padding-top:2.5rem;padding-bottom:1rem">
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:.85rem">
+    <div class="sec-head">
+      <span class="sec-ic" style="background:rgba(245,158,11,.14);color:#f59e0b">⭐</span>
+      <div><h2 class="sec-title">Kenapa pilih kami?</h2><div style="font-size:.8rem;color:var(--muted)">Cepat, murah, dan terpercaya.</div></div>
+    </div>
+    <div class="why">
       <div class="card lift" style="padding:1.2rem"><div style="font-size:1.5rem;margin-bottom:.6rem">⚡</div><div style="font-weight:700;font-size:.9rem;margin-bottom:.3rem">Proses Instan</div><div style="font-size:.8rem;color:var(--muted)">Otomatis 24 jam, masuk dalam hitungan detik.</div></div>
       <div class="card lift" style="padding:1.2rem"><div style="font-size:1.5rem;margin-bottom:.6rem">💰</div><div style="font-weight:700;font-size:.9rem;margin-bottom:.3rem">Harga Bersaing</div><div style="font-size:.8rem;color:var(--muted)">Murah untuk member, lebih hemat untuk reseller.</div></div>
       <div class="card lift" style="padding:1.2rem"><div style="font-size:1.5rem;margin-bottom:.6rem">🔒</div><div style="font-weight:700;font-size:.9rem;margin-bottom:.3rem">Aman &amp; Terpercaya</div><div style="font-size:.8rem;color:var(--muted)">Login terverifikasi, transaksi tercatat rapi.</div></div>
@@ -287,11 +300,54 @@
     </div>
   </section>
 
-  <!-- FOOTER -->
-  <footer style="border-top:1px solid var(--border)">
-    <div class="wrap" style="padding:1.75rem 1rem;display:flex;flex-direction:column;align-items:center;gap:.6rem;text-align:center">
-      <span class="g-bg" style="display:grid;place-items:center;width:32px;height:32px;border-radius:.7rem"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M13 3.5 5.5 14c-.4.5 0 1.2.6 1.2H11l-1.5 8c-.2.8 1 1.3 1.5.6L18.5 13c.4-.5 0-1.2-.6-1.2H13l1.5-7.7c.2-.8-1-1.3-1.5-.6z" fill="white"/></svg></span>
-      <p style="font-size:.82rem;color:var(--muted);margin:0">&copy;<span id="year"></span> <span id="brandFoot">Rayzell Store PPOB</span>. Seluruh hak cipta dilindungi.</p>
+  <!-- FOOTER (gaya Ditopup: Menu / Informasi / Metode Pembayaran) -->
+  <footer style="border-top:1px solid var(--border);background:var(--bg2)">
+    <div class="wrap" style="padding:2.2rem 1rem 1.4rem">
+      <div class="ft-grid">
+        <!-- brand -->
+        <div>
+          <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.85rem">
+            <span class="g-bg" style="display:grid;place-items:center;width:34px;height:34px;border-radius:.7rem"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M13 3.5 5.5 14c-.4.5 0 1.2.6 1.2H11l-1.5 8c-.2.8 1 1.3 1.5.6L18.5 13c.4-.5 0-1.2-.6-1.2H13l1.5-7.7c.2-.8-1-1.3-1.5-.6z" fill="white"/></svg></span>
+            <span class="g-text" id="brandFoot2" style="font-weight:800;font-size:1rem">Rayzell Store PPOB</span>
+          </div>
+          <p style="font-size:.84rem;color:var(--muted);line-height:1.6;margin:0 0 1rem;max-width:340px">Layanan top up &amp; pembayaran tagihan otomatis 24 jam: pulsa, paket data, token PLN, voucher game, dan e-money. Cepat, murah, terpercaya.</p>
+          <div style="display:flex;gap:.5rem">
+            <a id="ftWa" href="#" target="_blank" rel="noopener" class="icon-btn" aria-label="WhatsApp"><svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15l-1.3 4.8 4.9-1.3A10 10 0 1 0 12 2Zm5.3 14.1c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .1-1.7-.1-.4-.1-.9-.3-1.6-.6-2.7-1.2-4.5-4-4.6-4.2-.1-.2-1.1-1.5-1.1-2.8 0-1.3.7-2 .9-2.2.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 1.9c.1.2.1.4 0 .5l-.4.6c-.2.2-.3.4-.1.7.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.4 2.4 1.5.2.1.4.1.6-.1l.7-.9c.2-.2.4-.2.6-.1l1.8.9c.2.1.4.2.4.3.1.2.1.7-.1 1.2Z"/></svg></a>
+            <a id="ftTg" href="#" target="_blank" rel="noopener" class="icon-btn" aria-label="Telegram"><svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M21.9 4.3 18.7 19c-.2 1-.9 1.3-1.8.8l-4.9-3.6-2.4 2.3c-.3.3-.5.5-1 .5l.3-5 9-8.1c.4-.3-.1-.5-.6-.2L6.4 13 1.6 11.5c-1-.3-1-1 .2-1.5l18.7-7.2c.9-.3 1.6.2 1.4 1.5Z"/></svg></a>
+          </div>
+        </div>
+
+        <!-- menu -->
+        <div>
+          <h4 class="ft-h">Menu</h4>
+          <a href="/" class="ft-link">Beranda</a>
+          <a href="#layanan" class="ft-link">Semua Layanan</a>
+          <a href="/cek.html" class="ft-link">Cek Transaksi</a>
+          <a href="/app.html" class="ft-link">Masuk / Daftar</a>
+          <a href="#kontak" class="ft-link">Hubungi Kami</a>
+        </div>
+
+        <!-- metode pembayaran -->
+        <div>
+          <h4 class="ft-h">Metode Pembayaran</h4>
+          <div style="display:flex;flex-wrap:wrap;gap:.45rem">
+            <span class="pay-chip">QRIS</span>
+            <span class="pay-chip">DANA</span>
+            <span class="pay-chip">OVO</span>
+            <span class="pay-chip">GoPay</span>
+            <span class="pay-chip">ShopeePay</span>
+            <span class="pay-chip">BCA</span>
+            <span class="pay-chip">BRI</span>
+            <span class="pay-chip">BNI</span>
+            <span class="pay-chip">Mandiri</span>
+            <span class="pay-chip">Saldo</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="border-top:1px solid var(--border);margin-top:1.8rem;padding-top:1.2rem;text-align:center">
+        <p style="font-size:.8rem;color:var(--muted);margin:0">&copy;<span id="year"></span> <span id="brandFoot">Rayzell Store PPOB</span>. Seluruh hak cipta dilindungi.</p>
+      </div>
     </div>
   </footer>
 
@@ -354,7 +410,8 @@
       const savedSkin = localStorage.getItem('skin');
       root.setAttribute('data-skin', VALID.includes(savedSkin) ? savedSkin : 'aurora');
       // default LIGHT bila belum pernah memilih
-      root.setAttribute('data-mode', localStorage.getItem('mode') === 'dark' ? 'dark' : 'light');
+      const savedMode = localStorage.getItem('mode');
+      root.setAttribute('data-mode', savedMode === 'dark' ? 'dark' : 'light');
 
       // bangun daftar skin
       const list = $('#skinList');
@@ -448,7 +505,7 @@
       timer = setTimeout(show, 5000);
     })();
 
-    // ===== iconFor =====
+    // ===== iconFor / gradFor =====
     function iconFor(cat) {
       const c = (cat || '').toLowerCase();
       if (c.includes('perdana') || c.includes('aktivasi') || c.includes('kartu')) return '📶';
@@ -459,7 +516,7 @@
       if (c.includes('game')) return '🎮';
       if (c.includes('dana') || c.includes('ovo') || c.includes('gopay') || c.includes('emoney') || c.includes('e-money') || c.includes('ewallet') || c.includes('saldo')) return '💳';
       if (c.includes('voucher')) return '🎟️';
-      if (c.includes('tv') || c.includes('streaming')) return '📺';
+      if (c.includes('tv') || c.includes('streaming') || c.includes('netflix') || c.includes('spotify') || c.includes('viu')) return '📺';
       if (c.includes('bpjs') || c.includes('kesehatan')) return '🏥';
       if (c.includes('pdam') || c.includes('air')) return '🚰';
       return '🛍️';
@@ -480,30 +537,36 @@
     fetch('/api/info').then((r) => r.json()).then(({ data }) => {
       if (!data) return;
       const set = (id, v) => { const el = $(id); if (el && v) el.textContent = v; };
-      set('#brand', data.store); set('#brandFoot', data.store);
+      set('#brand', data.store); set('#brandFoot', data.store); set('#brandFoot2', data.store);
       if (data.store) document.title = data.store + ' — Pulsa, Paket Data, PLN, Game, E-Money';
       if ($('#cta-tg') && data.botLink) $('#cta-tg').href = data.botLink;
-      if ($('#wa') && data.waLink) $('#wa').href = data.waLink;
-      if ($('#tg') && data.tgLink) $('#tg').href = data.tgLink;
-      if ($('#waFab') && data.waLink) $('#waFab').href = data.waLink;
+      if (data.waLink) { ['#wa', '#waFab', '#ftWa'].forEach((id) => { const el = $(id); if (el) el.href = data.waLink; }); }
+      if (data.tgLink) { ['#tg', '#ftTg'].forEach((id) => { const el = $(id); if (el) el.href = data.tgLink; }); }
       if ($('#saleStore') && data.store) $('#saleStore').textContent = data.store;
     }).catch(() => {});
 
-    // ===== API: produk per kategori + filter + show more =====
+    // ===== API: produk dikelompokkan per SECTION (gaya Ditopup) =====
     (function () {
       const FAV_KEY = 'rz_favs';
       let favs = {};
       try { favs = JSON.parse(localStorage.getItem(FAV_KEY) || '{}') || {}; } catch (e) { favs = {}; }
       const saveFavs = () => { try { localStorage.setItem(FAV_KEY, JSON.stringify(favs)); } catch (e) {} };
 
-      let ALL = [];
-      let activeCat = '__all';
-      let expanded = false;
-      const LIMIT = 10;
-
       function escapeHtml(s) {
         return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
       }
+
+      // Definisi grup section (urut tampil dari atas). match() menerima nama kategori lowercase.
+      const GROUPS = [
+        { key: 'pulsa', title: 'Top Up Pulsa', ic: '📱', match: (c) => c.includes('pulsa') },
+        { key: 'data', title: 'Paket Data & Internet', ic: '🌐', match: (c) => c.includes('data') || c.includes('kuota') || c.includes('internet') || c.includes('perdana') },
+        { key: 'pln', title: 'Token PLN & Tagihan', ic: '⚡', match: (c) => c.includes('pln') || c.includes('listrik') || c.includes('token') || c.includes('bpjs') || c.includes('pdam') || c.includes('air') || c.includes('tagihan') },
+        { key: 'game', title: 'Top Up Game', ic: '🎮', match: (c) => c.includes('game') },
+        { key: 'ewallet', title: 'Top Up Saldo e-Wallet', ic: '💳', match: (c) => c.includes('dana') || c.includes('ovo') || c.includes('gopay') || c.includes('shopee') || c.includes('emoney') || c.includes('e-money') || c.includes('ewallet') || c.includes('e-wallet') || c.includes('saldo') },
+        { key: 'stream', title: 'Streaming & Aplikasi Premium', ic: '📺', match: (c) => c.includes('stream') || c.includes('tv') || c.includes('netflix') || c.includes('viu') || c.includes('spotify') || c.includes('youtube') || c.includes('premium') || c.includes('aplikasi') },
+        { key: 'voucher', title: 'Voucher', ic: '🎟️', match: (c) => c.includes('voucher') },
+      ];
+      const OTHER = { key: '__other', title: 'Layanan Lainnya', ic: '🛍️' };
 
       function cardHtml(d) {
         const on = favs[d.category] ? '1' : '0';
@@ -511,7 +574,7 @@
         return '' +
           '<div class="card lift pcard">' +
             '<button class="fav" data-fav="' + name + '" data-on="' + on + '" aria-label="Favorit">' +
-              '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7.5-4.6-10-9.1C.4 8.9 2 5.5 5.2 5.5c1.9 0 3.2 1 3.8 2.3h.2c.6-1.3 1.9-2.3 3.8-2.3 3.2 0 4.8 3.4 3.2 6.4C19.5 16.4 12 21 12 21z" stroke="currentColor" stroke-width="1.6" fill="' + (on === '1' ? 'currentColor' : 'none') + '"/></svg>' +
+              '<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7.5-4.6-10-9.1C.4 8.9 2 5.5 5.2 5.5c1.9 0 3.2 1 3.8 2.3h.2c.6-1.3 1.9-2.3 3.8-2.3 3.2 0 4.8 3.4 3.2 6.4C19.5 16.4 12 21 12 21z" stroke="currentColor" stroke-width="1.6" fill="' + (on === '1' ? 'currentColor' : 'none') + '"/></svg>' +
             '</button>' +
             '<a href="/app.html" style="text-decoration:none;color:inherit;display:flex;flex-direction:column;flex:1">' +
               '<div class="pcard-img" style="background:' + gradFor(d.category) + '"><span>' + iconFor(d.category) + '</span></div>' +
@@ -524,29 +587,34 @@
           '</div>';
       }
 
-      function render() {
-        const grid = $('#grid');
-        if (!grid) return;
-        let items = activeCat === '__all' ? ALL : ALL.filter((d) => d.category === activeCat);
-        const total = items.length;
-        if (!expanded && activeCat === '__all' && total > LIMIT) items = items.slice(0, LIMIT);
-        if (!total) {
-          grid.innerHTML = '<div class="card" style="padding:1.4rem;text-align:center;color:var(--muted);grid-column:1/-1">Produk belum tersedia.</div>';
-        } else {
-          grid.innerHTML = items.map(cardHtml).join('');
-        }
-        // tombol show more
-        const more = $('#moreBtn');
-        if (more) {
-          if (activeCat === '__all' && total > LIMIT) {
-            more.style.display = 'inline-flex';
-            more.textContent = expanded ? 'Tampilkan lebih sedikit' : 'Tampilkan lainnya…';
-          } else {
-            more.style.display = 'none';
-          }
-        }
-        // pasang handler favorit
-        grid.querySelectorAll('.fav').forEach((btn) => btn.addEventListener('click', (e) => {
+      function sectionHtml(group, items) {
+        return '' +
+          '<section class="catsec">' +
+            '<div class="catsec-head">' +
+              '<span class="catsec-ic" style="background:' + gradFor(group.title) + '">' + group.ic + '</span>' +
+              '<h3 class="catsec-title">' + escapeHtml(group.title) + '</h3>' +
+              '<span class="catsec-count">' + items.length + ' kategori</span>' +
+            '</div>' +
+            '<div class="pgrid">' + items.map(cardHtml).join('') + '</div>' +
+          '</section>';
+      }
+
+      function bucketize(all) {
+        const buckets = GROUPS.map((g) => ({ group: g, items: [] }));
+        const other = { group: OTHER, items: [] };
+        all.forEach((d) => {
+          const c = (d.category || '').toLowerCase();
+          const hit = GROUPS.find((g) => g.match(c));
+          if (hit) buckets.find((b) => b.group.key === hit.key).items.push(d);
+          else other.items.push(d);
+        });
+        const result = buckets.filter((b) => b.items.length);
+        if (other.items.length) result.push(other);
+        return result;
+      }
+
+      function attachFavHandlers(root) {
+        root.querySelectorAll('.fav').forEach((btn) => btn.addEventListener('click', (e) => {
           e.preventDefault(); e.stopPropagation();
           const key = btn.dataset.fav;
           favs[key] = !favs[key];
@@ -559,38 +627,21 @@
         }));
       }
 
-      function buildChips() {
-        const box = $('#chips');
-        if (!box) return;
-        const base = box.querySelector('[data-cat="__all"]');
-        ALL.forEach((d) => {
-          const c = document.createElement('span');
-          c.className = 'chip';
-          c.dataset.cat = d.category;
-          c.innerHTML = '<span style="font-size:.95rem">' + iconFor(d.category) + '</span> ' + escapeHtml(d.category);
-          box.appendChild(c);
-        });
-        box.querySelectorAll('.chip').forEach((chip) => chip.addEventListener('click', () => {
-          activeCat = chip.dataset.cat;
-          expanded = false;
-          box.querySelectorAll('.chip').forEach((c) => c.setAttribute('data-active', c === chip ? '1' : '0'));
-          render();
-          document.getElementById('layanan').scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }));
-        if (base) base.setAttribute('data-active', '1');
-      }
-
-      const moreBtn = $('#moreBtn');
-      if (moreBtn) moreBtn.addEventListener('click', () => { expanded = !expanded; render(); });
-
       fetch('/api/products').then((r) => r.json()).then(({ data }) => {
-        ALL = Array.isArray(data) ? data : [];
+        const ALL = Array.isArray(data) ? data : [];
         const sc = $('#statCat'); if (sc) sc.textContent = ALL.length || 0;
-        buildChips();
-        render();
+        const host = $('#sections');
+        if (!host) return;
+        if (!ALL.length) {
+          host.innerHTML = '<div class="card" style="padding:1.4rem;text-align:center;color:var(--muted)">Produk belum tersedia.</div>';
+          return;
+        }
+        const sections = bucketize(ALL);
+        host.innerHTML = sections.map((s) => sectionHtml(s.group, s.items)).join('');
+        attachFavHandlers(host);
       }).catch(() => {
-        const grid = $('#grid');
-        if (grid) grid.innerHTML = '<div class="card" style="padding:1.4rem;text-align:center;color:var(--muted);grid-column:1/-1">Gagal memuat layanan.</div>';
+        const host = $('#sections');
+        if (host) host.innerHTML = '<div class="card" style="padding:1.4rem;text-align:center;color:var(--muted)">Gagal memuat layanan.</div>';
       });
     })();
   </script>
