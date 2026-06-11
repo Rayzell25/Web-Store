@@ -120,7 +120,7 @@
       const root = document.documentElement;
       const VALID = ['aurora','royal','ocean','emerald','sunset','candy','grape','gold'];
       const skin = localStorage.getItem('skin'); root.setAttribute('data-skin', VALID.includes(skin) ? skin : 'aurora');
-      root.setAttribute('data-mode', localStorage.getItem('mode') === 'light' ? 'light' : 'dark');
+      root.setAttribute('data-mode', localStorage.getItem('mode') === 'dark' ? 'dark' : 'light');
       const mb = document.getElementById('modeToggle');
       const sync = () => { if (mb) mb.textContent = root.getAttribute('data-mode') === 'light' ? '☀️' : '🌙'; };
       sync();
