@@ -119,6 +119,26 @@
         <div id="bannerList" class="mt-5 space-y-3"></div>
       </div>
     </div>
+
+    <!-- LOGO BRAND (BERANDA) -->
+    <div class="mt-6 rounded-2xl" style="background:var(--card);border:1px solid var(--border)">
+      <div class="flex items-center justify-between border-b px-6 py-4" style="border-color:var(--border)">
+        <h2 class="font-semibold">Logo Brand (Beranda)</h2>
+        <span class="text-xs" style="color:var(--muted)">Upload logo tiap brand (XL, Mobile Legends, DANA…) — tampil di grid beranda.</span>
+      </div>
+      <div class="p-6">
+        <div class="grid gap-3 sm:flex sm:items-end sm:gap-4">
+          <div class="flex-1">
+            <label class="mb-1 block text-xs font-medium" style="color:var(--muted)">Kategori (opsional, untuk memfilter)</label>
+            <select id="logoCat" class="w-full rounded-xl px-3 py-2.5 text-sm" style="background:var(--bg);border:1px solid var(--border);color:var(--text)">
+              <option value="">— Semua kategori —</option>
+            </select>
+          </div>
+          <button onclick="loadBrandLogos()" class="rounded-xl px-5 py-2.5 text-sm font-semibold" style="background:var(--btn);color:var(--btn-text)">Tampilkan Brand</button>
+        </div>
+        <div id="logoList" class="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2"></div>
+      </div>
+    </div>
   </main>
   <script>
     const saved = localStorage.getItem('theme') || 'dark';
@@ -197,7 +217,7 @@
       loadData();
     }
     if (!token()) window.location = '/admin/';
-    else { loadData(); setInterval(loadData, 30000); initBanner(); }
+    else { loadData(); setInterval(loadData, 30000); initBanner(); initBrandLogos(); }
 
     // ===== BANNER PRODUK =====
     async function initBanner() {
@@ -320,6 +340,83 @@
         });
         const j = await r.json();
         if (j.ok) loadBannerProducts(); else alert(j.message || 'Gagal hapus.');
+      } catch(e){ alert('Gagal terhubung.'); }
+    }
+
+    // ===== LOGO BRAND (BERANDA) =====
+    let BRANDLOGO_DATA = [];
+    async function initBrandLogos() {
+      try {
+        const r = await fetch('/api/admin/products/categories', { headers: ah() });
+        const j = await r.json();
+        if (!j.ok || !j.data.length) return;
+        const sel = document.getElementById('logoCat');
+        j.data.forEach(c => sel.innerHTML += `<option value="${esc(c.category)}">${esc(c.category)} (${c.c})</option>`);
+      } catch(e){}
+    }
+
+    async function loadBrandLogos() {
+      const cat = document.getElementById('logoCat').value;
+      const box = document.getElementById('logoList');
+      box.innerHTML = '<p class="text-sm" style="color:var(--muted)">Memuat…</p>';
+      try {
+        const r = await fetch('/api/admin/brandlogos' + (cat ? '?category=' + encodeURIComponent(cat) : ''), { headers: ah() });
+        const j = await r.json();
+        if (!j.ok || !j.data.length) { box.innerHTML = '<p class="text-sm" style="color:var(--muted)">Tidak ada brand.</p>'; return; }
+        BRANDLOGO_DATA = j.data;
+        box.innerHTML = j.data.map((b, i) => `
+          <div class="flex items-center gap-3 rounded-xl p-3" style="background:var(--bg);border:1px solid var(--border)">
+            <div class="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-xl" style="background:var(--card);border:1px solid var(--border)">
+              ${b.logo
+                ? `<img src="${esc(b.logo)}" alt="logo" class="h-full w-full" style="object-fit:contain;padding:4px" onerror="this.style.display='none'">`
+                : `<span class="text-lg" style="color:var(--muted)">🖼️</span>`}
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="truncate text-sm font-semibold">${esc(b.brand)}</div>
+              <div class="text-[11px]" style="color:var(--muted)">${b.logo ? 'Logo terpasang' : 'Belum ada logo'}</div>
+            </div>
+            <input id="logofile_${i}" type="file" accept="image/png,image/jpeg,image/webp,image/gif" class="hidden" onchange="uploadBrandLogo(${i}, this)"/>
+            <button id="logobtn_${i}" onclick="document.getElementById('logofile_${i}').click()" class="shrink-0 rounded-lg px-3 py-2 text-xs font-semibold" style="background:var(--btn);color:var(--btn-text)">📷 Upload</button>
+            ${b.logo ? `<button onclick="clearBrandLogo(${i})" class="shrink-0 rounded-lg px-3 py-2 text-xs font-semibold" style="background:#f43f5e;color:#fff">Hapus</button>` : ''}
+          </div>`).join('');
+      } catch(e){ box.innerHTML = '<p class="text-sm text-rose-400">Gagal memuat.</p>'; }
+    }
+
+    async function uploadBrandLogo(i, inputEl) {
+      const b = BRANDLOGO_DATA[i];
+      const file = inputEl.files && inputEl.files[0];
+      if (!b || !file) return;
+      if (!/^image\//.test(file.type)) { alert('File harus berupa gambar (PNG/JPG/WEBP/GIF).'); inputEl.value=''; return; }
+      if (file.size > 3 * 1024 * 1024) { alert('Ukuran gambar maksimal 3 MB.'); inputEl.value=''; return; }
+      const btn = document.getElementById('logobtn_' + i);
+      const oldLabel = btn ? btn.textContent : '';
+      if (btn) { btn.textContent = 'Mengunggah…'; btn.disabled = true; }
+      const reader = new FileReader();
+      reader.onload = async () => {
+        try {
+          const r = await fetch('/api/admin/brandlogos/photo', {
+            method: 'POST', headers: ah(), body: JSON.stringify({ brand: b.brand, data: reader.result })
+          });
+          const j = await r.json();
+          if (j.ok) { loadBrandLogos(); }
+          else { alert(j.message || 'Gagal upload.'); if (btn) { btn.textContent = oldLabel; btn.disabled = false; } }
+        } catch(e) { alert('Gagal terhubung.'); if (btn) { btn.textContent = oldLabel; btn.disabled = false; } }
+        inputEl.value = '';
+      };
+      reader.onerror = () => { alert('Gagal membaca file.'); inputEl.value=''; if (btn) { btn.textContent = oldLabel; btn.disabled = false; } };
+      reader.readAsDataURL(file);
+    }
+
+    async function clearBrandLogo(i) {
+      const b = BRANDLOGO_DATA[i];
+      if (!b) return;
+      if (!confirm('Hapus logo "' + b.brand + '"?')) return;
+      try {
+        const r = await fetch('/api/admin/brandlogos/clear', {
+          method: 'POST', headers: ah(), body: JSON.stringify({ brand: b.brand })
+        });
+        const j = await r.json();
+        if (j.ok) loadBrandLogos(); else alert(j.message || 'Gagal hapus.');
       } catch(e){ alert('Gagal terhubung.'); }
     }
   </script>
