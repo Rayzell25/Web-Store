@@ -213,6 +213,42 @@ app.get('/api/products', async (req, res) => {
   }
 });
 
+// ===== STOREFRONT (beranda gaya Ditopup): kategori -> daftar BRAND + logo =====
+app.get('/api/storefront', async (req, res) => {
+  try {
+    const rows = await all(
+      `SELECT category, brand, COUNT(*)::int AS count, MIN(price)::bigint AS minprice
+         FROM products WHERE status = 'active'
+        GROUP BY category, brand ORDER BY category, brand`
+    );
+    const logoRows = await all("SELECT key, value FROM settings WHERE key LIKE 'brandlogo:%'");
+    const logoMap = {};
+    for (const r of logoRows) logoMap[r.key.slice('brandlogo:'.length)] = r.value;
+
+    const byCat = new Map();
+    for (const r of rows) {
+      const harga = sellPrice(
+        { price: Number(r.minprice), category: r.category, buyer_sku_code: '' },
+        'MEMBER'
+      );
+      const key = String(r.brand || '-').trim().toUpperCase();
+      if (!byCat.has(r.category)) byCat.set(r.category, []);
+      byCat.get(r.category).push({
+        brand: r.brand,
+        count: r.count,
+        startFrom: harga,
+        startFromText: rupiah(harga),
+        logo: logoMap[key] || null,
+      });
+    }
+    const data = [...byCat.entries()].map(([category, brands]) => ({ category, brands }));
+    res.json({ ok: true, data });
+  } catch (e) {
+    logger.error('web /api/storefront:', e.message);
+    res.json({ ok: false, data: [] });
+  }
+});
+
 // cek transaksi by ref_id
 app.get('/api/trx/:refId', async (req, res) => {
   try {
@@ -866,9 +902,8 @@ app.put('/api/admin/products/:sku/banner', requireAdmin, async (req, res) => {
   }
 });
 
-// ===================== ADMIN: UPLOAD FOTO PRODUK =====================
-// Terima gambar base64 (dataURL), simpan ke /public/uploads, set jadi banner_url.
-// Tanpa dependency tambahan (multer dsb) — cukup base64 via JSON.
+// ===================== ADMIN: UPLOAD GAMBAR (foto produk & logo brand) =====================
+// Terima gambar base64 (dataURL), simpan ke /public/uploads. Tanpa dependency tambahan.
 const ALLOWED_IMG = {
   'image/png': 'png',
   'image/jpeg': 'jpg',
@@ -878,50 +913,119 @@ const ALLOWED_IMG = {
 };
 const MAX_IMG_BYTES = 3 * 1024 * 1024; // 3 MB
 
+// Decode + simpan satu gambar base64. Return { url } atau { error }.
+function saveBase64Image(dataUrl) {
+  const m = String(dataUrl || '').match(/^data:([a-z0-9/+.-]+);base64,(.+)$/i);
+  if (!m) return { error: 'Format gambar tidak valid.' };
+  const ext = ALLOWED_IMG[m[1].toLowerCase()];
+  if (!ext) return { error: 'Tipe gambar harus PNG, JPG, WEBP, atau GIF.' };
+  let buf;
+  try { buf = Buffer.from(m[2], 'base64'); } catch (e) { buf = null; }
+  if (!buf || !buf.length) return { error: 'Gambar kosong / rusak.' };
+  if (buf.length > MAX_IMG_BYTES) return { error: 'Ukuran gambar maksimal 3 MB.' };
+  fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+  const fname = `${Date.now()}-${crypto.randomBytes(6).toString('hex')}.${ext}`;
+  fs.writeFileSync(path.join(UPLOAD_DIR, fname), buf);
+  return { url: `/uploads/${fname}` };
+}
+
+// Hapus file lama bila berasal dari folder /uploads (aman terhadap path traversal).
+function unlinkUpload(url) {
+  const u = String(url || '');
+  if (!u.startsWith('/uploads/')) return;
+  try {
+    const p = path.join(UPLOAD_DIR, path.basename(u));
+    if (p.startsWith(UPLOAD_DIR) && fs.existsSync(p)) fs.unlinkSync(p);
+  } catch (e) { /* abaikan kegagalan hapus */ }
+}
+
+// Upload foto produk (per SKU) -> set banner_url.
 app.post('/api/admin/products/:sku/photo', requireAdmin, async (req, res) => {
   try {
     const sku = String(req.params.sku || '').trim();
     if (!sku) return res.json({ ok: false, message: 'SKU tidak valid.' });
 
-    const dataUrl = String((req.body && req.body.data) || '');
-    const m = dataUrl.match(/^data:([a-z0-9/+.-]+);base64,(.+)$/i);
-    if (!m) return res.json({ ok: false, message: 'Format gambar tidak valid.' });
-
-    const mime = m[1].toLowerCase();
-    const ext = ALLOWED_IMG[mime];
-    if (!ext) return res.json({ ok: false, message: 'Tipe gambar harus PNG, JPG, WEBP, atau GIF.' });
-
-    let buf;
-    try { buf = Buffer.from(m[2], 'base64'); } catch (e) { buf = null; }
-    if (!buf || !buf.length) return res.json({ ok: false, message: 'Gambar kosong / rusak.' });
-    if (buf.length > MAX_IMG_BYTES) return res.json({ ok: false, message: 'Ukuran gambar maksimal 3 MB.' });
-
-    // produk harus ada dulu
     const prod = await one(
       'SELECT buyer_sku_code, product_name, banner_url FROM products WHERE buyer_sku_code = $1',
       [sku]
     );
     if (!prod) return res.json({ ok: false, message: 'Produk tidak ditemukan.' });
 
-    fs.mkdirSync(UPLOAD_DIR, { recursive: true });
-    const fname = `${Date.now()}-${crypto.randomBytes(6).toString('hex')}.${ext}`;
-    fs.writeFileSync(path.join(UPLOAD_DIR, fname), buf);
-    const url = `/uploads/${fname}`;
+    const saved = saveBase64Image(req.body && req.body.data);
+    if (saved.error) return res.json({ ok: false, message: saved.error });
 
-    // bersihkan file lama bila sebelumnya hasil upload (di folder /uploads saja)
-    const old = String(prod.banner_url || '');
-    if (old.startsWith('/uploads/')) {
-      try {
-        const oldPath = path.join(UPLOAD_DIR, path.basename(old));
-        if (oldPath.startsWith(UPLOAD_DIR) && fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
-      } catch (e) { /* abaikan kegagalan hapus file lama */ }
-    }
-
-    await query('UPDATE products SET banner_url = $1 WHERE buyer_sku_code = $2', [url, sku]);
-    res.json({ ok: true, message: `Foto "${prod.product_name}" diperbarui.`, url });
+    if (prod.banner_url) unlinkUpload(prod.banner_url);
+    await query('UPDATE products SET banner_url = $1 WHERE buyer_sku_code = $2', [saved.url, sku]);
+    res.json({ ok: true, message: `Foto "${prod.product_name}" diperbarui.`, url: saved.url });
   } catch (e) {
     logger.error('web upload foto produk:', e.message);
     res.json({ ok: false, message: 'Gagal mengunggah foto.' });
+  }
+});
+
+// ===================== ADMIN: LOGO BRAND (untuk beranda) =====================
+// Disimpan di tabel settings (key = 'brandlogo:<BRAND UPPER>'). Tanpa migrasi DB.
+
+// daftar brand (unik) + logo saat ini
+app.get('/api/admin/brandlogos', requireAdmin, async (req, res) => {
+  try {
+    const category = String(req.query.category || '').trim();
+    const params = [];
+    let where = "status = 'active'";
+    if (category) { where += ' AND category = $1'; params.push(category); }
+    const rows = await all(`SELECT DISTINCT brand FROM products WHERE ${where} ORDER BY brand`, params);
+    const logoRows = await all("SELECT key, value FROM settings WHERE key LIKE 'brandlogo:%'");
+    const logoMap = {};
+    for (const r of logoRows) logoMap[r.key.slice('brandlogo:'.length)] = r.value;
+    const seen = new Set();
+    const data = [];
+    for (const r of rows) {
+      const k = String(r.brand || '-').trim().toUpperCase();
+      if (seen.has(k)) continue;
+      seen.add(k);
+      data.push({ brand: r.brand, logo: logoMap[k] || null });
+    }
+    res.json({ ok: true, data });
+  } catch (e) {
+    logger.error('web /api/admin/brandlogos:', e.message);
+    res.json({ ok: false, data: [] });
+  }
+});
+
+// upload logo brand
+app.post('/api/admin/brandlogos/photo', requireAdmin, async (req, res) => {
+  try {
+    const brand = String((req.body && req.body.brand) || '').trim();
+    if (!brand) return res.json({ ok: false, message: 'Brand tidak valid.' });
+    const saved = saveBase64Image(req.body && req.body.data);
+    if (saved.error) return res.json({ ok: false, message: saved.error });
+    const key = 'brandlogo:' + brand.toUpperCase();
+    const old = await one('SELECT value FROM settings WHERE key = $1', [key]);
+    if (old && old.value) unlinkUpload(old.value);
+    await query(
+      'INSERT INTO settings(key, value) VALUES($1, $2) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value',
+      [key, saved.url]
+    );
+    res.json({ ok: true, message: `Logo "${brand}" diperbarui.`, url: saved.url });
+  } catch (e) {
+    logger.error('web brandlogo upload:', e.message);
+    res.json({ ok: false, message: 'Gagal mengunggah logo.' });
+  }
+});
+
+// hapus logo brand
+app.post('/api/admin/brandlogos/clear', requireAdmin, async (req, res) => {
+  try {
+    const brand = String((req.body && req.body.brand) || '').trim();
+    if (!brand) return res.json({ ok: false, message: 'Brand tidak valid.' });
+    const key = 'brandlogo:' + brand.toUpperCase();
+    const old = await one('SELECT value FROM settings WHERE key = $1', [key]);
+    if (old && old.value) unlinkUpload(old.value);
+    await query('DELETE FROM settings WHERE key = $1', [key]);
+    res.json({ ok: true, message: `Logo "${brand}" dihapus.` });
+  } catch (e) {
+    logger.error('web brandlogo clear:', e.message);
+    res.json({ ok: false, message: 'Gagal menghapus logo.' });
   }
 });
 
