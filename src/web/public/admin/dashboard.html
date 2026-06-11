@@ -95,8 +95,8 @@
     <!-- BANNER PRODUK -->
     <div class="mt-6 rounded-2xl" style="background:var(--card);border:1px solid var(--border)">
       <div class="flex items-center justify-between border-b px-6 py-4" style="border-color:var(--border)">
-        <h2 class="font-semibold">Banner Per-Produk</h2>
-        <span class="text-xs" style="color:var(--muted)">Gambar kecil di atas kartu produk di web store</span>
+        <h2 class="font-semibold">Foto / Banner Per-Produk</h2>
+        <span class="text-xs" style="color:var(--muted)">Upload foto (dari HP/komputer) atau tempel URL. Muncul di kartu produk web store.</span>
       </div>
       <div class="p-6">
         <!-- Step 1: Kategori -->
@@ -239,16 +239,29 @@
         const j = await r.json();
         if (!j.ok || !j.data.length) { box.innerHTML = '<p class="text-sm" style="color:var(--muted)">Tidak ada produk.</p>'; return; }
         box.innerHTML = j.data.map(p => `
-          <div class="flex flex-col gap-2 rounded-xl p-4 sm:flex-row sm:items-center sm:gap-3" style="background:var(--bg);border:1px solid var(--border)">
-            <div class="min-w-0 flex-1">
-              <div class="truncate text-sm font-semibold">${esc(p.product_name)}</div>
-              <div class="text-[11px]" style="color:var(--muted)">${esc(p.buyer_sku_code)} · ${rupiah(p.price)}</div>
-              ${p.banner_url ? `<img src="${esc(p.banner_url)}" alt="banner" class="mt-2 h-10 w-auto rounded" onerror="this.style.display='none'">` : ''}
+          <div class="flex flex-col gap-3 rounded-xl p-4 sm:flex-row sm:items-center sm:gap-4" style="background:var(--bg);border:1px solid var(--border)">
+            <div class="flex min-w-0 flex-1 items-center gap-3">
+              <div class="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-xl" style="background:var(--card);border:1px solid var(--border)">
+                ${p.banner_url
+                  ? `<img id="thumb_${esc(p.buyer_sku_code)}" src="${esc(p.banner_url)}" alt="foto" class="h-full w-full" style="object-fit:cover" onerror="this.style.display='none'">`
+                  : `<span id="thumb_${esc(p.buyer_sku_code)}" class="text-lg" style="color:var(--muted)">🖼️</span>`}
+              </div>
+              <div class="min-w-0">
+                <div class="truncate text-sm font-semibold">${esc(p.product_name)}</div>
+                <div class="text-[11px]" style="color:var(--muted)">${esc(p.buyer_sku_code)} · ${rupiah(p.price)}</div>
+              </div>
             </div>
-            <div class="flex gap-2 sm:w-64">
-              <input id="banner_${esc(p.buyer_sku_code)}" type="text" placeholder="https://... (kosong = hapus)" value="${esc(p.banner_url||'')}"
-                class="w-full rounded-lg px-3 py-2 text-xs" style="background:var(--card);border:1px solid var(--border);color:var(--text)"/>
-              <button onclick="saveBanner('${esc(p.buyer_sku_code)}')" class="shrink-0 rounded-lg px-3 py-2 text-xs font-semibold" style="background:var(--btn);color:var(--btn-text)">Simpan</button>
+            <div class="flex flex-col gap-2 sm:w-72">
+              <div class="flex gap-2">
+                <input id="file_${esc(p.buyer_sku_code)}" type="file" accept="image/png,image/jpeg,image/webp,image/gif" class="hidden" onchange="uploadPhoto('${esc(p.buyer_sku_code)}', this)"/>
+                <button id="upbtn_${esc(p.buyer_sku_code)}" onclick="document.getElementById('file_${esc(p.buyer_sku_code)}').click()" class="flex-1 rounded-lg px-3 py-2 text-xs font-semibold" style="background:var(--btn);color:var(--btn-text)">📷 Upload Foto</button>
+                ${p.banner_url ? `<button onclick="clearBanner('${esc(p.buyer_sku_code)}')" class="shrink-0 rounded-lg px-3 py-2 text-xs font-semibold" style="background:#f43f5e;color:#fff" title="Hapus foto">Hapus</button>` : ''}
+              </div>
+              <div class="flex gap-2">
+                <input id="banner_${esc(p.buyer_sku_code)}" type="text" placeholder="atau tempel URL https://…" value="${esc(p.banner_url||'')}"
+                  class="w-full rounded-lg px-3 py-2 text-xs" style="background:var(--card);border:1px solid var(--border);color:var(--text)"/>
+                <button onclick="saveBanner('${esc(p.buyer_sku_code)}')" class="shrink-0 rounded-lg px-3 py-2 text-xs font-semibold" style="background:var(--btn);color:var(--btn-text)">URL</button>
+              </div>
             </div>
           </div>`).join('');
       } catch(e){ box.innerHTML = '<p class="text-sm text-rose-400">Gagal memuat.</p>'; }
@@ -270,6 +283,43 @@
         } else {
           alert(j.message || 'Gagal simpan.');
         }
+      } catch(e){ alert('Gagal terhubung.'); }
+    }
+
+    // Upload foto dari file (galeri/komputer) -> base64 -> server simpan & set banner.
+    async function uploadPhoto(sku, inputEl) {
+      const file = inputEl.files && inputEl.files[0];
+      if (!file) return;
+      if (!/^image\//.test(file.type)) { alert('File harus berupa gambar (PNG/JPG/WEBP/GIF).'); inputEl.value=''; return; }
+      if (file.size > 3 * 1024 * 1024) { alert('Ukuran gambar maksimal 3 MB.'); inputEl.value=''; return; }
+      const btn = document.getElementById('upbtn_' + sku);
+      const oldLabel = btn ? btn.textContent : '';
+      if (btn) { btn.textContent = 'Mengunggah…'; btn.disabled = true; }
+      const reader = new FileReader();
+      reader.onload = async () => {
+        try {
+          const r = await fetch('/api/admin/products/' + encodeURIComponent(sku) + '/photo', {
+            method: 'POST', headers: ah(), body: JSON.stringify({ data: reader.result })
+          });
+          const j = await r.json();
+          if (j.ok) { loadBannerProducts(); }
+          else { alert(j.message || 'Gagal upload.'); if (btn) { btn.textContent = oldLabel; btn.disabled = false; } }
+        } catch(e) { alert('Gagal terhubung.'); if (btn) { btn.textContent = oldLabel; btn.disabled = false; } }
+        inputEl.value = '';
+      };
+      reader.onerror = () => { alert('Gagal membaca file.'); inputEl.value=''; if (btn) { btn.textContent = oldLabel; btn.disabled = false; } };
+      reader.readAsDataURL(file);
+    }
+
+    // Hapus foto/banner (set kosong).
+    async function clearBanner(sku) {
+      if (!confirm('Hapus foto produk ini?')) return;
+      try {
+        const r = await fetch('/api/admin/products/' + encodeURIComponent(sku) + '/banner', {
+          method: 'PUT', headers: ah(), body: JSON.stringify({ url: '' })
+        });
+        const j = await r.json();
+        if (j.ok) loadBannerProducts(); else alert(j.message || 'Gagal hapus.');
       } catch(e){ alert('Gagal terhubung.'); }
     }
   </script>

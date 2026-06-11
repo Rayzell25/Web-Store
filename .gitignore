@@ -4,3 +4,7 @@ node_modules/
 backups/
 data/
 .DS_Store
+
+
+# foto produk yang di-upload admin (disimpan di disk VPS, jangan di-commit)
+src/web/public/uploads/
