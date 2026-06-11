@@ -1,6 +1,7 @@
 'use strict';
 
 const path = require('path');
+const fs = require('fs');
 const crypto = require('crypto');
 const express = require('express');
 const { all, one, query, init } = require('../db/database');
@@ -181,8 +182,12 @@ function requireAdmin(req, res, next) {
 
 const app = express();
 app.disable('x-powered-by');
-app.use(express.json());
+// limit 6mb supaya upload foto produk (base64) muat. Endpoint lain payload-nya kecil.
+app.use(express.json({ limit: '6mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
+
+// folder upload foto produk (di-serve via express.static -> /uploads/<file>)
+const UPLOAD_DIR = path.join(__dirname, 'public', 'uploads');
 
 // ===================== PUBLIC API =====================
 
@@ -861,9 +866,70 @@ app.put('/api/admin/products/:sku/banner', requireAdmin, async (req, res) => {
   }
 });
 
+// ===================== ADMIN: UPLOAD FOTO PRODUK =====================
+// Terima gambar base64 (dataURL), simpan ke /public/uploads, set jadi banner_url.
+// Tanpa dependency tambahan (multer dsb) — cukup base64 via JSON.
+const ALLOWED_IMG = {
+  'image/png': 'png',
+  'image/jpeg': 'jpg',
+  'image/jpg': 'jpg',
+  'image/webp': 'webp',
+  'image/gif': 'gif',
+};
+const MAX_IMG_BYTES = 3 * 1024 * 1024; // 3 MB
+
+app.post('/api/admin/products/:sku/photo', requireAdmin, async (req, res) => {
+  try {
+    const sku = String(req.params.sku || '').trim();
+    if (!sku) return res.json({ ok: false, message: 'SKU tidak valid.' });
+
+    const dataUrl = String((req.body && req.body.data) || '');
+    const m = dataUrl.match(/^data:([a-z0-9/+.-]+);base64,(.+)$/i);
+    if (!m) return res.json({ ok: false, message: 'Format gambar tidak valid.' });
+
+    const mime = m[1].toLowerCase();
+    const ext = ALLOWED_IMG[mime];
+    if (!ext) return res.json({ ok: false, message: 'Tipe gambar harus PNG, JPG, WEBP, atau GIF.' });
+
+    let buf;
+    try { buf = Buffer.from(m[2], 'base64'); } catch (e) { buf = null; }
+    if (!buf || !buf.length) return res.json({ ok: false, message: 'Gambar kosong / rusak.' });
+    if (buf.length > MAX_IMG_BYTES) return res.json({ ok: false, message: 'Ukuran gambar maksimal 3 MB.' });
+
+    // produk harus ada dulu
+    const prod = await one(
+      'SELECT buyer_sku_code, product_name, banner_url FROM products WHERE buyer_sku_code = $1',
+      [sku]
+    );
+    if (!prod) return res.json({ ok: false, message: 'Produk tidak ditemukan.' });
+
+    fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+    const fname = `${Date.now()}-${crypto.randomBytes(6).toString('hex')}.${ext}`;
+    fs.writeFileSync(path.join(UPLOAD_DIR, fname), buf);
+    const url = `/uploads/${fname}`;
+
+    // bersihkan file lama bila sebelumnya hasil upload (di folder /uploads saja)
+    const old = String(prod.banner_url || '');
+    if (old.startsWith('/uploads/')) {
+      try {
+        const oldPath = path.join(UPLOAD_DIR, path.basename(old));
+        if (oldPath.startsWith(UPLOAD_DIR) && fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+      } catch (e) { /* abaikan kegagalan hapus file lama */ }
+    }
+
+    await query('UPDATE products SET banner_url = $1 WHERE buyer_sku_code = $2', [url, sku]);
+    res.json({ ok: true, message: `Foto "${prod.product_name}" diperbarui.`, url });
+  } catch (e) {
+    logger.error('web upload foto produk:', e.message);
+    res.json({ ok: false, message: 'Gagal mengunggah foto.' });
+  }
+});
+
 async function startWeb() {
   await init();
   await markupService.load();
+  // pastikan folder upload ada sebelum melayani request
+  try { fs.mkdirSync(UPLOAD_DIR, { recursive: true }); } catch (e) { /* abaikan */ }
   app.listen(PORT, '127.0.0.1', () => {
     logger.info(`Web storefront jalan di http://127.0.0.1:${PORT}`);
   });

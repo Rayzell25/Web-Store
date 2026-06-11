@@ -806,9 +806,12 @@
         if (!j.ok || !j.data.length) { $('#beliView').innerHTML = loadingCard('Produk belum tersedia.'); return; }
         $('#beliView').innerHTML = '<div class="space-y-2.5">' + j.data.map((p) => `
           <div class="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/5 p-4">
-            <div class="min-w-0">
-              <div class="truncate font-semibold text-sm">${esc(p.name)}</div>
-              <div class="text-sm text-indigo-300 font-semibold">${p.priceText}</div>
+            <div class="flex min-w-0 items-center gap-3">
+              ${p.banner ? `<img src="${esc(p.banner)}" alt="" style="width:44px;height:44px;border-radius:.6rem;object-fit:cover;flex-shrink:0;background:rgba(255,255,255,.06)" onerror="this.style.display='none'">` : ''}
+              <div class="min-w-0">
+                <div class="truncate font-semibold text-sm">${esc(p.name)}</div>
+                <div class="text-sm text-indigo-300 font-semibold">${p.priceText}</div>
+              </div>
             </div>
             <button data-sku="${esc(p.sku)}" data-name="${esc(p.name)}" data-price="${p.price}" data-pricetext="${esc(p.priceText)}"
               class="pickBtn shrink-0 btn-grad rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition">Pilih</button>
