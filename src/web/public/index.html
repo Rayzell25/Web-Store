@@ -212,38 +212,19 @@
         </div>
       </div>
 
-      <div style="overflow:hidden;border-radius:1.3rem">
-        <div id="slides" class="slides">
-          <div class="slide"><div class="slide-in" style="background:linear-gradient(135deg,var(--a1),var(--a2))">
-            <div><div style="font-size:.68rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.78)">Promo Spesial</div>
-              <div style="font-size:1.65rem;font-weight:800;color:#fff;margin-top:.25rem;line-height:1.15">Paket Data Murah</div>
-              <div style="font-size:.84rem;color:rgba(255,255,255,.88);margin-top:.45rem">Kuota besar harga hemat untuk semua operator.</div></div>
-            <a href="/app.html" style="display:inline-block;background:#fff;color:#111;font-weight:700;font-size:.8rem;border-radius:.6rem;padding:.55rem 1.1rem;margin-top:1.1rem;width:fit-content">Beli Sekarang →</a>
-            <div style="position:absolute;right:-1rem;top:-1rem;font-size:6.5rem;opacity:.16;pointer-events:none">🌐</div></div></div>
-          <div class="slide"><div class="slide-in" style="background:linear-gradient(135deg,#f59e0b,#f97316)">
-            <div><div style="font-size:.68rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.78)">Bayar Mudah</div>
-              <div style="font-size:1.65rem;font-weight:800;color:#fff;margin-top:.25rem;line-height:1.15">Token PLN Instan</div>
-              <div style="font-size:.84rem;color:rgba(255,255,255,.88);margin-top:.45rem">Struk &amp; token langsung masuk dalam detik.</div></div>
-            <a href="/app.html" style="display:inline-block;background:#fff;color:#111;font-weight:700;font-size:.8rem;border-radius:.6rem;padding:.55rem 1.1rem;margin-top:1.1rem;width:fit-content">Beli Sekarang →</a>
-            <div style="position:absolute;right:-1rem;top:-1rem;font-size:6.5rem;opacity:.16;pointer-events:none">⚡</div></div></div>
-          <div class="slide"><div class="slide-in" style="background:linear-gradient(135deg,#8b5cf6,#ec4899)">
-            <div><div style="font-size:.68rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.78)">Top Up Game</div>
-              <div style="font-size:1.65rem;font-weight:800;color:#fff;margin-top:.25rem;line-height:1.15">Voucher &amp; Diamond</div>
-              <div style="font-size:.84rem;color:rgba(255,255,255,.88);margin-top:.45rem">Semua game favorit, harga reseller tersedia.</div></div>
-            <a href="/app.html" style="display:inline-block;background:#fff;color:#111;font-weight:700;font-size:.8rem;border-radius:.6rem;padding:.55rem 1.1rem;margin-top:1.1rem;width:fit-content">Beli Sekarang →</a>
-            <div style="position:absolute;right:-1rem;top:-1rem;font-size:6.5rem;opacity:.16;pointer-events:none">🎮</div></div></div>
-        </div>
-        <div style="display:flex;justify-content:center;gap:.45rem;padding:.7rem">
-          <span class="dot" data-i="0" data-active="1"></span><span class="dot" data-i="1"></span><span class="dot" data-i="2"></span>
-        </div>
+      <!-- BANNER SLIDER DINAMIS -->
+      <div style="overflow:hidden;border-radius:1.3rem" id="sliderWrap">
+        <div id="slides" class="slides"></div>
+        <div id="dots" style="display:flex;justify-content:center;gap:.45rem;padding:.7rem"></div>
       </div>
     </div>
   </header>
 
-  <!-- MARQUEE -->
+  <!-- MARQUEE DINAMIS -->
   <div class="wrap" style="padding:.5rem 1rem 1.25rem">
     <div class="mq-wrap">
-      <div class="mq-in">
+      <div class="mq-in" id="mqIn">
+        <!-- diisi JS dari storefront -->
         <span class="mq-chip">📱 Telkomsel</span><span class="mq-chip">🌐 XL · Axis</span><span class="mq-chip">📶 Indosat</span><span class="mq-chip">⚡ PLN</span><span class="mq-chip">🎮 Mobile Legends</span><span class="mq-chip">💳 DANA · OVO · GoPay</span><span class="mq-chip">📺 Netflix · Viu</span><span class="mq-chip">🏥 BPJS</span><span class="mq-chip">📱 Smartfren</span>
         <span class="mq-chip">📱 Telkomsel</span><span class="mq-chip">🌐 XL · Axis</span><span class="mq-chip">📶 Indosat</span><span class="mq-chip">⚡ PLN</span><span class="mq-chip">🎮 Mobile Legends</span><span class="mq-chip">💳 DANA · OVO · GoPay</span><span class="mq-chip">📺 Netflix · Viu</span><span class="mq-chip">🏥 BPJS</span><span class="mq-chip">📱 Smartfren</span>
       </div>
@@ -420,16 +401,86 @@
       document.querySelectorAll('.drw-nav').forEach((a) => a.addEventListener('click', hide));
     })();
 
-    // ===== PROMO SLIDER =====
+    // ===== BANNER SLIDER DINAMIS =====
     (function () {
-      const track = $('#slides'), dots = Array.from(document.querySelectorAll('.dot'));
-      if (!track || !dots.length) return;
-      let i = 0, n = dots.length, timer;
-      function go(idx) { i = (idx + n) % n; track.style.transform = 'translateX(-' + i * 100 + '%)'; dots.forEach((d, k) => d.setAttribute('data-active', k === i ? '1' : '0')); }
-      function start() { stop(); timer = setInterval(() => go(i + 1), 4500); }
-      function stop() { clearInterval(timer); }
-      dots.forEach((d) => d.addEventListener('click', () => { go(+d.dataset.i); start(); }));
-      start();
+      const GRAD = [
+        'linear-gradient(135deg,#6d5aff,#26d0ce)',
+        'linear-gradient(135deg,#f59e0b,#f97316)',
+        'linear-gradient(135deg,#8b5cf6,#ec4899)',
+        'linear-gradient(135deg,#10b981,#34d399)',
+        'linear-gradient(135deg,#38bdf8,#6366f1)',
+      ];
+      const DEFAULT_BANNERS = [
+        { title: 'Paket Data Murah', subtitle: 'Kuota besar harga hemat untuk semua operator.', imageUrl: null, _grad: GRAD[0], _emoji: '🌐' },
+        { title: 'Token PLN Instan', subtitle: 'Struk & token langsung masuk dalam detik.', imageUrl: null, _grad: GRAD[1], _emoji: '⚡' },
+        { title: 'Voucher & Diamond', subtitle: 'Semua game favorit, harga reseller tersedia.', imageUrl: null, _grad: GRAD[2], _emoji: '🎮' },
+      ];
+
+      let sliders = [], cur = 0, timer;
+      const track = document.getElementById('slides');
+      const dotsWrap = document.getElementById('dots');
+      if (!track) return;
+
+      function buildSlide(b, idx) {
+        const grad = b._grad || GRAD[idx % GRAD.length];
+        const emoji = b._emoji || '🛍️';
+        if (b.imageUrl) {
+          // banner gambar dari upload
+          return `<div class="slide"><div class="slide-in" style="background:${grad};padding:0;min-height:12rem;position:relative;">
+            <img src="${escapeHtml(b.imageUrl)}" alt="${escapeHtml(b.title||'')}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:inherit;" onerror="this.style.display='none'">
+            <div style="position:relative;z-index:1;padding:1.7rem;background:linear-gradient(to top,rgba(0,0,0,.55) 0%,transparent 60%);height:100%;display:flex;flex-direction:column;justify-content:flex-end;border-radius:inherit;">
+              ${b.title ? `<div style="font-size:1.45rem;font-weight:800;color:#fff;line-height:1.15;text-shadow:0 2px 8px rgba(0,0,0,.4)">${escapeHtml(b.title)}</div>` : ''}
+              ${b.subtitle ? `<div style="font-size:.84rem;color:rgba(255,255,255,.9);margin-top:.35rem;text-shadow:0 1px 4px rgba(0,0,0,.4)">${escapeHtml(b.subtitle)}</div>` : ''}
+            </div>
+          </div></div>`;
+        }
+        // banner teks/warna
+        return `<div class="slide"><div class="slide-in" style="background:${grad}">
+          <div>
+            <div style="font-size:.68rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.78)">Promo Spesial</div>
+            <div style="font-size:1.65rem;font-weight:800;color:#fff;margin-top:.25rem;line-height:1.15">${escapeHtml(b.title||'Top Up Murah')}</div>
+            <div style="font-size:.84rem;color:rgba(255,255,255,.88);margin-top:.45rem">${escapeHtml(b.subtitle||'Proses otomatis, cepat & terpercaya.')}</div>
+          </div>
+          <a href="/app.html" style="display:inline-block;background:#fff;color:#111;font-weight:700;font-size:.8rem;border-radius:.6rem;padding:.55rem 1.1rem;margin-top:1.1rem;width:fit-content">Beli Sekarang →</a>
+          <div style="position:absolute;right:-1rem;top:-1rem;font-size:6.5rem;opacity:.16;pointer-events:none">${emoji}</div>
+        </div></div>`;
+      }
+
+      function renderSlider(banners) {
+        sliders = banners;
+        const n = sliders.length;
+        track.innerHTML = sliders.map((b, i) => buildSlide(b, i)).join('');
+        dotsWrap.innerHTML = sliders.map((_, i) => `<span class="dot" data-i="${i}" data-active="${i===0?'1':'0'}"></span>`).join('');
+        dotsWrap.querySelectorAll('.dot').forEach((d) => d.addEventListener('click', () => { go(+d.dataset.i); startTimer(); }));
+        go(0);
+        if (n > 1) startTimer();
+      }
+
+      function go(idx) {
+        const n = sliders.length || 1;
+        cur = ((idx % n) + n) % n;
+        track.style.transform = 'translateX(-' + cur * 100 + '%)';
+        dotsWrap.querySelectorAll('.dot').forEach((d, k) => d.setAttribute('data-active', k === cur ? '1' : '0'));
+      }
+      function startTimer() { clearInterval(timer); timer = setInterval(() => go(cur + 1), 4800); }
+
+      // swipe support
+      let sx = 0;
+      track.addEventListener('touchstart', (e) => { sx = e.touches[0].clientX; }, { passive: true });
+      track.addEventListener('touchend', (e) => {
+        const dx = e.changedTouches[0].clientX - sx;
+        if (Math.abs(dx) > 45) { go(cur + (dx < 0 ? 1 : -1)); startTimer(); }
+      }, { passive: true });
+
+      // Load dari API
+      fetch('/api/banners').then((r) => r.json()).then(({ data }) => {
+        const active = Array.isArray(data) ? data.filter((b) => b.active !== false) : [];
+        if (active.length) {
+          renderSlider(active);
+        } else {
+          renderSlider(DEFAULT_BANNERS);
+        }
+      }).catch(() => renderSlider(DEFAULT_BANNERS));
     })();
 
     // ===== helpers ikon/gradien/monogram =====
@@ -466,6 +517,11 @@
     // ===== API: info kontak/brand =====
     function applyLogo(url) {
       if (!url) return;
+      // update favicon dinamis
+      let link = document.querySelector('link[rel="icon"]');
+      if (!link) { link = document.createElement('link'); link.rel = 'icon'; document.head.appendChild(link); }
+      link.href = url;
+      // update logo di navbar & footer
       const img = '<img src="' + escapeHtml(url) + '" alt="logo" style="width:100%;height:100%;object-fit:contain">';
       ['#navLogo', '#footLogo'].forEach((id) => { const el = $(id); if (el) { el.style.background = 'transparent'; el.innerHTML = img; } });
     }
@@ -474,7 +530,7 @@
       const set = (id, v) => { const el = $(id); if (el && v) el.textContent = v; };
       set('#brand', data.store); set('#brandFoot', data.store); set('#brandFoot2', data.store);
       if (data.store) document.title = data.store + ' — Pulsa, Paket Data, PLN, Game, E-Money';
-      applyLogo(data.logoUrl);
+      if (data.logoUrl) applyLogo(data.logoUrl);
       if ($('#cta-tg') && data.botLink) $('#cta-tg').href = data.botLink;
       if (data.waLink) ['#wa','#waFab','#ftWa'].forEach((id) => { const el = $(id); if (el) el.href = data.waLink; });
       if (data.tgLink) ['#tg','#ftTg'].forEach((id) => { const el = $(id); if (el) el.href = data.tgLink; });
@@ -560,8 +616,25 @@
       fetch('/api/storefront').then((r) => r.json()).then(({ data }) => {
         const ALL = Array.isArray(data) ? data : [];
         let brandCount = 0;
-        ALL.forEach((s) => { brandCount += (s.brands ? s.brands.length : 0); });
+        const allBrands = [];
+        ALL.forEach((s) => {
+          brandCount += (s.brands ? s.brands.length : 0);
+          (s.brands || []).forEach((b) => allBrands.push({ brand: b.brand, cat: s.category }));
+        });
         const sb = $('#statBrand'); if (sb) sb.textContent = brandCount || 0;
+
+        // Update marquee dinamis dari brand produk nyata
+        if (allBrands.length > 0) {
+          const mqIn = document.getElementById('mqIn');
+          if (mqIn) {
+            const chips = allBrands.slice(0, 18).map((b) => {
+              const ic = iconFor(b.cat);
+              return `<span class="mq-chip">${ic} ${escapeHtml(b.brand)}</span>`;
+            }).join('');
+            mqIn.innerHTML = chips + chips; // duplikat untuk loop seamless
+          }
+        }
+
         if (!host) return;
         if (!ALL.length) {
           host.innerHTML = '<div class="card empty">Produk belum tersedia. Minta admin jalankan <b>Sync Produk</b> dari menu Admin.</div>';
