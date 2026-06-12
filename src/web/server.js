@@ -587,10 +587,22 @@ app.post('/api/order', requireUser, async (req, res) => {
       }
 
       const status = digiflazz.mapStatus(result.status);
-      if (status === 'Gagal') {
+      const saldoHabis = digiflazz.isSaldoHabis(result);
+      // GAGAL eksplisit ATAU deposit Digiflazz habis -> refund SEGERA (jangan
+      // biarkan Pending/saldo pembeli ketahan). Pembeli beli ulang nanti.
+      if (status === 'Gagal' || (saldoHabis && status !== 'Sukses')) {
         await userService.addBalance(req.userId, harga); // refund
-        await trxService.updateTransaction(refId, { status: 'Gagal', message: result.message || '', sn: result.sn || null });
-        return res.json({ ok: false, message: result.message || 'Transaksi gagal, saldo dikembalikan.' });
+        await trxService.updateTransaction(refId, {
+          status: 'Gagal',
+          message: result.message || (saldoHabis ? 'Deposit provider habis' : ''),
+          sn: result.sn || null,
+        });
+        return res.json({
+          ok: false,
+          message: saldoHabis
+            ? 'Transaksi gagal diproses (stok provider sedang kosong). Saldo dikembalikan, silakan coba lagi nanti.'
+            : (result.message || 'Transaksi gagal, saldo dikembalikan.'),
+        });
       }
 
       await trxService.updateTransaction(refId, { status, sn: result.sn || null, message: result.message || '' });
