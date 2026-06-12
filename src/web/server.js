@@ -21,9 +21,10 @@ const logger = require('../utils/logger');
 const PORT = Number(process.env.WEB_PORT || 3000);
 const STORE_NAME = process.env.STORE_NAME || 'Rayzell Store PPOB';
 
-// kredensial admin web (dari .env)
-const WEB_ADMIN_USER = process.env.WEB_ADMIN_USER || 'admin';
-const WEB_ADMIN_PASS = process.env.WEB_ADMIN_PASSWORD || 'admin123';
+// kredensial admin web (dari .env) — mendukung login via email atau username
+const WEB_ADMIN_EMAIL = process.env.WEB_ADMIN_EMAIL || 'admin@rayzell.id';
+const WEB_ADMIN_USER  = process.env.WEB_ADMIN_USER  || 'admin';
+const WEB_ADMIN_PASS  = process.env.WEB_ADMIN_PASSWORD || 'admin123';
 
 // Rate-limit login admin: max 10 percobaan per IP per 15 menit (anti brute-force).
 const loginAttempts = new Map(); // ip -> { count, resetAt }
@@ -44,6 +45,9 @@ function checkLoginRate(ip) {
 if (WEB_ADMIN_PASS === 'admin123') {
   // eslint-disable-next-line no-console
   console.warn('[SECURITY] WEB_ADMIN_PASSWORD masih default "admin123" — ganti di .env!');
+}
+if (WEB_ADMIN_EMAIL === 'admin@rayzell.id') {
+  console.warn('[SECURITY] WEB_ADMIN_EMAIL masih default — ganti di .env!');
 }
 
 // token sederhana in-memory (cukup untuk 1 admin)
@@ -759,18 +763,24 @@ app.get('/api/history', requireUser, async (req, res) => {
 
 // ===================== ADMIN API =====================
 
-// login
+// login — mendukung email atau username
 app.post('/api/admin/login', (req, res) => {
   const ip = req.ip || req.socket.remoteAddress || 'unknown';
   if (!checkLoginRate(ip)) {
     logger.warn(`[admin-login] rate-limit hit ip=${ip}`);
     return res.status(429).json({ ok: false, message: 'Terlalu banyak percobaan. Coba lagi 15 menit lagi.' });
   }
-  const { username, password } = req.body || {};
-  if (username === WEB_ADMIN_USER && password === WEB_ADMIN_PASS) {
-    return res.json({ ok: true, token: genToken() });
+  const { email, username, password } = req.body || {};
+  const inputId = String(email || username || '').trim();
+  const inputPass = String(password || '');
+  const emailMatch = inputId === WEB_ADMIN_EMAIL && inputPass === WEB_ADMIN_PASS;
+  const userMatch  = inputId === WEB_ADMIN_USER  && inputPass === WEB_ADMIN_PASS;
+  if (emailMatch || userMatch) {
+    const adminInfo = { email: WEB_ADMIN_EMAIL };
+    return res.json({ ok: true, token: genToken(), admin: adminInfo });
   }
-  res.status(401).json({ ok: false, message: 'Username atau password salah.' });
+  logger.warn(`[admin-login] gagal ip=${ip} inputId=${inputId}`);
+  res.status(401).json({ ok: false, message: 'Email atau password salah.' });
 });
 
 // statistik
@@ -790,22 +800,43 @@ app.get('/api/admin/stats', requireAdmin, async (req, res) => {
   }
 });
 
-// transaksi terbaru
+// transaksi — dengan pagination, filter status, dan search
 app.get('/api/admin/transactions', requireAdmin, async (req, res) => {
   try {
-    const limit = Math.min(Number(req.query.limit || 20), 100);
-    const rows = await all(
-      'SELECT ref_id, product_name, target, sell_price, status, created_at FROM transactions ORDER BY created_at DESC LIMIT $1',
-      [limit]
-    );
+    const limit  = Math.min(Number(req.query.limit  || 50), 200);
+    const offset = Math.max(Number(req.query.offset || 0), 0);
+    const status = String(req.query.status || '').trim();
+    const search = String(req.query.search || '').trim();
+    const params = [];
+    const conds  = [];
+    if (status) { conds.push(`status = $${params.length+1}`); params.push(status); }
+    if (search) {
+      conds.push(`(ref_id ILIKE $${params.length+1} OR target ILIKE $${params.length+1} OR product_name ILIKE $${params.length+1})`);
+      params.push(`%${search}%`);
+    }
+    const where = conds.length ? 'WHERE ' + conds.join(' AND ') : '';
+    const [rows, countRow] = await Promise.all([
+      all(
+        `SELECT t.ref_id, t.product_name, t.target, t.sell_price, t.cost_price, t.status, t.sn, t.message, t.created_at, u.name as user_name
+           FROM transactions t LEFT JOIN users u ON u.id = t.user_id
+           ${where} ORDER BY t.created_at DESC LIMIT $${params.length+1} OFFSET $${params.length+2}`,
+        [...params, limit, offset]
+      ),
+      one(`SELECT COUNT(*)::int AS c FROM transactions ${where}`, params),
+    ]);
     res.json({
       ok: true,
+      total: countRow ? countRow.c : 0,
       data: rows.map((r) => ({
         ref_id: r.ref_id,
         product_name: r.product_name,
         target: r.target,
         sell_price: r.sell_price,
+        cost_price: r.cost_price,
         status: r.status,
+        sn: r.sn,
+        message: r.message,
+        user_name: r.user_name || '-',
         waktu: tanggal(Number(r.created_at)),
       })),
     });
@@ -813,6 +844,334 @@ app.get('/api/admin/transactions', requireAdmin, async (req, res) => {
     logger.error('web /api/admin/transactions:', e.message);
     res.json({ ok: false, message: e.message });
   }
+});
+
+// ===================== ADMIN: MANAJEMEN PENGGUNA =====================
+
+app.get('/api/admin/users', requireAdmin, async (req, res) => {
+  try {
+    const limit  = Math.min(Number(req.query.limit  || 50), 200);
+    const offset = Math.max(Number(req.query.offset || 0), 0);
+    const search = String(req.query.search || '').trim();
+    const params = [];
+    let where = '';
+    if (search) {
+      where = `WHERE (name ILIKE $1 OR username ILIKE $1 OR id::text ILIKE $1)`;
+      params.push(`%${search}%`);
+    }
+    const [rows, countRow] = await Promise.all([
+      all(
+        `SELECT id, username, name, balance, role, banned, created_at FROM users ${where} ORDER BY created_at DESC LIMIT $${params.length+1} OFFSET $${params.length+2}`,
+        [...params, limit, offset]
+      ),
+      one(`SELECT COUNT(*)::int AS c FROM users ${where}`, params),
+    ]);
+    res.json({
+      ok: true,
+      total: countRow ? countRow.c : 0,
+      data: rows.map((r) => ({
+        id: r.id,
+        username: r.username,
+        name: r.name,
+        balance: r.balance,
+        role: r.role,
+        banned: r.banned,
+        waktu: tanggal(Number(r.created_at)),
+      })),
+    });
+  } catch (e) {
+    logger.error('web /api/admin/users:', e.message);
+    res.json({ ok: false, message: e.message });
+  }
+});
+
+// adjust saldo user
+app.post('/api/admin/users/:id/balance', requireAdmin, async (req, res) => {
+  try {
+    const uid   = Number(req.params.id);
+    const delta = parseInt(req.body && req.body.delta, 10);
+    if (!Number.isFinite(delta)) return res.json({ ok: false, message: 'delta harus angka.' });
+    const user = await userService.getUser(uid);
+    if (!user) return res.json({ ok: false, message: 'User tidak ditemukan.' });
+    await userService.addBalance(uid, delta);
+    const updated = await userService.getUser(uid);
+    res.json({ ok: true, message: `Saldo ${user.name} ${delta >= 0 ? '+' : ''}${rupiah(delta)}.`, balance: updated.balance });
+  } catch (e) {
+    logger.error('web /api/admin/users/balance:', e.message);
+    res.json({ ok: false, message: e.message });
+  }
+});
+
+// ubah role user
+app.post('/api/admin/users/:id/role', requireAdmin, async (req, res) => {
+  try {
+    const uid  = Number(req.params.id);
+    const role = String(req.body && req.body.role || '').toUpperCase();
+    const allowed = ['MEMBER', 'RESELLER', 'VIP', 'ADMIN'];
+    if (!allowed.includes(role)) return res.json({ ok: false, message: 'Role tidak valid.' });
+    await query('UPDATE users SET role=$1, updated_at=$2 WHERE id=$3', [role, Date.now(), uid]);
+    res.json({ ok: true, message: `Role user diubah ke ${role}.` });
+  } catch (e) {
+    logger.error('web /api/admin/users/role:', e.message);
+    res.json({ ok: false, message: e.message });
+  }
+});
+
+// ban/unban user
+app.post('/api/admin/users/:id/ban', requireAdmin, async (req, res) => {
+  try {
+    const uid    = Number(req.params.id);
+    const banned = !!req.body.banned;
+    await query('UPDATE users SET banned=$1, updated_at=$2 WHERE id=$3', [banned, Date.now(), uid]);
+    res.json({ ok: true, message: `User ${banned ? 'diblokir' : 'diaktifkan kembali'}.` });
+  } catch (e) {
+    logger.error('web /api/admin/users/ban:', e.message);
+    res.json({ ok: false, message: e.message });
+  }
+});
+
+// ===================== ADMIN: MULTI DIGIFLAZZ API =====================
+// Disimpan di settings key 'digiflazz_accounts' sebagai JSON array.
+
+async function getDigiAccounts() {
+  try {
+    const row = await one("SELECT value FROM settings WHERE key = 'digiflazz_accounts'");
+    if (row && row.value) return JSON.parse(row.value) || [];
+  } catch (e) { /* fallback */ }
+  // fallback ke env jika belum ada data
+  const envAcc = config.digiflazz.username ? [{
+    id: 'default',
+    label: 'Akun Utama (dari .env)',
+    username: config.digiflazz.username,
+    api_key: config.digiflazz.apiKey,
+    mode: config.digiflazz.mode || 'prepaid',
+    active: true,
+    primary: true,
+  }] : [];
+  return envAcc;
+}
+
+async function saveDigiAccounts(accounts) {
+  await query(
+    "INSERT INTO settings(key, value) VALUES('digiflazz_accounts', $1) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value",
+    [JSON.stringify(accounts)]
+  );
+}
+
+app.get('/api/admin/digiflazz-accounts', requireAdmin, async (req, res) => {
+  try {
+    const accounts = await getDigiAccounts();
+    // Sembunyikan sebagian api_key untuk keamanan
+    const safe = accounts.map((a) => ({
+      ...a,
+      api_key_masked: a.api_key ? a.api_key.slice(0, 6) + '****' + a.api_key.slice(-4) : '',
+    }));
+    res.json({ ok: true, data: safe });
+  } catch (e) {
+    logger.error('web /api/admin/digiflazz-accounts GET:', e.message);
+    res.json({ ok: false, message: e.message });
+  }
+});
+
+app.post('/api/admin/digiflazz-accounts', requireAdmin, async (req, res) => {
+  try {
+    const { label, username, api_key, mode } = req.body || {};
+    if (!label || !username || !api_key) return res.json({ ok: false, message: 'label, username, api_key wajib diisi.' });
+    const accounts = await getDigiAccounts();
+    const id = `acc_${Date.now()}`;
+    accounts.push({ id, label: String(label).slice(0,60), username: String(username), api_key: String(api_key), mode: mode || 'prepaid', active: true, primary: accounts.length === 0 });
+    await saveDigiAccounts(accounts);
+    res.json({ ok: true, message: 'Akun Digiflazz ditambahkan.', id });
+  } catch (e) {
+    logger.error('web /api/admin/digiflazz-accounts POST:', e.message);
+    res.json({ ok: false, message: e.message });
+  }
+});
+
+app.put('/api/admin/digiflazz-accounts/:id', requireAdmin, async (req, res) => {
+  try {
+    const accId = String(req.params.id);
+    const accounts = await getDigiAccounts();
+    const idx = accounts.findIndex((a) => a.id === accId);
+    if (idx === -1) return res.json({ ok: false, message: 'Akun tidak ditemukan.' });
+    const { label, username, api_key, mode, active, primary } = req.body || {};
+    if (label !== undefined) accounts[idx].label = String(label).slice(0,60);
+    if (username !== undefined) accounts[idx].username = String(username);
+    if (api_key !== undefined && api_key && !api_key.includes('****')) accounts[idx].api_key = String(api_key);
+    if (mode !== undefined) accounts[idx].mode = mode;
+    if (active !== undefined) accounts[idx].active = !!active;
+    if (primary) { accounts.forEach((a) => { a.primary = false; }); accounts[idx].primary = true; }
+    await saveDigiAccounts(accounts);
+    res.json({ ok: true, message: 'Akun diperbarui.' });
+  } catch (e) {
+    logger.error('web /api/admin/digiflazz-accounts PUT:', e.message);
+    res.json({ ok: false, message: e.message });
+  }
+});
+
+app.delete('/api/admin/digiflazz-accounts/:id', requireAdmin, async (req, res) => {
+  try {
+    const accId = String(req.params.id);
+    let accounts = await getDigiAccounts();
+    accounts = accounts.filter((a) => a.id !== accId);
+    await saveDigiAccounts(accounts);
+    res.json({ ok: true, message: 'Akun dihapus.' });
+  } catch (e) {
+    logger.error('web /api/admin/digiflazz-accounts DELETE:', e.message);
+    res.json({ ok: false, message: e.message });
+  }
+});
+
+// cek saldo deposit per akun Digiflazz
+app.post('/api/admin/digiflazz-accounts/:id/check-deposit', requireAdmin, async (req, res) => {
+  try {
+    const accId = String(req.params.id);
+    const accounts = await getDigiAccounts();
+    const acc = accounts.find((a) => a.id === accId);
+    if (!acc) return res.json({ ok: false, message: 'Akun tidak ditemukan.' });
+    // Buat signature sementara pakai creds akun ini
+    const md5 = (s) => require('crypto').createHash('md5').update(s).digest('hex');
+    const sign = md5(acc.username + acc.api_key + 'depo');
+    const axios = require('axios');
+    const { data } = await axios.post('https://api.digiflazz.com/v1/cek-saldo', {
+      cmd: 'deposit', username: acc.username, sign,
+    }, { timeout: 15000 });
+    const deposit = data && data.data ? data.data.deposit : null;
+    res.json({ ok: true, deposit });
+  } catch (e) {
+    logger.error('web check-deposit:', e.message);
+    res.json({ ok: false, message: e.message });
+  }
+});
+
+// ===================== ADMIN: MARKUP HARGA =====================
+
+app.get('/api/admin/markup', requireAdmin, async (req, res) => {
+  try {
+    const rows = await all('SELECT sku, type, value, updated_at FROM markups ORDER BY sku');
+    res.json({ ok: true, data: rows });
+  } catch (e) {
+    logger.error('web /api/admin/markup GET:', e.message);
+    res.json({ ok: false, message: e.message });
+  }
+});
+
+app.post('/api/admin/markup', requireAdmin, async (req, res) => {
+  try {
+    const rules = req.body && Array.isArray(req.body.rules) ? req.body.rules : [];
+    for (const r of rules) {
+      const sku   = String(r.sku || '').trim();
+      const type  = ['flat','percent'].includes(r.type) ? r.type : 'flat';
+      const value = Number(r.value) || 0;
+      if (!sku) continue;
+      await query(
+        `INSERT INTO markups(sku, type, value, updated_at) VALUES($1,$2,$3,$4)
+         ON CONFLICT(sku) DO UPDATE SET type=EXCLUDED.type, value=EXCLUDED.value, updated_at=EXCLUDED.updated_at`,
+        [sku, type, value, Date.now()]
+      );
+    }
+    await markupService.load(); // reload cache
+    res.json({ ok: true, message: `${rules.length} markup disimpan.` });
+  } catch (e) {
+    logger.error('web /api/admin/markup POST:', e.message);
+    res.json({ ok: false, message: e.message });
+  }
+});
+
+// ===================== ADMIN: STATUS PRODUK =====================
+
+app.post('/api/admin/products/:sku/status', requireAdmin, async (req, res) => {
+  try {
+    const sku    = String(req.params.sku || '').trim();
+    const status = String(req.body && req.body.status || '').trim();
+    if (!['active','inactive'].includes(status)) return res.json({ ok: false, message: 'status harus active/inactive.' });
+    const result = await query(
+      'UPDATE products SET status=$1 WHERE buyer_sku_code=$2 RETURNING product_name',
+      [status, sku]
+    );
+    if (!result.rows.length) return res.json({ ok: false, message: 'Produk tidak ditemukan.' });
+    res.json({ ok: true, message: `Produk "${result.rows[0].product_name}" diubah ke ${status}.` });
+  } catch (e) {
+    logger.error('web /api/admin/products/status:', e.message);
+    res.json({ ok: false, message: e.message });
+  }
+});
+
+// ===================== ADMIN: BANNER HOMEPAGE =====================
+// Disimpan di settings key 'homepage_banners' sebagai JSON array.
+
+async function getBanners() {
+  try {
+    const row = await one("SELECT value FROM settings WHERE key = 'homepage_banners'");
+    if (row && row.value) return JSON.parse(row.value) || [];
+  } catch (e) { /* fallback */ }
+  return [];
+}
+
+app.get('/api/admin/banners', requireAdmin, async (req, res) => {
+  try { res.json({ ok: true, data: await getBanners() }); }
+  catch (e) { res.json({ ok: false, message: e.message }); }
+});
+
+app.get('/api/banners', async (req, res) => {
+  try { res.json({ ok: true, data: await getBanners() }); }
+  catch (e) { res.json({ ok: true, data: [] }); }
+});
+
+app.post('/api/admin/banners', requireAdmin, async (req, res) => {
+  try {
+    const banners = await getBanners();
+    const { title, subtitle, url, image } = req.body || {};
+    let imageUrl = String(url || '').trim();
+    if (image && image.startsWith('data:')) {
+      const saved = saveBase64Image(image);
+      if (saved.error) return res.json({ ok: false, message: saved.error });
+      imageUrl = saved.url;
+    }
+    if (!imageUrl) return res.json({ ok: false, message: 'URL atau gambar wajib.' });
+    const id = `banner_${Date.now()}`;
+    banners.push({ id, title: String(title||'').slice(0,80), subtitle: String(subtitle||'').slice(0,160), imageUrl, active: true });
+    await query("INSERT INTO settings(key,value) VALUES('homepage_banners',$1) ON CONFLICT(key) DO UPDATE SET value=EXCLUDED.value", [JSON.stringify(banners)]);
+    res.json({ ok: true, message: 'Banner ditambahkan.', id });
+  } catch (e) {
+    logger.error('web /api/admin/banners POST:', e.message);
+    res.json({ ok: false, message: e.message });
+  }
+});
+
+app.delete('/api/admin/banners/:id', requireAdmin, async (req, res) => {
+  try {
+    const bannerId = String(req.params.id);
+    let banners = await getBanners();
+    const found = banners.find((b) => b.id === bannerId);
+    if (found && found.imageUrl) unlinkUpload(found.imageUrl);
+    banners = banners.filter((b) => b.id !== bannerId);
+    await query("INSERT INTO settings(key,value) VALUES('homepage_banners',$1) ON CONFLICT(key) DO UPDATE SET value=EXCLUDED.value", [JSON.stringify(banners)]);
+    res.json({ ok: true, message: 'Banner dihapus.' });
+  } catch (e) {
+    logger.error('web /api/admin/banners DELETE:', e.message);
+    res.json({ ok: false, message: e.message });
+  }
+});
+
+app.put('/api/admin/banners/:id/toggle', requireAdmin, async (req, res) => {
+  try {
+    const bannerId = String(req.params.id);
+    const banners = await getBanners();
+    const b = banners.find((x) => x.id === bannerId);
+    if (!b) return res.json({ ok: false, message: 'Banner tidak ditemukan.' });
+    b.active = !b.active;
+    await query("INSERT INTO settings(key,value) VALUES('homepage_banners',$1) ON CONFLICT(key) DO UPDATE SET value=EXCLUDED.value", [JSON.stringify(banners)]);
+    res.json({ ok: true, message: `Banner ${b.active ? 'diaktifkan' : 'dinonaktifkan'}.`, active: b.active });
+  } catch (e) {
+    logger.error('web /api/admin/banners toggle:', e.message);
+    res.json({ ok: false, message: e.message });
+  }
+});
+
+// info admin (email) untuk ditampilkan di panel
+app.get('/api/admin/me', requireAdmin, (req, res) => {
+  res.json({ ok: true, data: { email: WEB_ADMIN_EMAIL } });
 });
 
 // top up pending
