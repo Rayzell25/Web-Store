@@ -544,6 +544,10 @@ app.post('/api/order', requireUser, async (req, res) => {
     const tujuan = String(target || '').trim();
     if (!tujuan) return res.json({ ok: false, message: 'Nomor tujuan tidak boleh kosong.' });
 
+    // Anti DOBEL: tolak bila masih ada transaksi Pending ke produk+nomor yang sama.
+    const dupTrx = await trxService.hasPendingSame(sku, tujuan);
+    if (dupTrx) return res.json({ ok: false, message: 'Masih ada transaksi ke nomor ini yang sedang diproses. Tunggu hingga selesai.' });
+
     // ===== Bayar pakai SALDO =====
     if (method === 'saldo') {
       if (user.balance < harga) return res.json({ ok: false, message: 'Saldo tidak cukup.' });

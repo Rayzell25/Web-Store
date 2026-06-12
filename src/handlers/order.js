@@ -8,7 +8,7 @@ const {
   sellPrice,
 } = require('../services/productService');
 const { getUser, addBalance } = require('../services/userService');
-const { createTransaction, updateTransaction } = require('../services/trxService');
+const { createTransaction, updateTransaction, hasPendingSame } = require('../services/trxService');
 const digiflazz = require('../services/digiflazz');
 const digiflazzPoller = require('../services/digiflazzPoller');
 const autogopay = require('../services/autogopay');
@@ -162,6 +162,13 @@ async function pay(bot, chatId, messageId, userId, notifyAdmins, alert) {
     }
     return editOrSend(bot, chatId, messageId,
       `⚠️ Saldo tidak cukup. Kurang ${rupiah(harga - user.balance)}.`, backButton('menu:deposit'));
+  }
+
+  // Anti DOBEL: tolak bila masih ada transaksi Pending ke produk+nomor yang sama.
+  const dupTrx = await hasPendingSame(sku, target);
+  if (dupTrx) {
+    if (typeof alert === 'function') return alert('Masih ada transaksi ke nomor ini yang sedang diproses. Tunggu hingga selesai dulu.');
+    return editOrSend(bot, chatId, messageId, '⚠️ Masih ada transaksi ke nomor ini yang sedang diproses. Tunggu hingga selesai.', backButton('menu:home'));
   }
 
   // Klaim state ATOMIK tepat sebelum memotong saldo -> cegah double-charge bila

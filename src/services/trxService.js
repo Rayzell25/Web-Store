@@ -98,9 +98,18 @@ function startOfTodayJakarta() {
   return jakarta.getTime() - offset;
 }
 
+/** Cek apakah masih ada transaksi PENDING ke produk+nomor yang sama (anti dobel). */
+function hasPendingSame(sku, target) {
+  return one(
+    "SELECT ref_id FROM transactions WHERE buyer_sku_code = $1 AND target = $2 AND status = 'Pending' LIMIT 1",
+    [sku, String(target)]
+  );
+}
+
 module.exports = {
   createTransaction,
   getTransaction,
+  hasPendingSame,
   updateTransaction,
   getUserTransactions,
   pendingTransactions,
