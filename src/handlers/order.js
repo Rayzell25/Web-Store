@@ -221,13 +221,27 @@ async function pay(bot, chatId, messageId, userId, notifyAdmins, alert) {
   const status = digiflazz.mapStatus(result.status);
   const sn = result.sn || null;
   const message = result.message || '';
+  const saldoHabis = digiflazz.isSaldoHabis(result);
 
-  if (status === 'Gagal') {
+  // GAGAL eksplisit, ATAU deposit Digiflazz (penjual) habis. Untuk saldo-habis:
+  // perlakukan GAGAL + refund SEGERA meski Digiflazz balas selain 'Sukses' --
+  // jangan biarkan 'Pending' (saldo pembeli ketahan). Pembeli beli ulang nanti.
+  if (status === 'Gagal' || (saldoHabis && status !== 'Sukses')) {
     await addBalance(userId, harga);
-    await updateTransaction(refId, { status: 'Gagal', message, sn });
+    await updateTransaction(refId, {
+      status: 'Gagal',
+      message: message || (saldoHabis ? 'Deposit provider habis' : ''),
+      sn,
+    });
     groupNotify.notifyTrx({ status: 'Gagal', productName: product.product_name, target, price: harga, refId, sn, userName: user.name, userId });
+    if (saldoHabis && typeof notifyAdmins === 'function') {
+      notifyAdmins(`⚠️ DEPOSIT DIGIFLAZZ HABIS\n${product.product_name} → ${target} ditolak, saldo pembeli (${rupiah(harga)}) sudah direfund.\nSegera isi deposit Digiflazz. Ref: ${refId}`);
+    }
+    const userMsg = saldoHabis
+      ? 'Transaksi gagal diproses (stok provider sedang kosong). Saldo kamu sudah dikembalikan, silakan coba lagi nanti.'
+      : `${escapeHtml(message)}\nSaldo dikembalikan.`;
     return editOrSend(bot, chatId, messageId,
-      `<b>TRANSAKSI GAGAL</b> ❌\n${LINE}\n${escapeHtml(message)}\nSaldo dikembalikan.\nRef: <code>${refId}</code>`,
+      `<b>TRANSAKSI GAGAL</b> ❌\n${LINE}\n${userMsg}\nRef: <code>${refId}</code>`,
       backButton('menu:home'));
   }
 

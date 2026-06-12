@@ -125,4 +125,25 @@ function mapStatus(digiStatus) {
   return 'Pending';
 }
 
-module.exports = { priceList, checkDeposit, topUp, checkTransaction, mapStatus, sign };
+/**
+ * Deteksi respons "deposit/saldo DIGIFLAZZ (penjual) tidak cukup".
+ * Ini kondisi di sisi PENJUAL (deposit kita habis), bukan kegagalan produk dan
+ * BUKAN saldo pembeli. Digiflazz menolak transaksi ini -> harus diperlakukan
+ * GAGAL + refund pembeli SEGERA, JANGAN dibiarkan 'Pending' (supaya saldo
+ * pembeli tidak ketahan). Setelah deposit diisi, pembeli harus beli ulang.
+ * Deteksi via pesan provider (utama) + rc '41' (umum dipakai Digiflazz).
+ */
+function isSaldoHabis(result) {
+  if (!result) return false;
+  const rc = String(result.rc == null ? '' : result.rc).trim();
+  if (rc === '41') return true;
+  const msg = String(result.message || '').toLowerCase().replace(/\s+/g, ' ');
+  if (!msg.includes('saldo') && !msg.includes('deposit')) return false;
+  return msg.includes('tidak cukup')
+    || msg.includes('tdk cukup')
+    || msg.includes('tidak mencukupi')
+    || msg.includes('belum cukup')
+    || msg.includes('kurang');
+}
+
+module.exports = { priceList, checkDeposit, topUp, checkTransaction, mapStatus, isSaldoHabis, sign };
