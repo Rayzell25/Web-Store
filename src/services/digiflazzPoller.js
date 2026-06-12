@@ -71,10 +71,8 @@ async function processOne(trx) {
         refId,
       });
     } catch (e) {
-      // Gateway error sementara -> jangan ubah apa-apa, coba lagi tick berikutnya.
+      // Gateway error sementara -> JANGAN ubah status/refund. Coba lagi tick berikutnya.
       logger.warn(`reconcile cek ${refId} gagal sementara:`, e.message);
-      // Cek timeout: kalau sudah terlalu lama Pending, gagalkan & refund.
-      await maybeTimeoutRefund(trx);
       return;
     }
 
@@ -87,8 +85,11 @@ async function processOne(trx) {
     } else if (status === 'Gagal') {
       await markGagalRefund(trx, message);
     } else {
-      // masih Pending di Digiflazz -> cek timeout
-      await maybeTimeoutRefund(trx);
+      // Masih Pending di Digiflazz. JANGAN auto-gagalkan/refund berdasarkan timer:
+      // transaksi 'Pending' di provider BISA tetap dipenuhi nanti (mis. setelah
+      // deposit ditop-up) -> auto-refund bikin deposit kesedot (produk tetap
+      // terkirim). Hanya catat & beri tahu admin.
+      noteStalePending(trx);
     }
   } finally {
     inFlight.delete(refId);
@@ -143,14 +144,23 @@ async function markGagalRefund(trx, message) {
   groupNotify.notifyTrx({ status: 'Gagal', productName: trx.product_name, target: trx.target, price: trx.sell_price, refId: trx.ref_id, userId: trx.user_id });
 }
 
-/** Kalau transaksi Pending sudah lewat batas waktu, anggap gagal & refund. */
-async function maybeTimeoutRefund(trx) {
-  const timeoutMin = Number(config.digiflazz.reconcileTimeoutMin) || 0;
-  if (timeoutMin <= 0) return;
+/**
+ * Transaksi Pending lama TIDAK lagi di-refund otomatis. Auto-refund saat masih
+ * 'Pending' di provider berbahaya: Digiflazz bisa tetap memenuhinya nanti (mis.
+ * setelah deposit ditop-up) sehingga deposit terpotong padahal user sudah
+ * di-refund -> kerugian nyata. Refund HANYA saat Digiflazz membalas 'Gagal'
+ * eksplisit. Di sini cuma beri peringatan ke admin (sekali, di sekitar ambang).
+ */
+function noteStalePending(trx) {
+  const mins = Number(config.digiflazz.reconcileTimeoutMin) || 0;
+  if (mins <= 0) return;
   const age = Date.now() - Number(trx.created_at);
-  if (age < timeoutMin * 60 * 1000) return;
-  logger.warn(`reconcile ${trx.ref_id} timeout (${timeoutMin}m) -> gagalkan & refund`);
-  await markGagalRefund(trx, `Tidak ada kepastian dari provider > ${timeoutMin} menit`);
+  const threshold = mins * 60 * 1000;
+  const windowMs = ((Number(config.digiflazz.reconcileSec) || 60) * 1000) + 5000;
+  if (age >= threshold && age < threshold + windowMs) {
+    logger.warn(`reconcile ${trx.ref_id} masih Pending > ${mins}m (target ${trx.target}) — dibiarkan Pending (TIDAK di-refund).`);
+    notifyRef(`⚠️ Transaksi ${trx.ref_id} (${trx.product_name} -> ${trx.target}) masih PENDING > ${mins} menit. TIDAK di-refund otomatis (mencegah deposit kesedot). Cek manual di Digiflazz.`);
+  }
 }
 
 function sendMessage(chatId, text) {
