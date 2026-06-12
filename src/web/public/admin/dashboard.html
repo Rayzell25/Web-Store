@@ -531,8 +531,22 @@
 
     <!-- ===== TRANSACTIONS ===== -->
     <div class="pg" id="sec-transactions">
-      <div class="ph"><div><div class="ph-title">💳 Manajemen <span>Transaksi</span></div><div class="ph-sub">Semua riwayat transaksi</div></div><button class="btn btn-p btn-sm" onclick="loadTransactions()">↺ Refresh</button></div>
-      <div class="box"><div class="tw"><table><thead><tr><th>Ref ID</th><th>Produk</th><th>Tujuan</th><th>Harga</th><th>Status</th><th>Waktu</th></tr></thead><tbody id="allTrxBody"><tr><td colspan="6"><div class="ls"><span class="spin"></span></div></td></tr></tbody></table></div></div>
+      <div class="ph"><div><div class="ph-title">💳 Riwayat <span>Transaksi</span></div><div class="ph-sub">Semua riwayat transaksi dengan filter & search</div></div><button class="btn btn-p btn-sm" onclick="loadTransactions()">↺ Refresh</button></div>
+      <div class="box" style="margin-bottom:1rem;">
+        <div class="bb" style="padding:.75rem 1rem;display:flex;gap:.65rem;flex-wrap:wrap;align-items:center;">
+          <input type="text" id="trxSearch" class="fc" placeholder="🔍 Cari ref_id / produk / tujuan…" style="flex:1;min-width:180px;" oninput="loadTransactions()">
+          <select id="trxStatus" class="fc" style="width:160px;" onchange="loadTransactions()">
+            <option value="">Semua Status</option>
+            <option value="Sukses">✅ Sukses</option>
+            <option value="Pending">⏳ Pending</option>
+            <option value="Gagal">❌ Gagal</option>
+          </select>
+          <button class="btn btn-g btn-sm" onclick="exportTrxCSV()">⬇ Export CSV</button>
+        </div>
+      </div>
+      <div class="box"><div class="tw"><table><thead><tr><th>Ref ID</th><th>Pengguna</th><th>Produk</th><th>Tujuan</th><th>Harga</th><th>Status</th><th>Waktu</th></tr></thead><tbody id="allTrxBody"><tr><td colspan="7"><div class="ls"><span class="spin"></span></div></td></tr></tbody></table></div>
+        <div id="trxPagBox" style="display:flex;justify-content:center;gap:.5rem;padding:.75rem;flex-wrap:wrap;"></div>
+      </div>
     </div>
 
     <!-- ===== TOP UP PENDING ===== -->
@@ -544,7 +558,15 @@
     <!-- ===== USERS ===== -->
     <div class="pg" id="sec-users">
       <div class="ph"><div><div class="ph-title">👥 Manajemen <span>Pengguna</span></div><div class="ph-sub">Daftar semua member terdaftar</div></div><button class="btn btn-p btn-sm" onclick="loadUsers()">↺ Refresh</button></div>
-      <div class="box"><div class="tw"><table><thead><tr><th>Pengguna</th><th>ID</th><th>Saldo</th><th>Role</th><th>Bergabung</th></tr></thead><tbody id="usersBody"><tr><td colspan="5"><div class="ls"><span class="spin"></span></div></td></tr></tbody></table></div></div>
+      <div class="box" style="margin-bottom:1rem;">
+        <div class="bb" style="padding:.75rem 1rem;display:flex;gap:.65rem;flex-wrap:wrap;align-items:center;">
+          <input type="text" id="userSearch" class="fc" placeholder="🔍 Cari nama / username / ID…" style="flex:1;min-width:200px;" oninput="loadUsers()">
+        </div>
+      </div>
+      <div class="box">
+        <div class="tw"><table><thead><tr><th>Pengguna</th><th>ID</th><th>Saldo</th><th>Role</th><th>Status</th><th>Bergabung</th><th>Aksi</th></tr></thead><tbody id="usersBody"><tr><td colspan="7"><div class="ls"><span class="spin"></span></div></td></tr></tbody></table></div>
+        <div id="userPagBox" style="display:flex;justify-content:center;gap:.5rem;padding:.75rem;flex-wrap:wrap;"></div>
+      </div>
     </div>
 
     <!-- ===== SLIDE BERANDA ===== -->
@@ -1415,39 +1437,119 @@ async function loadStats(){
   }catch(e){}
 }
 
-async function loadTransactions(){
+let _trxOffset=0,_trxLimit=50;
+async function loadTransactions(reset){
+  if(reset)_trxOffset=0;
   const tb=document.getElementById('allTrxBody');
-  tb.innerHTML='<tr><td colspan="6"><div class="ls"><span class="spin"></span></div></td></tr>';
-  try{const r=await fetch('/api/admin/transactions?limit=100',{headers:ah()});const j=await r.json();
-    if(!j.ok||!j.data.length){tb.innerHTML='<tr><td colspan="6"><div class="ls">Belum ada.</div></td></tr>';}
-    else{tb.innerHTML=j.data.map(t=>`<tr><td><code style="font-size:.72rem;color:var(--a2);">${esc(t.ref_id)}</code></td><td>${esc(t.product_name||'—')}</td><td>${esc(t.target||'—')}</td><td>${rp(t.sell_price)}</td><td>${sb(t.status)}</td><td style="color:var(--muted);font-size:.74rem;">${esc(t.waktu)}</td></tr>`).join('');}
-  }catch(e){tb.innerHTML='<tr><td colspan="6"><div class="ls" style="color:var(--err);">Gagal memuat.</div></td></tr>';}
-}
-
-async function loadPending(){
-  const tb=document.getElementById('topupBody');
-  tb.innerHTML='<tr><td colspan="5"><div class="ls"><span class="spin"></span></div></td></tr>';
-  try{const r=await fetch('/api/admin/topups/pending',{headers:ah()});const j=await r.json();
-    const badge=document.getElementById('pendingCount');
-    if(!j.ok||!j.data.length){tb.innerHTML='<tr><td colspan="5"><div class="ls">Tidak ada top up pending 🎉</div></td></tr>';badge.style.display='none';}
-    else{badge.textContent=j.data.length;badge.style.display='';
-      tb.innerHTML=j.data.map(d=>`<tr><td style="color:var(--muted);font-size:.79rem;">#${esc(d.id)}</td><td><strong>${esc(d.user_name)}</strong></td><td><strong style="color:var(--ok);">${rp(d.amount)}</strong></td><td style="color:var(--muted);font-size:.74rem;">${esc(d.waktu)}</td><td style="display:flex;gap:.35rem;"><button class="btn btn-ok btn-xs" onclick="actTopup(${d.id},'approve')">✓ Setujui</button><button class="btn btn-err btn-xs" onclick="actTopup(${d.id},'reject')">✕ Tolak</button></td></tr>`).join('');}
-  }catch(e){}
-}
-async function actTopup(id,action){
-  if(!confirm(`${action==='approve'?'Setujui':'Tolak'} top up #${id}?`))return;
-  try{const r=await fetch(`/api/admin/topups/${id}/${action}`,{method:'POST',headers:ah()});const j=await r.json();toast(j.message||(j.ok?'Berhasil.':'Gagal.'),j.ok?'ok':'err');loadPending();}catch(e){toast('Gagal.','err');}
-}
-
-async function loadUsers(){
-  const tb=document.getElementById('usersBody');
-  tb.innerHTML='<tr><td colspan="5"><div class="ls"><span class="spin"></span></div></td></tr>';
-  try{const r=await fetch('/api/admin/users',{headers:ah()});
-    if(!r.ok){tb.innerHTML='<tr><td colspan="5"><div class="ls" style="color:var(--muted);">Endpoint belum tersedia.</div></td></tr>';return;}
+  tb.innerHTML='<tr><td colspan="7"><div class="ls"><span class="spin"></span> Memuat…</div></td></tr>';
+  const search=document.getElementById('trxSearch')?.value.trim()||'';
+  const status=document.getElementById('trxStatus')?.value||'';
+  const url=`/api/admin/transactions?limit=${_trxLimit}&offset=${_trxOffset}`+(status?'&status='+encodeURIComponent(status):'')+(search?'&search='+encodeURIComponent(search):'');
+  try{
+    const r=await fetch(url,{headers:ah()});
+    if(r.status===401){logout();return;}
     const j=await r.json();
-    if(!j.ok||!j.data||!j.data.length){tb.innerHTML='<tr><td colspan="5"><div class="ls">Tidak ada pengguna.</div></td></tr>';return;}
-    tb.innerHTML=j.data.map(u=>`<tr><td><div style="display:flex;align-items:center;gap:.6rem;"><div class="uav">${(u.name||'?')[0].toUpperCase()}</div><strong>${esc(u.name)}</strong></div></td><td style="color:var(--muted);font-size:.74rem;font-family:monospace;">${esc(u.id)}</td><td><strong style="color:var(--ok);">${rp(u.balance)}</strong></td><td>${sb(u.role||'MEMBER')}</td><td style="color:var(--muted);font-size:.74rem;">${esc(u.waktu||'—')}</td></tr>`).join('');
-  }catch(e){tb.innerHTML='<tr><td colspan="5"><div class="ls" style="color:var(--muted);">Endpoint belum tersedia.</div></td></tr>';}
+    if(!j.ok||!j.data.length){tb.innerHTML='<tr><td colspan="7"><div class="ls">Tidak ada transaksi.</div></td></tr>';renderTrxPag(0);return;}
+    tb.innerHTML=j.data.map(t=>`<tr>
+      <td><code style="font-size:.72rem;color:var(--a2);">${esc(t.ref_id)}</code></td>
+      <td style="color:var(--muted);font-size:.8rem;">${esc(t.user_name||'—')}</td>
+      <td>${esc(t.product_name||'—')}</td>
+      <td>${esc(t.target||'—')}</td>
+      <td><strong>${rp(t.sell_price)}</strong></td>
+      <td>${sb(t.status)}</td>
+      <td style="color:var(--muted);font-size:.74rem;">${esc(t.waktu)}</td>
+    </tr>`).join('');
+    renderTrxPag(j.total||0);
+  }catch(e){tb.innerHTML='<tr><td colspan="7"><div class="ls" style="color:var(--err);">Gagal memuat.</div></td></tr>';}
+}
+function renderTrxPag(total){
+  const box=document.getElementById('trxPagBox');if(!box)return;
+  const pages=Math.ceil(total/_trxLimit);const cur=Math.floor(_trxOffset/_trxLimit);
+  if(pages<=1){box.innerHTML='';return;}
+  let h='';
+  if(cur>0)h+=`<button class="btn btn-g btn-sm" onclick="_trxOffset-=${_trxLimit};loadTransactions()">‹ Prev</button>`;
+  h+=`<span style="font-size:.8rem;color:var(--muted);align-self:center;">${cur+1} / ${pages}</span>`;
+  if(cur<pages-1)h+=`<button class="btn btn-g btn-sm" onclick="_trxOffset+=${_trxLimit};loadTransactions()">Next ›</button>`;
+  box.innerHTML=h;
+}
+function exportTrxCSV(){
+  const rows=document.querySelectorAll('#allTrxBody tr');if(!rows.length)return;
+  const lines=['Ref ID,Pengguna,Produk,Tujuan,Harga,Status,Waktu'];
+  rows.forEach(r=>{const c=[...r.querySelectorAll('td')].map(td=>JSON.stringify(td.textContent.trim()));lines.push(c.join(','));});
+  const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(lines.join('\n'));
+  a.download=`transaksi_${new Date().toISOString().slice(0,10)}.csv`;a.click();
+}
+
+let _userOffset=0,_userLimit=50;
+async function loadUsers(reset){
+  if(reset)_userOffset=0;
+  const tb=document.getElementById('usersBody');
+  tb.innerHTML='<tr><td colspan="7"><div class="ls"><span class="spin"></span> Memuat…</div></td></tr>';
+  const search=document.getElementById('userSearch')?.value.trim()||'';
+  const url=`/api/admin/users?limit=${_userLimit}&offset=${_userOffset}`+(search?'&search='+encodeURIComponent(search):'');
+  try{
+    const r=await fetch(url,{headers:ah()});
+    if(r.status===401){logout();return;}
+    const j=await r.json();
+    if(!j.ok||!j.data||!j.data.length){tb.innerHTML='<tr><td colspan="7"><div class="ls">Tidak ada pengguna.</div></td></tr>';renderUserPag(0);return;}
+    tb.innerHTML=j.data.map(u=>`<tr>
+      <td><div style="display:flex;align-items:center;gap:.6rem;"><div class="uav">${(u.name||'?')[0].toUpperCase()}</div><div><strong>${esc(u.name)}</strong><br><span style="font-size:.72rem;color:var(--muted);">@${esc(u.username||'—')}</span></div></div></td>
+      <td style="color:var(--muted);font-size:.74rem;font-family:monospace;">${esc(u.id)}</td>
+      <td><strong style="color:var(--ok);">${rp(u.balance)}</strong></td>
+      <td>${sb(u.role||'MEMBER')}</td>
+      <td>${u.banned?'<span style="color:var(--err);font-size:.78rem;font-weight:700;">🚫 Diblokir</span>':'<span style="color:var(--ok);font-size:.78rem;">✓ Aktif</span>'}</td>
+      <td style="color:var(--muted);font-size:.74rem;">${esc(u.waktu||'—')}</td>
+      <td>
+        <div style="display:flex;gap:.3rem;flex-wrap:wrap;">
+          <button class="btn btn-g btn-xs" onclick="dlgBalance(${u.id},'${esc(u.name)}')">💰 Saldo</button>
+          <button class="btn btn-g btn-xs" onclick="dlgRole(${u.id},'${esc(u.name)}','${u.role||'MEMBER'}')">🎭 Role</button>
+          <button class="btn ${u.banned?'btn-ok':'btn-err'} btn-xs" onclick="actBan(${u.id},${!u.banned})">${u.banned?'✓ Aktifkan':'🚫 Blokir'}</button>
+        </div>
+      </td>
+    </tr>`).join('');
+    renderUserPag(j.total||0);
+  }catch(e){tb.innerHTML='<tr><td colspan="7"><div class="ls" style="color:var(--err);">Gagal memuat.</div></td></tr>';}
+}
+function renderUserPag(total){
+  const box=document.getElementById('userPagBox');if(!box)return;
+  const pages=Math.ceil(total/_userLimit);const cur=Math.floor(_userOffset/_userLimit);
+  if(pages<=1){box.innerHTML='';return;}
+  let h='';
+  if(cur>0)h+=`<button class="btn btn-g btn-sm" onclick="_userOffset-=${_userLimit};loadUsers()">‹ Prev</button>`;
+  h+=`<span style="font-size:.8rem;color:var(--muted);align-self:center;">${cur+1} / ${pages}</span>`;
+  if(cur<pages-1)h+=`<button class="btn btn-g btn-sm" onclick="_userOffset+=${_userLimit};loadUsers()">Next ›</button>`;
+  box.innerHTML=h;
+}
+async function dlgBalance(id,name){
+  const delta=prompt(`Adjust saldo ${name}\nMasukkan jumlah (positif=tambah, negatif=kurangi):`);
+  if(delta===null)return;
+  const d=parseInt(delta,10);
+  if(isNaN(d)||d===0){toast('Jumlah tidak valid.','err');return;}
+  try{
+    const r=await fetch(`/api/admin/users/${id}/balance`,{method:'POST',headers:ah(),body:JSON.stringify({delta:d})});
+    const j=await r.json();toast(j.message||(j.ok?'Berhasil.':'Gagal.'),j.ok?'ok':'err');
+    if(j.ok)loadUsers();
+  }catch(e){toast('Gagal.','err');}
+}
+async function dlgRole(id,name,cur){
+  const roles=['MEMBER','RESELLER','VIP','ADMIN'];
+  const role=prompt(`Ubah role ${name}\nPilih: ${roles.join(' / ')}\nRole saat ini: ${cur}`);
+  if(!role)return;
+  const r2=role.trim().toUpperCase();
+  if(!roles.includes(r2)){toast('Role tidak valid.','err');return;}
+  try{
+    const r=await fetch(`/api/admin/users/${id}/role`,{method:'POST',headers:ah(),body:JSON.stringify({role:r2})});
+    const j=await r.json();toast(j.message||(j.ok?'Berhasil.':'Gagal.'),j.ok?'ok':'err');
+    if(j.ok)loadUsers();
+  }catch(e){toast('Gagal.','err');}
+}
+async function actBan(id,banned){
+  if(!confirm(banned?'Blokir user ini?':'Aktifkan kembali user ini?'))return;
+  try{
+    const r=await fetch(`/api/admin/users/${id}/ban`,{method:'POST',headers:ah(),body:JSON.stringify({banned})});
+    const j=await r.json();toast(j.message||(j.ok?'Berhasil.':'Gagal.'),j.ok?'ok':'err');
+    if(j.ok)loadUsers();
+  }catch(e){toast('Gagal.','err');}
 }
 
 // ===== SLIDES =====
@@ -1816,7 +1918,7 @@ async function clrBannerProd(sku){
   }catch(e){toast('Gagal.','err');}
 }
 
-// ===== API DIGIFLAZZ =====
+// ===== API DIGIFLAZZ (multi-akun, simpan ke database) =====
 let _apis=[];
 const ATYPES=[
   {key:'vip',label:'⭐ VIP',color:'rgba(245,158,11,.1)',border:'rgba(245,158,11,.2)',tc:'#fbbf24'},
@@ -1825,13 +1927,17 @@ const ATYPES=[
   {key:'special',label:'💎 Special',color:'rgba(236,72,153,.08)',border:'rgba(236,72,153,.18)',tc:'#f9a8d4'},
   {key:'custom',label:'⚙️ Custom',color:'rgba(255,255,255,.04)',border:'rgba(255,255,255,.1)',tc:'var(--text)'},
 ];
-function initApiDigi(){
-  _apis=JSON.parse(localStorage.getItem('digi_apis')||'[]');
-  if(!_apis.length)_apis=[{label:'API Utama',username:'',apiKey:'',mode:'prepaid',type:'reseller',active:true,note:''}];
+async function initApiDigi(){
+  try{
+    const r=await fetch('/api/admin/digiflazz-accounts',{headers:ah()});
+    const j=await r.json();
+    _apis=j.ok?j.data:[];
+  }catch(e){_apis=[];}
   renderApis();
 }
 function renderApis(){
   const c=document.getElementById('apiEntriesList');
+  if(!_apis.length){c.innerHTML='<div class="ls" style="color:var(--muted);padding:1.5rem;">Belum ada akun API. Klik "+ Tambah API".</div>';return;}
   c.innerHTML=_apis.map((a,i)=>`
     <div class="api-entry" id="ae-${i}">
       <div class="ae-header">
@@ -1840,80 +1946,110 @@ function renderApis(){
             <span class="asdot ${a.active?'on':'off'}"></span>
             <span style="color:${a.active?'#34d399':'#fb7185'}">${a.active?'Aktif':'Nonaktif'}</span>
           </span>
+          ${a.primary?'<span style="background:rgba(245,158,11,.15);color:#fbbf24;font-size:.63rem;font-weight:900;padding:.1rem .45rem;border-radius:999px;margin-left:.3rem;">⭐ PRIMARY</span>':''}
         </div>
         <div style="display:flex;gap:.35rem;flex-wrap:wrap;">
-          <button class="btn btn-g btn-xs" onclick="testApi(${i})">🔍 Test</button>
-          <button class="btn ${a.active?'btn-warn':'btn-ok'} btn-xs" onclick="toggleApi(${i})">${a.active?'⏸ Nonaktif':'▶ Aktif'}</button>
-          ${_apis.length>1?`<button class="btn btn-err btn-xs" onclick="rmApi(${i})">✕</button>`:''}
+          <button class="btn btn-g btn-xs" onclick="testApiDB(${i})">🔍 Cek Saldo</button>
+          <button class="btn btn-g btn-xs" onclick="setPrimaryApi('${esc(a.id||'')}')">⭐ Jadikan Primary</button>
+          <button class="btn ${a.active?'btn-warn':'btn-ok'} btn-xs" onclick="toggleApiDB('${esc(a.id||'')}',${!a.active})">${a.active?'⏸ Nonaktif':'▶ Aktifkan'}</button>
+          <button class="btn btn-err btn-xs" onclick="delApiDB('${esc(a.id||'')}','${esc(a.label||'')}')">✕ Hapus</button>
         </div>
       </div>
       <div class="fgrid">
-        <div class="fg"><label class="fl">Label API</label><input type="text" class="fc ai-label" value="${esc(a.label||'')}" placeholder="contoh: API VIP Utama"/></div>
-        <div class="fg"><label class="fl">Username Digiflazz</label><input type="text" class="fc ai-user" value="${esc(a.username||'')}" placeholder="username Anda di Digiflazz"/></div>
+        <div class="fg"><label class="fl">Label API</label><input type="text" class="fc ai-label" value="${esc(a.label||'')}" placeholder="contoh: API VIP Utama" data-id="${esc(a.id||'')}"/></div>
+        <div class="fg"><label class="fl">Username Digiflazz</label><input type="text" class="fc ai-user" value="${esc(a.username||'')}" placeholder="username di Digiflazz"/></div>
       </div>
       <div class="fg"><label class="fl">API Key / Secret Key</label>
         <div style="position:relative;">
-          <input type="password" class="fc ai-key" value="${esc(a.apiKey||'')}" placeholder="API Key dari dashboard Digiflazz" style="padding-right:3.5rem;font-family:monospace;"/>
+          <input type="password" class="fc ai-key" placeholder="${a.api_key_masked||'API Key dari dashboard Digiflazz'}" style="padding-right:3.5rem;font-family:monospace;"/>
           <button class="eye-btn" style="position:absolute;right:.6rem;top:50%;transform:translateY(-50%);" onclick="toggleEyeEl(this)">👁</button>
         </div>
+        <div style="font-size:.72rem;color:var(--muted);margin-top:.25rem;">Kosongkan jika tidak ingin mengubah API key yang tersimpan.</div>
       </div>
       <div class="fgrid">
         <div class="fg"><label class="fl">Mode Transaksi</label>
           <select class="fc ai-mode">
-            <option value="prepaid" ${a.mode==='prepaid'?'selected':''}>Prepaid (Pulsa, Data, PLN)</option>
+            <option value="prepaid" ${(a.mode||'prepaid')==='prepaid'?'selected':''}>Prepaid (Pulsa, Data, PLN)</option>
             <option value="pasca" ${a.mode==='pasca'?'selected':''}>Pasca Bayar (Tagihan)</option>
             <option value="both" ${a.mode==='both'?'selected':''}>Semua</option>
           </select>
         </div>
         <div class="fg"><label class="fl">Tipe Harga</label>
-          <div class="type-pills">${ATYPES.map(t=>`<button type="button" class="type-pill${a.type===t.key?' active':''}" onclick="setAt(${i},'${t.key}',this)">${t.label}</button>`).join('')}</div>
+          <div class="type-pills">${ATYPES.map(t=>`<button type="button" class="type-pill${(a.type||'reseller')===t.key?' active':''}" onclick="setAt(${i},'${t.key}',this)">${t.label}</button>`).join('')}</div>
         </div>
       </div>
-      <div class="fg"><label class="fl">Catatan (opsional)</label><input type="text" class="fc ai-note" value="${esc(a.note||'')}" placeholder="Catatan untuk API ini..."/></div>
+      <div style="display:flex;gap:.5rem;margin-top:.75rem;">
+        <button class="btn btn-p btn-sm" onclick="saveApiEntry(${i})">💾 Simpan Akun Ini</button>
+      </div>
       <div id="atest-${i}" class="test-result"></div>
     </div>`).join('');
 }
 function setAt(idx,type,el){const e=document.getElementById('ae-'+idx);if(!e)return;e.querySelectorAll('.type-pill').forEach(b=>b.classList.remove('active'));el.classList.add('active');}
 function toggleEye(btn,id){const inp=document.getElementById(id);if(!inp)return;inp.type=inp.type==='password'?'text':'password';btn.textContent=inp.type==='password'?'👁':'🔒';}
 function toggleEyeEl(btn){const inp=btn.previousElementSibling;if(!inp)return;inp.type=inp.type==='password'?'text':'password';btn.textContent=inp.type==='password'?'👁':'🔒';}
-function collectApis(){
-  return Array.from(document.querySelectorAll('.api-entry')).map((el,i)=>({
-    label:el.querySelector('.ai-label')?.value||'',username:el.querySelector('.ai-user')?.value||'',
-    apiKey:el.querySelector('.ai-key')?.value||'',mode:el.querySelector('.ai-mode')?.value||'prepaid',
-    type:el.querySelector('.type-pill.active')?.textContent?.trim()?.split(' ').pop()?.toLowerCase()||'reseller',
-    note:el.querySelector('.ai-note')?.value||'',active:(_apis[i]?.active)??false,
-  }));
+async function saveApiEntry(i){
+  const el=document.getElementById('ae-'+i);if(!el)return;
+  const a=_apis[i];if(!a)return;
+  const label=el.querySelector('.ai-label')?.value||'';
+  const username=el.querySelector('.ai-user')?.value||'';
+  const api_key=el.querySelector('.ai-key')?.value||'';
+  const mode=el.querySelector('.ai-mode')?.value||'prepaid';
+  const type=el.querySelector('.type-pill.active')?.textContent?.trim()?.split(' ').pop()?.toLowerCase()||'reseller';
+  const payload={label,username,mode,type};
+  if(api_key)payload.api_key=api_key;
+  try{
+    let r,j;
+    if(a.id&&a.id!=='__new__'){
+      r=await fetch(`/api/admin/digiflazz-accounts/${encodeURIComponent(a.id)}`,{method:'PUT',headers:ah(),body:JSON.stringify(payload)});
+    }else{
+      if(!api_key){toast('API Key wajib untuk akun baru.','err');return;}
+      payload.api_key=api_key;
+      r=await fetch('/api/admin/digiflazz-accounts',{method:'POST',headers:ah(),body:JSON.stringify(payload)});
+    }
+    j=await r.json();toast(j.message||(j.ok?'Tersimpan!':'Gagal.'),j.ok?'ok':'err');
+    if(j.ok)initApiDigi();
+  }catch(e){toast('Gagal.','err');}
 }
-function addApiEntry(){_apis=collectApis();_apis.push({label:`API ${_apis.length+1}`,username:'',apiKey:'',mode:'prepaid',type:'reseller',active:false,note:''});renderApis();setTimeout(()=>{document.querySelector(`#ae-${_apis.length-1}`)?.scrollIntoView({behavior:'smooth',block:'center'});},100);}
-function rmApi(i){if(!confirm(`Hapus API "${_apis[i]?.label||i+1}"?`))return;_apis=collectApis();_apis.splice(i,1);renderApis();}
-function toggleApi(i){const c=collectApis();c[i].active=!c[i].active;_apis=c;renderApis();}
-async function testApi(i){
-  const entries=collectApis();const a=entries[i];const el=document.getElementById('atest-'+i);
-  if(!a.username||!a.apiKey){el.style.display='';el.className='test-result test-warn show';el.innerHTML='⚠ Isi username dan API key dulu.';return;}
-  el.style.display='';el.className='test-result show';el.style.background='rgba(255,255,255,.05)';el.innerHTML='<span class="spin"></span> Mengecek...';
-  try{const r=await fetch('/api/admin/stats',{headers:ah()});const j=await r.json();
-    if(j.ok){el.className='test-result test-ok show';el.innerHTML=`✓ Koneksi OK! Saldo Digiflazz: ${rp(j.data.digiDeposit||0)}`;}
-    else{el.className='test-result test-err show';el.innerHTML='✕ '+( j.message||'Gagal.');}
-  }catch(e){el.className='test-result test-err show';el.innerHTML='✕ Gagal terhubung.';}
-  setTimeout(()=>{el.style.display='none';},6000);
+function addApiEntry(){
+  _apis.push({id:'__new__',label:`API ${_apis.length+1}`,username:'',api_key:'',mode:'prepaid',type:'reseller',active:false,primary:false});
+  renderApis();
+  setTimeout(()=>document.querySelector(`#ae-${_apis.length-1}`)?.scrollIntoView({behavior:'smooth',block:'center'}),100);
 }
-async function testAllApi(){
-  const entries=collectApis();for(let i=0;i<entries.length;i++)await testApi(i);
+async function delApiDB(id,label){
+  if(!confirm(`Hapus akun API "${label}"?`))return;
+  try{
+    const r=await fetch(`/api/admin/digiflazz-accounts/${encodeURIComponent(id)}`,{method:'DELETE',headers:ah()});
+    const j=await r.json();toast(j.message||(j.ok?'Dihapus.':'Gagal.'),j.ok?'ok':'err');
+    if(j.ok)initApiDigi();
+  }catch(e){toast('Gagal.','err');}
 }
-async function saveAllApi(){
-  _apis=collectApis();localStorage.setItem('digi_apis',JSON.stringify(_apis));
-  const active=_apis.find(a=>a.active)||_apis[0];
-  const m=document.getElementById('apiMsg');
-  try{const cur=await(await fetch('/api/admin/site',{headers:ah()})).json();
-    const body={...((cur.ok&&cur.data)||{}),digiflazz:{username:active?.username,apiKey:active?.apiKey,mode:active?.mode,type:active?.type},allApis:_apis};
-    const r=await fetch('/api/admin/site',{method:'POST',headers:ah(),body:JSON.stringify(body)});
+async function toggleApiDB(id,active){
+  try{
+    const r=await fetch(`/api/admin/digiflazz-accounts/${encodeURIComponent(id)}`,{method:'PUT',headers:ah(),body:JSON.stringify({active})});
+    const j=await r.json();toast(j.message||(j.ok?'Diperbarui.':'Gagal.'),j.ok?'ok':'err');
+    if(j.ok)initApiDigi();
+  }catch(e){toast('Gagal.','err');}
+}
+async function setPrimaryApi(id){
+  try{
+    const r=await fetch(`/api/admin/digiflazz-accounts/${encodeURIComponent(id)}`,{method:'PUT',headers:ah(),body:JSON.stringify({primary:true})});
+    const j=await r.json();toast(j.message||(j.ok?'Primary diset!':'Gagal.'),j.ok?'ok':'err');
+    if(j.ok)initApiDigi();
+  }catch(e){toast('Gagal.','err');}
+}
+async function testApiDB(i){
+  const a=_apis[i];const el=document.getElementById('atest-'+i);
+  if(!a||!a.id||a.id==='__new__'){if(el){el.style.display='';el.className='test-result test-warn show';el.innerHTML='⚠ Simpan akun ini dulu.';} return;}
+  if(el){el.style.display='';el.className='test-result show';el.innerHTML='<span class="spin"></span> Mengecek saldo…';}
+  try{
+    const r=await fetch(`/api/admin/digiflazz-accounts/${encodeURIComponent(a.id)}/check-deposit`,{method:'POST',headers:ah()});
     const j=await r.json();
-    m.className='fmsg '+(j.ok?'fmsg-ok':'fmsg-ok')+' show';
-    m.innerHTML=j.ok?`✓ API tersimpan! Aktif: ${esc(active?.label||'API 1')}`:'✓ Tersimpan di browser. Update .env untuk permanen.';
-    toast('API Digiflazz tersimpan!');
-  }catch(e){m.className='fmsg fmsg-ok show';m.innerHTML='✓ Tersimpan di browser (update .env untuk permanen).';toast('API tersimpan di browser.');}
-  setTimeout(()=>m.className='fmsg',5000);
+    if(j.ok&&j.deposit!=null){if(el){el.className='test-result test-ok show';el.innerHTML=`✓ Saldo Digiflazz "${esc(a.label)}": <strong>${rp(j.deposit)}</strong>`;}}
+    else{if(el){el.className='test-result test-err show';el.innerHTML='✕ '+(j.message||'Gagal mengecek saldo.');}}
+  }catch(e){if(el){el.className='test-result test-err show';el.innerHTML='✕ Gagal terhubung.';}}
+  setTimeout(()=>{if(el)el.style.display='none';},8000);
 }
+async function testAllApi(){for(let i=0;i<_apis.length;i++)await testApiDB(i);}
 
 // ===== PAYMENT PROVIDERS =====
 const _prov=JSON.parse(localStorage.getItem('payment_providers')||'{}');
