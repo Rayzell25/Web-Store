@@ -64,6 +64,15 @@ const config = {
     min: Number(process.env.MIN_TOPUP || 10000),
   },
 
+  // Anti-dobel order: cegah double-charge bila pembeli menekan "beli" berkali-kali.
+  // Pembelian produk+nomor yang sama oleh user yang sama ditolak bila masih
+  // diproses (Pending) ATAU baru saja SUKSES dalam jendela ini (detik).
+  // Transaksi yang GAGAL tidak menghalangi (boleh coba lagi). 0 = nonaktif cooldown
+  // (tetap blokir yang masih Pending).
+  order: {
+    dedupeSec: Number(process.env.ORDER_DEDUP_SEC || 120),
+  },
+
   store: {
     name: process.env.STORE_NAME || 'Rayzell Store PPOB',
     maintenance: process.env.MAINTENANCE_INFO || '-',

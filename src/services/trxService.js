@@ -98,18 +98,33 @@ function startOfTodayJakarta() {
   return jakarta.getTime() - offset;
 }
 
-/** Cek apakah masih ada transaksi PENDING ke produk+nomor yang sama (anti dobel). */
-function hasPendingSame(sku, target) {
+/**
+ * Anti DOBEL: cek transaksi DUPLIKAT untuk user+produk+nomor yang SAMA.
+ * Tujuannya mencegah double-charge saat pembeli menekan tombol "beli"
+ * berkali-kali. Memblokir bila ditemukan transaksi yang:
+ *   - status 'Pending' (proses sedang berjalan) — tanpa batas waktu, ATAU
+ *   - status 'Sukses' yang dibuat dalam `cooldownMs` terakhir (cooldown).
+ * TIDAK memblokir bila transaksi sebelumnya 'Gagal' -> pembeli boleh coba lagi
+ * (mis. setelah deposit Digiflazz habis lalu diisi ulang).
+ * @returns {Promise<{ref_id:string,status:string,created_at:number}|null>}
+ */
+function findDuplicate(userId, sku, target, cooldownMs = 120 * 1000) {
+  const since = now() - Math.max(0, Number(cooldownMs) || 0);
   return one(
-    "SELECT ref_id FROM transactions WHERE buyer_sku_code = $1 AND target = $2 AND status = 'Pending' LIMIT 1",
-    [sku, String(target)]
+    `SELECT ref_id, status, created_at FROM transactions
+       WHERE user_id = $1 AND buyer_sku_code = $2 AND target = $3
+         AND ( status = 'Pending'
+               OR (status = 'Sukses' AND created_at >= $4) )
+       ORDER BY created_at DESC
+       LIMIT 1`,
+    [Number(userId), sku, String(target), since]
   );
 }
 
 module.exports = {
   createTransaction,
   getTransaction,
-  hasPendingSame,
+  findDuplicate,
   updateTransaction,
   getUserTransactions,
   pendingTransactions,
