@@ -1,306 +1,294 @@
-# 🚀 Rayzell Store PPOB — Panduan Lengkap
+# 🚀 Rayzell Store PPOB — Panduan Lengkap & Deploy
 
-Bot Telegram + Web Store PPOB (Pulsa, Data, PLN, dll) dengan panel admin web.
+Bot Telegram + Web Store PPOB (Pulsa, Paket Data, Token PLN, Voucher Game, E-Money) dengan Panel Admin Web & Multi-Supplier Digiflazz DB.
 
 ---
 
 ## 📋 Daftar Isi
 
-1. [Instalasi di VPS](#1-instalasi-di-vps)
-2. [Konfigurasi File .env](#2-konfigurasi-file-env)
-3. [Cara Login Admin Panel](#3-cara-login-admin-panel)
-4. [Cara Atur Email & Password Admin](#4-cara-atur-email--password-admin)
-5. [Fitur Admin Panel](#5-fitur-admin-panel)
-6. [API Digiflazz (VIP / Reseller)](#6-api-digiflazz-vip--reseller)
-7. [Backup & Restore Database](#7-backup--restore-database)
-8. [Troubleshooting](#8-troubleshooting)
+1. [Tutorial Deploy di VPS Fresh dari Nol (Sampai 100% Jalan)](#1-tutorial-deploy-di-vps-fresh-dari-nol-sampai-100-jalan)
+   - [Langkah 1: Persiapan VPS Baru](#langkah-1-persiapan-vps-baru)
+   - [Langkah 2: Clone Repository](#langkah-2-clone-repository)
+   - [Langkah 3: Jalankan Installer Sistem & Bot (`install.sh`)](#langkah-3-jalankan-installer-sistem--bot-installsh)
+   - [Langkah 4: Konfigurasi `.env`](#langkah-4-konfigurasi-env)
+   - [Langkah 5: Setup Pointing Domain](#langkah-5-setup-pointing-domain)
+   - [Langkah 6: Setup Web Storefront, Nginx & SSL (`setup-web.sh`)](#langkah-6-setup-web-storefront-nginx--ssl-setup-websh)
+   - [Langkah 7: Jalankan Ulang & Cek Status](#langkah-7-jalankan-ulang--cek-status)
+2. [Penjelasan Detail Konfigurasi File `.env`](#2-penjelasan-detail-konfigurasi-file-env)
+3. [Cara Login & Mengatur Admin Panel](#3-cara-login--mengatur-admin-panel)
+4. [Mengatur API Digiflazz (Multi-API & Markup Harga)](#4-mengatur-api-digiflazz-multi-api--markup-harga)
+5. [Sistem Backup & Restore Database](#5-sistem-backup--restore-otomatis)
+6. [Troubleshooting & Perintah Berguna VPS](#6-troubleshooting--perintah-berguna-vps)
+7. [Struktur File Penting](#7-struktur-file-penting)
+8. [Catatan Keamanan](#8-catatan-keamanan)
 
 ---
 
-## 1. Instalasi di VPS
+## 1. Tutorial Deploy di VPS Fresh dari Nol (Sampai 100% Jalan)
 
+Panduan ini dirancang untuk deployment pada VPS baru (*fresh*) menggunakan Sistem Operasi **Ubuntu 20.04 / 22.04 / 24.04** atau **Debian 10 / 11 / 12**. Silakan ikuti langkah-langkah di bawah ini secara berurutan.
+
+### Langkah 1: Persiapan VPS Baru
+1. Masuk ke VPS Anda menggunakan SSH sebagai user **root**:
+   ```bash
+   ssh root@IP_VPS_ANDA
+   ```
+2. Lakukan update dan upgrade sistem paket OS untuk memastikan semuanya aman & terbaru:
+   ```bash
+   apt update && apt upgrade -y
+   ```
+
+### Langkah 2: Clone Repository
+1. Buat folder `/var/www` untuk penempatan aplikasi, lalu masuk ke folder tersebut:
+   ```bash
+   mkdir -p /var/www && cd /var/www
+   ```
+2. Clone repository project ini dari GitHub:
+   ```bash
+   git clone https://github.com/Rayzell25/web-store.git Web-Store
+   ```
+3. Masuk ke direktori web-app (sumber utama kode program):
+   ```bash
+   cd Web-Store/web-app
+   ```
+
+### Langkah 3: Jalankan Installer Sistem & Bot (`install.sh`)
+Script `install.sh` akan otomatis:
+- Memasang paket sistem penting (curl, git, zip, p7zip, cron, openssl).
+- Menginstal Docker & Docker Compose.
+- Menginstal Redis.
+- Menginstal Node.js 20 (LTS).
+- Menjalankan PostgreSQL & Local Telegram Bot API menggunakan Docker Compose.
+- Menyiapkan cron backup otomatis harian (jam 03:00) yang dikirim langsung ke chat/channel Telegram.
+- Mendaftarkan Bot Telegram sebagai systemd service (`rayzell-ppob`).
+
+1. Jalankan script installer otomatis:
+   ```bash
+   sudo bash install.sh
+   ```
+2. Saat proses instalasi berjalan, script akan meminta Anda menginput data berikut pada terminal:
+   - **Token bot**: Masukkan Token Bot Telegram Anda (dibuat dari [@BotFather](https://t.me/BotFather)).
+   - **ID owner**: Masukkan ID Telegram Anda (bisa didapat melalui [@userinfobot](https://t.me/userinfobot)).
+   - **ID channel / grup**: Masukkan ID channel atau grup tempat backup harian database dikirimkan (contoh: `-100xxxxxxxxxx`).
+3. Setelah script selesai berjalan, **simpan & catat baik-baik password database PostgreSQL dan password ZIP backup** yang digenerate otomatis di akhir proses.
+
+### Langkah 4: Konfigurasi `.env`
+Buka file konfigurasi `.env` untuk melengkapi konfigurasi web storefront, kredensial admin, API supplier, dan metode pembayaran:
 ```bash
-# Clone repository
-git clone https://github.com/Rayzell25/web-store.git
-cd web-store
-
-# Copy file konfigurasi
-cp .env.example .env
-
-# Edit konfigurasi (lihat bagian 2)
 nano .env
-
-# Jalankan instalasi otomatis
-bash install.sh
 ```
 
----
-
-## 2. Konfigurasi File .env
-
-Buka file `.env` dengan nano:
-
-```bash
-nano /root/web-store/.env
-```
-
-### Variabel Penting yang WAJIB Diisi:
+Sesuaikan nilai variabel berikut sesuai kebutuhan Anda:
 
 ```env
-# ===== TELEGRAM BOT =====
-BOT_TOKEN=123456:ABC-DEF_tokenbot_dari_botfather
-ADMIN_IDS=123456789                    # ID Telegram kamu (cek lewat @userinfobot)
+# ===== TELEGRAM BOT & OWNER =====
+BOT_TOKEN=token_bot_utama_anda
+ADMIN_IDS=id_telegram_anda
 
-# ===== DIGIFLAZZ =====
-DIGIFLAZZ_USERNAME=username_digiflazz
-DIGIFLAZZ_API_KEY=api_key_digiflazz
-DIGIFLAZZ_MODE=prepaid                 # prepaid atau pasca
-
-# ===== DATABASE =====
-DATABASE_URL=postgres://ppob:PASSWORD@127.0.0.1:5432/ppob
+# ===== ADMIN WEB (Wajib diganti!) =====
+WEB_ADMIN_EMAIL=admin@domainkamu.com    # Email untuk login panel admin web
+WEB_ADMIN_USER=admin                    # Username admin web
+WEB_ADMIN_PASSWORD=PasswordKuatAnda     # Password baru untuk login panel admin web
 
 # ===== WEB STOREFRONT =====
 WEB_PORT=3000
-PUBLIC_URL=https://domain-kamu.com
-CONTACT_WA=628xxxxxxxxxx
-CONTACT_TG=https://t.me/username_kamu
+PUBLIC_URL=https://domainkamu.com       # Ganti dengan domain utama Anda (tanpa / di akhir)
+CONTACT_WA=08xxxxxxxxxxx                # Nomor WA CS (gunakan awalan 08 / 62)
+CONTACT_TG=https://t.me/username_kamu   # Link akun Telegram CS
+BOT_USERNAME=username_bot_tanpa_at      # Contoh: rayzell_store_bot (tanpa tanda @)
 
-# ===== ADMIN PANEL LOGIN =====        ← INI YANG PALING PENTING
-WEB_ADMIN_EMAIL=admin@gmail.com        # Email untuk login /admin
-WEB_ADMIN_PASSWORD=passwordkuat123    # Password untuk login /admin
-
-# ===== QRIS (opsional) =====
-AUTOGOPAY_API_KEY=api_key_autogopay
-
-# ===== GOOGLE LOGIN (opsional) =====
-GOOGLE_CLIENT_ID=xxx.apps.googleusercontent.com
-GOOGLE_CLIENT_SECRET=xxx
-GOOGLE_REDIRECT_URI=https://domain-kamu.com/api/auth/google/callback
-```
-
-### Simpan File:
-- Tekan **Ctrl + X**
-- Tekan **Y**
-- Tekan **Enter**
-
----
-
-## 3. Cara Login Admin Panel
-
-1. Buka browser, akses: `https://domain-kamu.com/admin/`
-2. Masukkan **email** dan **password** yang sudah diatur di `.env`
-3. Klik **Masuk ke Dashboard**
-
-> Jika belum mengatur email & password, lihat bagian 4 di bawah.
-
----
-
-## 4. Cara Atur Email & Password Admin
-
-### Langkah-langkah di VPS:
-
-```bash
-# 1. Buka file .env
-nano /root/web-store/.env
-```
-
-Cari atau tambahkan baris ini (biasanya di bagian paling bawah):
-
-```env
-# ===== ADMIN PANEL LOGIN =====
-WEB_ADMIN_EMAIL=admin@gmail.com
-WEB_ADMIN_PASSWORD=passwordkuat123
-```
-
-> ✏️ Ganti `admin@gmail.com` dan `passwordkuat123` sesuai keinginan kamu.
-
-```bash
-# 2. Simpan file (Ctrl+X → Y → Enter)
-
-# 3. Restart server agar perubahan berlaku
-pm2 restart all
-
-# atau jika pakai systemctl:
-systemctl restart rayzell-web
-
-# atau jika pakai Docker:
-docker-compose restart
-```
-
-### Tips Password Aman:
-- Minimal **8 karakter**
-- Kombinasi huruf besar, kecil, angka, simbol
-- Contoh: `R@yZ3ll#2025!`
-
-### Cek Status Server:
-```bash
-pm2 status          # lihat semua proses
-pm2 logs            # lihat log terbaru
-```
-
----
-
-## 5. Fitur Admin Panel
-
-Akses di: `https://domain-kamu.com/admin/dashboard.html`
-
-| Menu | Fungsi |
-|------|--------|
-| 📊 **Dashboard** | Statistik pengguna, transaksi, omzet, saldo Digiflazz |
-| 💳 **Transaksi** | Riwayat semua transaksi |
-| 💰 **Top Up Pending** | Konfirmasi / tolak top up saldo manual |
-| 👥 **Pengguna** | Daftar semua member terdaftar |
-| 🎠 **Slide Beranda** | Edit slide/carousel di halaman utama |
-| 🖊️ **Edit Teks Web** | Ubah hero, tagline, kontak, footer, warna tema |
-| 🖼️ **Upload / Hapus Ikon** | Upload foto produk, logo brand, ikon custom |
-| 🏷️ **Logo Brand** | Upload/hapus logo brand di halaman beranda |
-| 🔑 **API Digiflazz** | Kelola multi API (VIP, Reseller, Basic, Custom) |
-| ⚙️ **Pengaturan Toko** | Nama toko, WA, Telegram, ubah password admin |
-
----
-
-## 6. API Digiflazz (VIP / Reseller)
-
-Panel admin mendukung **lebih dari 1 API Digiflazz** sekaligus.
-
-### Cara Tambah API:
-1. Buka Admin Panel → menu **🔑 API Digiflazz**
-2. Klik tombol **+ Tambah API**
-3. Isi:
-   - **Label** — nama pengenal API (contoh: "API VIP Utama")
-   - **Username** — username akun Digiflazz kamu
-   - **API Key** — dari dashboard Digiflazz
-   - **Tipe Harga** — pilih salah satu:
-     - ⭐ **VIP** — harga VIP, volume tinggi
-     - 🔄 **Reseller** — harga reseller, margin lebih
-     - 🔹 **Basic** — mode standar
-     - ⚙️ **Custom** — konfigurasi manual
-   - **Mode** — Prepaid / Pasca / Semua
-4. Klik **Aktifkan** untuk API yang akan dipakai
-5. Klik **💾 Simpan Semua API**
-
-### Cara Dapat API Key Digiflazz:
-1. Login ke [digiflazz.com](https://digiflazz.com)
-2. Menu **Pengaturan** → **API**
-3. Copy **Username** dan **API Key** (Production)
-
-### Setting di `.env` (untuk API utama):
-```env
-DIGIFLAZZ_USERNAME=username_kamu
-DIGIFLAZZ_API_KEY=api_key_kamu
+# ===== SUPPLIER DIGIFLAZZ =====
+DIGIFLAZZ_USERNAME=username_digiflazz_anda
+DIGIFLAZZ_API_KEY=api_key_digiflazz_anda
 DIGIFLAZZ_MODE=prepaid
+
+# ===== PAYMENT GATEWAY / QRIS =====
+AUTOGOPAY_API_KEY=key_autogopay_anda     # Kosongkan jika belum menggunakan QRIS otomatis
+```
+*Simpan file dengan menekan **Ctrl + X**, lalu tekan **Y**, dan tekan **Enter**.*
+
+### Langkah 5: Setup Pointing Domain
+Sebelum melanjutkan, pastikan domain Anda telah diarahkan ke **IP VPS** Anda. Masuk ke panel domain provider Anda dan tambahkan DNS Record berikut:
+*   **A Record** -> `@` -> `IP_VPS_ANDA`
+*   **A Record** -> `www` -> `IP_VPS_ANDA`
+*(Tunggu sekitar 1–5 menit agar propagasi DNS berjalan).*
+
+### Langkah 6: Setup Web Storefront, Nginx & SSL (`setup-web.sh`)
+Script ini akan:
+- Memasang Web Server Nginx & Certbot SSL.
+- Menginstal dependencies Node.js web storefront.
+- Membuat systemd service untuk web storefront (`rayzell-web`).
+- Membuat konfigurasi Reverse Proxy Nginx untuk domain Anda.
+- Menghasilkan dan mengaktifkan sertifikat SSL gratis (HTTPS) dari Let's Encrypt secara otomatis.
+
+1. Jalankan script setup web dengan menyertakan nama domain Anda:
+   ```bash
+   sudo bash scripts/setup-web.sh domainkamu.com
+   ```
+2. Ikuti petunjuk Certbot di layar terminal untuk menyelesaikan pemasangan HTTPS (tekan setuju ToS, izinkan redirect dari HTTP ke HTTPS).
+
+### Langkah 7: Jalankan Ulang & Cek Status
+Restart seluruh service aplikasi agar perubahan `.env` yang baru saja dilakukan terbaca sempurna:
+```bash
+systemctl restart rayzell-ppob
+systemctl restart rayzell-web
+```
+
+Cek status service untuk memastikan semuanya berjalan 100% normal:
+```bash
+systemctl status rayzell-ppob    # Cek status bot Telegram
+systemctl status rayzell-web     # Cek status web storefront
+```
+
+Untuk memantau log secara real-time:
+```bash
+journalctl -u rayzell-web -f     # Pantau log web storefront
+journalctl -u rayzell-ppob -f    # Pantau log bot Telegram
 ```
 
 ---
 
-## 7. Backup & Restore Database
+## 2. Penjelasan Detail Konfigurasi File `.env`
 
-### Ringkasan
+File `.env` terletak di `/var/www/Web-Store/web-app/.env`. Berikut adalah penjelasan parameter penting:
 
-| Hal | Nilai |
-|-----|-------|
-| Folder backup | `~/web-store/backups/` |
-| Format file | `ppob-YYYYMMDD-HHMMSS.zip` (AES-256) |
-| Backup otomatis | Tiap hari **jam 03:00** (cron) |
-| Disimpan | **14 file terbaru** |
-| Dikirim ke | Channel/grup Telegram (`BACKUP_CHAT_ID`) |
-| Password ZIP | Dari `.env` → `BACKUP_ZIP_PASSWORD` |
+| Parameter | Penjelasan | Contoh Nilai |
+|---|---|---|
+| `BOT_TOKEN` | Token Bot Telegram Utama Anda dari BotFather | `123456:ABC-DEF_yourtoken` |
+| `ADMIN_IDS` | ID Telegram Admin/Owner (pisahkan dengan koma jika multi) | `123456789,987654321` |
+| `DATABASE_URL` | String koneksi database PostgreSQL (diatur otomatis) | `postgres://ppob:password@127.0.0.1:5432/ppob` |
+| `WEB_ADMIN_EMAIL` | Alamat email untuk masuk ke panel admin | `admin@gmail.com` |
+| `WEB_ADMIN_PASSWORD` | Password baru untuk masuk ke panel admin | `PasswordKuatS3kali!` |
+| `PUBLIC_URL` | Alamat website storefront yang terpasang SSL | `https://rayzelldigital.web.id` |
+| `BOT_USERNAME` | Username bot Telegram PPOB jualan Anda | `rayzell_store_bot` |
+| `DIGIFLAZZ_USERNAME` | Username akun supplier Digiflazz Anda | `rayzelldigi` |
+| `DIGIFLAZZ_API_KEY` | API Key Production dari Digiflazz | `dev-key-xxxx-xxxx` |
+| `AUTOGOPAY_API_KEY` | API Key dari AutoGoPay (untuk sistem QRIS otomatis) | `agp_key_xxxx` |
 
-> ⚠️ **Simpan `BACKUP_ZIP_PASSWORD` di tempat aman!** Tanpa ini, backup tidak bisa dibuka.
+---
 
-### Backup Manual:
+## 3. Cara Login & Mengatur Admin Panel
+
+Setelah instalasi selesai, buka browser Anda dan kunjungi dashboard admin:
+```
+https://domainkamu.com/admin/
+```
+
+1. Masukkan **Email** & **Password** yang telah diatur di `.env` (pada bagian `WEB_ADMIN_EMAIL` dan `WEB_ADMIN_PASSWORD`).
+2. Klik **Masuk ke Dashboard**.
+3. Di dalam admin dashboard, Anda dapat mengelola:
+   - **Tampilan Toko (CMS)**: Ganti nama toko, upload logo, favicon, ganti warna tema, kelola keunggulan toko, dan informasi kontak/footer.
+   - **Banner & Slide**: Atur gambar dan teks promo berjalan di beranda.
+   - **Metode Pembayaran**: Aktifkan Midtrans, Duitku, atau QRIS AutoGoPay secara langsung.
+   - **Manajemen User**: Tambah saldo member, ubah level ke Reseller/Admin, dan blokir member bermasalah.
+   - **Status & Riwayat Transaksi**: Monitor status pembelian (Sukses, Pending, Gagal), edit status, dan export riwayat dalam file CSV.
+
+---
+
+## 4. Mengatur API Digiflazz (Multi-API & Markup Harga)
+
+Aplikasi ini mendukung penggunaan **Multi-API Digiflazz** secara fleksibel:
+
+1. Masuk ke Admin Panel → Menu **🔑 API Digiflazz**.
+2. Klik **+ Tambah API**.
+3. Isi label pengenal, username, API Key Digiflazz, dan pilih tipe harga (*VIP*, *Reseller*, *Basic*, atau *Custom*).
+4. Klik **Aktifkan** pada API yang ingin digunakan, lalu tekan **💾 Simpan Semua API**.
+5. Untuk sinkronisasi produk dari Digiflazz ke database lokal:
+   - Hubungi bot Telegram Anda, jalankan `/start`.
+   - Pilih menu **Admin** -> **Sinkronisasi Produk**.
+
+---
+
+## 5. Sistem Backup & Restore Otomatis
+
+Database Anda diamankan secara otomatis ke Telegram menggunakan enkripsi ZIP (AES-256).
+
+| Keterangan | Nilai / Jalur |
+|---|---|
+| **Folder Backup di VPS** | `/var/www/Web-Store/web-app/backups/` |
+| **Format File** | `ppob-YYYYMMDD-HHMMSS.zip` |
+| **Jadwal Backup Otomatis** | Setiap hari pukul **03:00 WIB** (Cron Job) |
+| **Pengiriman Backup** | Dikirimkan langsung ke Telegram Chat ID (`BACKUP_CHAT_ID`) |
+
+### Cara Backup Manual
+Jika ingin membackup database secara manual sebelum melakukan pembaruan kode:
 ```bash
-cd ~/web-store
+cd /var/www/Web-Store/web-app
 bash scripts/backup.sh
 ```
 
-### Restore Database:
+### Cara Restore Database
+Untuk mengembalikan data dari file ZIP backup:
 ```bash
-cd ~/web-store
+cd /var/www/Web-Store/web-app
 
-# Lihat daftar backup
+# 1. Lihat daftar file backup yang ada
 ls -lh backups/
 
-# Restore (HATI-HATI: menimpa data yang ada!)
-bash scripts/restore.sh backups/ppob-20260607-030000.zip
+# 2. Lakukan restore (Hati-hati: Menimpa database saat ini!)
+bash scripts/restore.sh backups/ppob-20260612-030000.zip
 
-# Restart setelah restore
-pm2 restart all
-```
-
-### Upload Backup dari Komputer ke VPS:
-```bash
-scp ppob-backup.zip root@IP_VPS:/root/web-store/backups/
-```
-
-### Variabel Backup di `.env`:
-```env
-BACKUP_ZIP_PASSWORD=password_zip_backup    # WAJIB disimpan!
-BACKUP_CHAT_ID=-1001234567890              # ID channel Telegram
-BACKUP_BOT_TOKEN=token_bot_backup          # opsional
-BACKUP_KEEP=14                             # jumlah file disimpan
+# 3. Restart aplikasi agar data dimuat ulang
+systemctl restart rayzell-ppob && systemctl restart rayzell-web
 ```
 
 ---
 
-## 8. Troubleshooting
+## 6. Troubleshooting & Perintah Berguna VPS
 
-### Login Admin Tidak Bisa Masuk
+### Aplikasi tidak merespon setelah edit `.env`
+Pastikan Anda selalu melakukan restart service setelah memodifikasi konfigurasi `.env`:
 ```bash
-# Cek apakah variabel sudah ada di .env
-grep "WEB_ADMIN" /root/web-store/.env
-
-# Pastikan sudah restart server setelah edit .env
-pm2 restart all
+systemctl restart rayzell-ppob
+systemctl restart rayzell-web
 ```
 
-### Server Tidak Jalan
+### Memantau Log Error
+Jika terjadi error di web storefront atau bot Telegram:
 ```bash
-pm2 status          # cek status
-pm2 logs --lines 50 # lihat error log
+# Log Web Storefront
+journalctl -u rayzell-web --no-pager -n 50
+
+# Log Bot Telegram
+journalctl -u rayzell-ppob --no-pager -n 50
 ```
 
-### Restore Gagal / Minta Password
-- Pastikan `BACKUP_ZIP_PASSWORD` di `.env` sama persis dengan saat backup dibuat
-
-### Backup Tidak Terkirim ke Telegram
-- Pastikan `BACKUP_CHAT_ID` sudah diisi
-- Bot harus sudah jadi admin di channel tujuan
-
-### Cek Log Backup:
+### Memeriksa Status Docker Postgres & Local Bot API
+Jika database tidak merespon:
 ```bash
-cat ~/web-store/backup.log | tail -20
+docker compose ps
+docker compose logs postgres --tail=30
 ```
 
 ---
 
-## 📁 Struktur File Penting
+## 7. Struktur File Penting
 
 ```
-web-store/
-├── .env                    ← Konfigurasi (JANGAN di-commit!)
-├── .env.example            ← Contoh konfigurasi
-├── src/
-│   └── web/
-│       └── public/
-│           └── admin/
-│               ├── index.html       ← Halaman login admin
-│               └── dashboard.html   ← Dashboard admin
-├── scripts/
-│   ├── backup.sh
-│   └── restore.sh
-└── install.sh
+Web-Store/
+└── web-app/
+    ├── .env                   ← Konfigurasi sistem (JANGAN COMMIT KE GITHUB!)
+    ├── .env.example           ← Contoh format file konfigurasi
+    ├── install.sh             ← Installer sistem (Docker, Redis, PostgreSQL, Bot)
+    ├── scripts/
+    │   ├── setup-web.sh       ← Setup Nginx, Systemd Web, dan SSL Let's Encrypt
+    │   ├── backup.sh          ← Script backup database otomatis
+    │   └── restore.sh         ← Script restore database otomatis
+    └── src/
+        ├── main.js            ← Entrypoint program Bot Telegram
+        └── web/
+            ├── server.js      ← Server API & storefront web
+            └── public/        ← Source code frontend storefront & admin panel
 ```
 
 ---
 
-## 🔒 Catatan Keamanan
+## 8. Catatan Keamanan
 
-- ❌ **Jangan** commit file `.env` ke Git (sudah ada di `.gitignore`)
-- ✅ Simpan `BACKUP_ZIP_PASSWORD` di tempat aman
-- ✅ Gunakan password admin yang kuat (min. 12 karakter)
-- ✅ Jangan bagikan token bot / API key ke siapapun
+- ⚠️ **Jangan pernah membagikan file `.env`** atau meng-commit file `.env` ke Git / GitHub.
+- 🔒 Simpan **Password ZIP Backup** di tempat yang aman dan terpisah dari server VPS.
+- 🔑 Gunakan password admin yang kompleks (kombinasi huruf besar, kecil, angka, dan karakter khusus).
+- 🛡️ Selalu gunakan port HTTPS (SSL) untuk mengakses halaman admin.
 
 ---
-
-*Dibuat dengan ❤️ oleh Rayzell Store — [github.com/Rayzell25/web-store](https://github.com/Rayzell25/web-store)*
+*Developed with ❤️ by Rayzell Store — [github.com/Rayzell25/web-store](https://github.com/Rayzell25/web-store)*
