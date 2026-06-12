@@ -1,79 +1,476 @@
 <!DOCTYPE html>
-<html lang="id" data-theme="dark">
+<html lang="id">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admin Login — Rayzell Store PPOB</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <meta name="description" content="Panel Admin Rayzell Store - Login untuk mengelola toko digital Anda" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <style>
-    body { font-family: 'Inter', sans-serif; }
-    h1 { font-family: 'Sora','Inter',sans-serif; letter-spacing:-.01em; }
-    [data-theme="dark"]  { --bg:#070711;--card:#10101f;--border:rgba(255,255,255,.09);--text:#e8e9f3;--muted:#9aa0b4;--btn:#7c5cff;--btn-text:#fff;--input-bg:#0b0b18;--input-border:rgba(255,255,255,.15); }
-    [data-theme="light"] { --bg:#f1f5f9;--card:#ffffff;--border:rgba(0,0,0,.12);--text:#0f172a;--muted:#64748b;--btn:#6366f1;--btn-text:#fff;--input-bg:#ffffff;--input-border:rgba(0,0,0,.2); }
-    input::placeholder { opacity: 0.45; }
-    input:focus { outline: 2px solid #7c5cff !important; outline-offset: 1px; }
+    *, ::before, ::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --a1: #7c5cff; --a2: #22d3ee; --a3: #ec4899;
+      --bg: #060612; --card: #0d0d20; --border: rgba(255,255,255,.1);
+      --text: #e8e9f3; --muted: #7a80a0; --input-bg: #111128;
+    }
+    html, body { height: 100%; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* ===== ANIMATED BACKGROUND ===== */
+    .bg-canvas {
+      position: fixed; inset: 0; pointer-events: none; z-index: 0;
+      background: radial-gradient(ellipse at 20% 20%, rgba(124,92,255,.15) 0%, transparent 60%),
+                  radial-gradient(ellipse at 80% 80%, rgba(34,211,238,.1) 0%, transparent 60%),
+                  radial-gradient(ellipse at 50% 50%, rgba(236,72,153,.07) 0%, transparent 70%);
+    }
+
+    /* Moving particles */
+    .particles { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+    .particle {
+      position: absolute;
+      width: 2px; height: 2px;
+      background: rgba(255,255,255,.3);
+      border-radius: 50%;
+      animation: particle-rise linear infinite;
+    }
+    @keyframes particle-rise {
+      0% { transform: translateY(100vh) scale(0); opacity: 0; }
+      10% { opacity: 1; }
+      90% { opacity: .5; }
+      100% { transform: translateY(-100px) scale(1.5); opacity: 0; }
+    }
+
+    /* Grid lines */
+    .grid-lines {
+      position: fixed; inset: 0; pointer-events: none; z-index: 0;
+      background-image:
+        linear-gradient(rgba(124,92,255,.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(124,92,255,.04) 1px, transparent 1px);
+      background-size: 60px 60px;
+    }
+
+    /* Floating orbs */
+    .orb {
+      position: fixed; border-radius: 50%;
+      filter: blur(100px); pointer-events: none; z-index: 0;
+      animation: orb-float ease-in-out infinite;
+    }
+    .orb-1 { width: 600px; height: 600px; background: rgba(124,92,255,.12); top: -200px; right: -150px; animation-duration: 10s; }
+    .orb-2 { width: 500px; height: 500px; background: rgba(34,211,238,.08); bottom: -150px; left: -100px; animation-duration: 13s; animation-delay: -5s; }
+    .orb-3 { width: 300px; height: 300px; background: rgba(236,72,153,.1); top: 40%; left: 30%; animation-duration: 8s; animation-delay: -3s; }
+    @keyframes orb-float {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      33% { transform: translate(30px, -40px) scale(1.05); }
+      66% { transform: translate(-20px, 20px) scale(.97); }
+    }
+
+    /* ===== MAIN CONTAINER ===== */
+    .login-container {
+      position: relative; z-index: 10;
+      display: flex; gap: 3rem;
+      width: 100%; max-width: 900px;
+      padding: 1.5rem;
+      align-items: center;
+    }
+
+    /* LEFT PANEL - Info */
+    .left-panel {
+      flex: 1; display: flex; flex-direction: column;
+      gap: 1.5rem;
+    }
+    .left-panel .brand {
+      display: flex; align-items: center; gap: 1rem;
+    }
+    .brand-icon {
+      width: 56px; height: 56px; border-radius: 16px;
+      background: linear-gradient(135deg, var(--a1), var(--a2));
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 20px 50px -10px rgba(124,92,255,.6);
+      animation: icon-pulse 3s ease-in-out infinite;
+    }
+    @keyframes icon-pulse {
+      0%, 100% { box-shadow: 0 20px 50px -10px rgba(124,92,255,.6); }
+      50% { box-shadow: 0 20px 70px -5px rgba(124,92,255,.9); }
+    }
+    .brand-icon svg { width: 28px; height: 28px; }
+    .brand-text h1 {
+      font-size: 1.5rem; font-weight: 900; letter-spacing: -.03em;
+      background: linear-gradient(90deg, #a78bfa, #67e8f9, #f9a8d4);
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+    }
+    .brand-text p { font-size: .78rem; color: var(--muted); margin-top: .15rem; }
+
+    .left-features { display: flex; flex-direction: column; gap: .85rem; }
+    .feature-item {
+      display: flex; align-items: center; gap: .85rem;
+      padding: .85rem 1rem;
+      background: rgba(255,255,255,.03);
+      border: 1px solid rgba(255,255,255,.06);
+      border-radius: .85rem;
+      transition: all .2s;
+    }
+    .feature-item:hover {
+      background: rgba(124,92,255,.07);
+      border-color: rgba(124,92,255,.2);
+      transform: translateX(4px);
+    }
+    .feature-icon {
+      width: 38px; height: 38px; border-radius: .65rem;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem; flex-shrink: 0;
+    }
+    .feature-text h3 { font-size: .85rem; font-weight: 700; }
+    .feature-text p { font-size: .75rem; color: var(--muted); margin-top: .1rem; }
+
+    .version-badge {
+      display: inline-flex; align-items: center; gap: .4rem;
+      background: rgba(124,92,255,.12); border: 1px solid rgba(124,92,255,.25);
+      color: #a78bfa; padding: .35rem .85rem; border-radius: 999px;
+      font-size: .72rem; font-weight: 700; letter-spacing: .04em;
+      width: fit-content;
+    }
+    .version-badge::before { content: ''; width: 6px; height: 6px; background: #7c5cff; border-radius: 50%; animation: blink 2s infinite; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+    /* RIGHT PANEL - Login Card */
+    .login-card {
+      width: 420px; flex-shrink: 0;
+      background: rgba(13,13,32,.85);
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 1.75rem;
+      padding: 2.25rem;
+      backdrop-filter: blur(30px);
+      box-shadow: 0 50px 100px rgba(0,0,0,.6), 0 0 0 1px rgba(124,92,255,.1) inset;
+      position: relative; overflow: hidden;
+    }
+    .login-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(124,92,255,.5), rgba(34,211,238,.5), transparent);
+    }
+
+    .card-header { margin-bottom: 1.75rem; }
+    .card-header h2 { font-size: 1.35rem; font-weight: 800; letter-spacing: -.02em; }
+    .card-header p { font-size: .82rem; color: var(--muted); margin-top: .3rem; }
+
+    /* Tabs */
+    .auth-tabs {
+      display: flex; background: rgba(0,0,0,.3); border-radius: .75rem;
+      padding: .3rem; margin-bottom: 1.5rem;
+      border: 1px solid rgba(255,255,255,.06);
+    }
+    .auth-tab {
+      flex: 1; padding: .55rem; border-radius: .55rem;
+      font-size: .82rem; font-weight: 700; cursor: pointer;
+      border: none; background: none; color: var(--muted);
+      transition: all .2s;
+    }
+    .auth-tab.active {
+      background: linear-gradient(120deg, var(--a1), var(--a2));
+      color: #fff;
+      box-shadow: 0 4px 15px -4px rgba(124,92,255,.5);
+    }
+
+    /* Fields */
+    .field { margin-bottom: 1.1rem; }
+    .field label {
+      display: flex; align-items: center; gap: .4rem;
+      font-size: .78rem; font-weight: 700; color: var(--muted);
+      margin-bottom: .45rem; letter-spacing: .02em; text-transform: uppercase;
+    }
+    .input-wrap { position: relative; }
+    .input-icon {
+      position: absolute; left: .9rem; top: 50%; transform: translateY(-50%);
+      color: var(--muted); pointer-events: none;
+    }
+    .field input {
+      width: 100%; padding: .85rem 1rem .85rem 2.75rem;
+      background: var(--input-bg);
+      border: 1.5px solid rgba(255,255,255,.08);
+      border-radius: .85rem;
+      color: var(--text); font-family: inherit; font-size: .9rem;
+      outline: none; transition: all .2s;
+    }
+    .field input:focus {
+      border-color: var(--a1);
+      box-shadow: 0 0 0 4px rgba(124,92,255,.12);
+      background: rgba(124,92,255,.05);
+    }
+    .field input::placeholder { color: rgba(154,160,180,.3); }
+
+    .show-pass {
+      position: absolute; right: .85rem; top: 50%; transform: translateY(-50%);
+      background: none; border: none; color: var(--muted); cursor: pointer;
+      padding: .3rem; border-radius: .4rem; transition: color .15s;
+    }
+    .show-pass:hover { color: var(--text); }
+
+    /* Error box */
+    .err-box {
+      display: none; align-items: center; gap: .6rem;
+      background: rgba(244,63,94,.08); border: 1px solid rgba(244,63,94,.25);
+      color: #fb7185; border-radius: .75rem; padding: .75rem 1rem;
+      font-size: .83rem; margin-bottom: 1rem; border-left: 3px solid #f43f5e;
+    }
+    .err-box.show { display: flex; }
+
+    /* Submit button */
+    .btn-login {
+      width: 100%; padding: 1rem;
+      background: linear-gradient(120deg, var(--a1), #6366f1, var(--a2));
+      background-size: 200%;
+      color: #fff; font-family: inherit; font-weight: 800; font-size: .95rem;
+      border: none; border-radius: .9rem; cursor: pointer;
+      transition: all .3s; letter-spacing: .02em;
+      box-shadow: 0 12px 35px -10px rgba(124,92,255,.65);
+      margin-top: .5rem;
+      position: relative; overflow: hidden;
+    }
+    .btn-login::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(120deg, transparent, rgba(255,255,255,.1), transparent);
+      transform: translateX(-100%);
+      transition: transform .5s;
+    }
+    .btn-login:hover::before { transform: translateX(100%); }
+    .btn-login:hover { background-position: right; box-shadow: 0 16px 45px -10px rgba(124,92,255,.8); transform: translateY(-1px); }
+    .btn-login:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+
+    .spinner {
+      display: inline-block; width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,.3); border-top-color: #fff;
+      border-radius: 50%; animation: spin .7s linear infinite; vertical-align: middle; margin-right: .4rem;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .info-hint {
+      background: rgba(124,92,255,.06); border: 1px solid rgba(124,92,255,.15);
+      border-radius: .75rem; padding: .75rem .9rem;
+      font-size: .76rem; color: var(--muted); margin-top: 1.1rem;
+      line-height: 1.6; display: flex; gap: .5rem;
+    }
+    .info-hint strong { color: #a78bfa; }
+
+    /* RESPONSIVE */
+    @media(max-width: 768px) {
+      .login-container { flex-direction: column; max-width: 440px; }
+      .left-panel { display: none; }
+      .login-card { width: 100%; }
+    }
   </style>
 </head>
-<body style="background:var(--bg);color:var(--text)" class="min-h-screen flex items-center justify-center px-4 transition-colors duration-200">
-  <button id="themeBtn" onclick="toggleTheme()" class="fixed top-4 right-4 rounded-full border px-3 py-1 text-xs font-medium" style="border-color:var(--border);color:var(--muted)">
-    <span id="themeLabel">Light</span>
-  </button>
-  <div class="w-full max-w-sm">
-    <div class="mb-8 text-center">
-      <span class="mx-auto mb-4 grid h-12 w-12 place-items-center rounded-2xl shadow-lg shadow-indigo-500/40" style="background:linear-gradient(135deg,#7c5cff,#22d3ee)"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z" fill="white"/></svg></span>
-      <h1 class="text-xl font-extrabold tracking-wide" style="background:linear-gradient(90deg,#a78bfa,#67e8f9);-webkit-background-clip:text;-webkit-text-fill-color:transparent">RAYZELL STORE PPOB</h1>
-      <p class="mt-1 text-sm" style="color:var(--muted)">Panel Admin</p>
+<body>
+  <div class="bg-canvas"></div>
+  <div class="grid-lines"></div>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+  <div class="particles" id="particles"></div>
+
+  <div class="login-container">
+    <!-- LEFT PANEL -->
+    <div class="left-panel">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z" fill="white"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <h1>RAYZELL STORE</h1>
+          <p>Panel Admin — Kelola toko digital Anda</p>
+        </div>
+      </div>
+
+      <div class="version-badge">ADMIN PANEL v2.0</div>
+
+      <div class="left-features">
+        <div class="feature-item">
+          <div class="feature-icon" style="background:rgba(124,92,255,.15);">📊</div>
+          <div class="feature-text">
+            <h3>Dashboard & Statistik</h3>
+            <p>Monitor transaksi, pengguna & revenue real-time</p>
+          </div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon" style="background:rgba(34,211,238,.1);">🖊️</div>
+          <div class="feature-text">
+            <h3>Edit Tampilan Web</h3>
+            <p>Ubah teks, warna, dan konten halaman utama</p>
+          </div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon" style="background:rgba(16,185,129,.1);">🖼️</div>
+          <div class="feature-text">
+            <h3>Kelola Ikon & Foto</h3>
+            <p>Upload, ganti & hapus ikon produk dan brand</p>
+          </div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon" style="background:rgba(245,158,11,.1);">🔑</div>
+          <div class="feature-text">
+            <h3>Multi API Digiflazz</h3>
+            <p>Kelola VIP, Reseller & berbagai mode API</p>
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="rounded-2xl p-6 sm:p-8" style="background:var(--card);border:1px solid var(--border)">
-      <div id="errBox" class="mb-4 hidden rounded-xl p-3 text-sm text-rose-400" style="background:rgba(244,63,94,.08)"></div>
-      <form id="loginForm" onsubmit="doLogin(event)" class="space-y-4">
-        <div>
-          <label class="mb-1 block text-sm font-medium">Username</label>
-          <input id="uname" type="text" required autocomplete="username" placeholder="admin"
-                 class="w-full rounded-xl px-4 py-3 text-sm outline-none"
-                 style="background:var(--input-bg);border:1.5px solid var(--input-border);color:var(--text)" />
+
+    <!-- RIGHT PANEL - Login Card -->
+    <div class="login-card">
+      <div class="card-header">
+        <h2>🔐 Selamat Datang</h2>
+        <p>Masuk ke panel admin Rayzell Store</p>
+      </div>
+
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="tabEmail" onclick="switchTab('email')">📧 Email</button>
+        <button class="auth-tab" id="tabPhone" onclick="switchTab('phone')" style="display:none">📱 Lainnya</button>
+      </div>
+
+      <div id="errBox" class="err-box">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span id="errText"></span>
+      </div>
+
+      <form id="loginForm" onsubmit="doLogin(event)">
+        <!-- Email Field -->
+        <div class="field">
+          <label>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 01-2.06 0L2 7"/></svg>
+            Email Admin
+          </label>
+          <div class="input-wrap">
+            <div class="input-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 01-2.06 0L2 7"/></svg>
+            </div>
+            <input
+              id="emailInp" type="email" required autocomplete="email"
+              placeholder="admin@rayzellstore.com" />
+          </div>
         </div>
-        <div>
-          <label class="mb-1 block text-sm font-medium">Password</label>
-          <input id="pass" type="password" required autocomplete="current-password" placeholder="••••••••"
-                 class="w-full rounded-xl px-4 py-3 text-sm outline-none"
-                 style="background:var(--input-bg);border:1.5px solid var(--input-border);color:var(--text)" />
+
+        <!-- Password Field -->
+        <div class="field">
+          <label>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+            Password
+          </label>
+          <div class="input-wrap">
+            <div class="input-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+            </div>
+            <input id="passInp" type="password" required autocomplete="current-password" placeholder="••••••••••••" />
+            <button type="button" class="show-pass" onclick="togglePass()" title="Tampilkan password">
+              <svg id="eyeIcon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
+          </div>
         </div>
-        <button type="submit" id="loginBtn" class="w-full rounded-xl py-3 font-semibold text-sm transition hover:opacity-90"
-                style="background:var(--btn);color:var(--btn-text)">Masuk</button>
+
+        <button type="submit" id="loginBtn" class="btn-login">
+          Masuk ke Dashboard →
+        </button>
       </form>
+
+      <div class="info-hint">
+        🔑 Gunakan <strong>email & password admin</strong> yang diatur di
+        <strong>.env</strong> (<code>WEB_ADMIN_EMAIL</code> & <code>WEB_ADMIN_PASSWORD</code>)
+      </div>
     </div>
   </div>
+
   <script>
-    const saved = localStorage.getItem('theme') || 'dark';
-    document.documentElement.setAttribute('data-theme', saved);
-    document.getElementById('themeLabel').textContent = saved === 'dark' ? 'Light' : 'Dark';
-    function toggleTheme() {
-      const cur = document.documentElement.getAttribute('data-theme');
-      const next = cur === 'dark' ? 'light' : 'dark';
-      document.documentElement.setAttribute('data-theme', next);
-      localStorage.setItem('theme', next);
-      document.getElementById('themeLabel').textContent = next === 'dark' ? 'Light' : 'Dark';
+    // Auto-redirect jika sudah login
+    if (localStorage.getItem('admin_token')) window.location.replace('/admin/dashboard.html');
+
+    // Generate particles
+    const pc = document.getElementById('particles');
+    for (let i = 0; i < 40; i++) {
+      const p = document.createElement('div');
+      p.className = 'particle';
+      p.style.cssText = `
+        left: ${Math.random()*100}%;
+        width: ${Math.random()*3+1}px;
+        height: ${Math.random()*3+1}px;
+        animation-duration: ${Math.random()*15+8}s;
+        animation-delay: ${Math.random()*10}s;
+        opacity: ${Math.random()*.5+.1};
+      `;
+      pc.appendChild(p);
     }
-    if (localStorage.getItem('admin_token')) window.location = '/admin/dashboard.html';
+
+    function switchTab(tab) {
+      document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+      document.getElementById('tab' + (tab === 'email' ? 'Email' : 'Phone')).classList.add('active');
+    }
+
+    function togglePass() {
+      const inp = document.getElementById('passInp');
+      const icon = document.getElementById('eyeIcon');
+      if (inp.type === 'password') {
+        inp.type = 'text';
+        icon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>';
+      } else {
+        inp.type = 'password';
+        icon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+      }
+    }
+
+    function showErr(msg) {
+      const box = document.getElementById('errBox');
+      document.getElementById('errText').textContent = msg;
+      box.classList.add('show');
+      box.style.animation = 'none';
+      requestAnimationFrame(() => { box.style.animation = ''; });
+    }
+    function hideErr() { document.getElementById('errBox').classList.remove('show'); }
+
     async function doLogin(e) {
       e.preventDefault();
       const btn = document.getElementById('loginBtn');
-      const err = document.getElementById('errBox');
-      btn.disabled = true; btn.textContent = 'Masuk…'; err.classList.add('hidden');
+      const email = document.getElementById('emailInp').value.trim();
+      const pass = document.getElementById('passInp').value;
+      hideErr();
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span>Memverifikasi…';
       try {
         const r = await fetch('/api/admin/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username: document.getElementById('uname').value, password: document.getElementById('pass').value }),
+          body: JSON.stringify({ email, password: pass }),
         });
         const j = await r.json();
-        if (j.ok) { localStorage.setItem('admin_token', j.token); window.location = '/admin/dashboard.html'; }
-        else { err.textContent = j.message || 'Username atau password salah.'; err.classList.remove('hidden'); }
-      } catch (ex) { err.textContent = 'Gagal terhubung ke server.'; err.classList.remove('hidden'); }
-      finally { btn.disabled = false; btn.textContent = 'Masuk'; }
+        if (j.ok) {
+          localStorage.setItem('admin_token', j.token);
+          if (email) localStorage.setItem('admin_email', email);
+          btn.innerHTML = '✓ Berhasil! Mengalihkan…';
+          btn.style.background = 'linear-gradient(120deg, #10b981, #34d399)';
+          setTimeout(() => window.location.replace('/admin/dashboard.html'), 700);
+        } else {
+          showErr(j.message || 'Email atau password salah.');
+          btn.disabled = false;
+          btn.innerHTML = 'Masuk ke Dashboard →';
+        }
+      } catch (ex) {
+        showErr('Gagal terhubung ke server. Periksa koneksi.');
+        btn.disabled = false;
+        btn.innerHTML = 'Masuk ke Dashboard →';
+      }
     }
   </script>
 </body>
