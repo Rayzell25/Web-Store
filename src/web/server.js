@@ -544,9 +544,15 @@ app.post('/api/order', requireUser, async (req, res) => {
     const tujuan = String(target || '').trim();
     if (!tujuan) return res.json({ ok: false, message: 'Nomor tujuan tidak boleh kosong.' });
 
-    // Anti DOBEL: tolak bila masih ada transaksi Pending ke produk+nomor yang sama.
-    const dupTrx = await trxService.hasPendingSame(sku, tujuan);
-    if (dupTrx) return res.json({ ok: false, message: 'Masih ada transaksi ke nomor ini yang sedang diproses. Tunggu hingga selesai.' });
+    // Anti DOBEL: cegah double-charge bila tombol beli ditekan berkali-kali.
+    // Blokir bila masih Pending, atau baru saja SUKSES (cooldown). Gagal -> boleh ulang.
+    const dupTrx = await trxService.findDuplicate(req.userId, sku, tujuan, (config.order.dedupeSec || 0) * 1000);
+    if (dupTrx) {
+      const message = dupTrx.status === 'Pending'
+        ? 'Masih ada transaksi ke nomor ini yang sedang diproses. Tunggu hingga selesai.'
+        : `Kamu baru saja beli produk ini ke nomor ini. Tunggu ${config.order.dedupeSec} detik bila memang mau beli lagi.`;
+      return res.json({ ok: false, message });
+    }
 
     // ===== Bayar pakai SALDO =====
     if (method === 'saldo') {

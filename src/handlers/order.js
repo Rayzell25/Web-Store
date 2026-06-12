@@ -8,7 +8,7 @@ const {
   sellPrice,
 } = require('../services/productService');
 const { getUser, addBalance } = require('../services/userService');
-const { createTransaction, updateTransaction, hasPendingSame } = require('../services/trxService');
+const { createTransaction, updateTransaction, findDuplicate } = require('../services/trxService');
 const digiflazz = require('../services/digiflazz');
 const digiflazzPoller = require('../services/digiflazzPoller');
 const autogopay = require('../services/autogopay');
@@ -164,11 +164,16 @@ async function pay(bot, chatId, messageId, userId, notifyAdmins, alert) {
       `⚠️ Saldo tidak cukup. Kurang ${rupiah(harga - user.balance)}.`, backButton('menu:deposit'));
   }
 
-  // Anti DOBEL: tolak bila masih ada transaksi Pending ke produk+nomor yang sama.
-  const dupTrx = await hasPendingSame(sku, target);
+  // Anti DOBEL: cegah double-charge bila pembeli menekan "beli" berkali-kali.
+  // Blokir bila masih ada yang Pending, atau baru saja SUKSES (cooldown).
+  // Transaksi yang GAGAL tidak menghalangi -> tetap bisa coba lagi.
+  const dupTrx = await findDuplicate(userId, sku, target, (config.order.dedupeSec || 0) * 1000);
   if (dupTrx) {
-    if (typeof alert === 'function') return alert('Masih ada transaksi ke nomor ini yang sedang diproses. Tunggu hingga selesai dulu.');
-    return editOrSend(bot, chatId, messageId, '⚠️ Masih ada transaksi ke nomor ini yang sedang diproses. Tunggu hingga selesai.', backButton('menu:home'));
+    const msg = dupTrx.status === 'Pending'
+      ? 'Masih ada transaksi ke nomor ini yang sedang diproses. Tunggu sampai selesai dulu.'
+      : `Kamu baru saja beli paket ini ke nomor ini (Ref ${dupTrx.ref_id}). Tunggu ${config.order.dedupeSec} detik bila memang mau beli lagi.`;
+    if (typeof alert === 'function') return alert(msg);
+    return editOrSend(bot, chatId, messageId, `⚠️ ${msg}`, backButton('menu:home'));
   }
 
   // Klaim state ATOMIK tepat sebelum memotong saldo -> cegah double-charge bila
